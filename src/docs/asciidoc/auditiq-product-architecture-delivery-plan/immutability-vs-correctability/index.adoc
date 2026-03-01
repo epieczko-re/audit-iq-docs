@@ -1,4 +1,4 @@
-== Section 20: Immutability vs. Correctability (Regulator-Safe Semantics)
+== 20. Immutability vs. Correctability (Regulator-Safe Semantics)
 
 === 20.1 The Problem: Audit Trail Integrity vs. Operational Reality
 

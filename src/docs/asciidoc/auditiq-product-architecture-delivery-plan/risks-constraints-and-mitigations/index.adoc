@@ -1,4 +1,4 @@
-== Section 15: Risks, Constraints, and Mitigations
+== 15. Risks, Constraints, and Mitigations
 
 === 15.1 Risk Register (Top 20+)
 

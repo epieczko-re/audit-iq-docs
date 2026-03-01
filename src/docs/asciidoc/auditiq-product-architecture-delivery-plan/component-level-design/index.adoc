@@ -37,14 +37,26 @@ interface ValidationError {
 ----
 
 
+*Error handling:*
+
 [cols="1,2",options="header"]
 |===
-|*Error handling:* |Error
-|Handling |File size > 100MB
-|Client-side rejection before upload |Encoding issues (non-UTF-8)
-|Attempt conversion; flag if fails; allow skip |Missing required columns
-|Reject entire upload; list missing columns |Malformed date values
-|Reject affected rows; suggest expected format |Duplicate record IDs
+|Error |Handling
+
+|File size > 100MB
+|Client-side rejection before upload
+
+|Encoding issues (non-UTF-8)
+|Attempt conversion; flag if fails; allow skip
+
+|Missing required columns
+|Reject entire upload; list missing columns
+
+|Malformed date values
+|Reject affected rows; suggest expected format
+
+|Duplicate record IDs
+|Flag with warning; allow user to choose which to keep
 |===
 
 
@@ -264,7 +276,7 @@ Additional raw signals passed to Layer 2: - `conf_extraction`: AFC score from Se
 
 *Layer 2 — Calibrated decision score:* - Combines `conf_mapping`, `conf_extraction`, and `conf_rule` into a single calibrated probability - Phase 1: Temperature scaling on logistic regression of Layer 1 signals (requires ≥200 labeled mapping decisions for initial calibration) - Phase 2: Isotonic regression for non-parametric calibration (requires ≥500 labeled decisions) - Calibration validation: Reliability diagrams (predicted confidence vs. actual accuracy in 10 bins); Expected Calibration Error (ECE) must be ≤0.05
 
-*Routing thresholds (calibrated score):* - ≥0.90: Auto-accept (reviewer sees green checkmark; ~10s visual confirmation) - 0.60–0.90: Human review required (reviewer evaluates suggestion; ~45s per field) - <0.60: Manual mapping required (no suggestion shown; reviewer selects from field list)
+*Routing thresholds (calibrated score):* - ≥0.95: Auto-accept (reviewer sees green checkmark; ~10s visual confirmation). NOTE: Initial conservative threshold per Decision D2 (Section 19.3); may be lowered to ≥0.90 after calibration validation on ≥500 mappings. - 0.70–0.95: Human review required (reviewer evaluates suggestion; ~45s per field) - <0.70: Manual mapping required (no suggestion shown; reviewer selects from field list)
 
 ==== 10.3.3 Input/Output Contracts
 
@@ -527,16 +539,27 @@ interface StatusTransition {
 *Segregation of duties:* Before closing a finding, system checks: if current_user == created_by, then deny with error message and log violation attempt.
 
 
-[cols="1,2",options="header"]
+*Escalation rules (configurable):*
+
+[cols="1,1,2",options="header"]
 |===
-|*Escalation rules (configurable):* |Severity
-|Days Untriaged |Escalation Path
-|– |Critical
-|1 |Manager notification + audit log
-|High |3
-|Manager notification |Medium
-|7 |Email notification to owner
-|Low |14
+|Severity |Days Untriaged |Escalation Path
+
+|Critical
+|1
+|Manager notification + audit log
+
+|High
+|3
+|Manager notification
+
+|Medium
+|7
+|Email notification to owner
+
+|Low
+|14
+|Email notification to owner
 |===
 
 

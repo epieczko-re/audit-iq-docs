@@ -26,8 +26,6 @@ Thumbs.db
 
 # Logs
 *.log
-*.pdf
-*.docx
 
 # Reference template (if contains proprietary content)
 # themes/riskexec-reference.docx
