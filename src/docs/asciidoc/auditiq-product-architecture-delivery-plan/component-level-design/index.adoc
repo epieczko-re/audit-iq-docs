@@ -219,7 +219,7 @@ for each document:
     // Step 2: Attempt LLM extraction via LiteLLM (self-hosted Mistral/vLLM)
     llm_result = docling_graph.run_pipeline(
       context, template=pydantic_template, backend="llm",
-      provider="lite_llm", provider_override="mistral"
+      provider="litellm", provider_override="mistral"
     )
     recompute afc
 
