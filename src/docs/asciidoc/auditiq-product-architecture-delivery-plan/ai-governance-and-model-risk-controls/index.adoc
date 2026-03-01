@@ -96,6 +96,8 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 
 *Requirement:* If an AI-generated narrative or score appears in an audit, humans must be able to trace it back to the model, version, prompt, retrieval corpus, and input. This is a regulatory requirement under SR 11-7 (documentation) and NIST GenAI Profile (content provenance).
 
+*Model Registry:* The `model_name`, `model_version`, `prompt_template_id`, and `retrieval_corpus_id` fields below are anchored to the *Model Registry* (Section 24). Only models with `status = 'approved'` in the registry may be called in production. See Section 24 for the registry schema, API contract, lifecycle state machine, and validation requirements.
+
 *Required Logging Fields (per AI Regulatory Acceptance Report — ALL fields mandatory for every AI API call):*
 
 [width="100%",cols="25%,25%,25%,25%",options="header",]
@@ -286,4 +288,4 @@ Per Interagency Guidance on Third-Party Relationships (OCC 2023-17 / FDIC FIL-29
 |*Right to audit* |AuditIQ (or its regulator) may audit provider’s AI controls |Contract clause
 |===
 
-*Cross-references:* - Section 22.1: Regulatory context, conditional acceptability standard, risk scenarios, disclaimers, red lines - Section 22.2: PII redaction and data residency controls - Section 22.3: Required logging fields and provenance metadata - Section 22.4: Hallucination detection and QA gates - Section 22.5: Drift monitoring and retraining triggers - Section 22.6: UI labeling and transparency requirements - AI Regulatory Acceptance Report: Full regulatory analysis, risk exposure assessment, and recommended controls
+*Cross-references:* - Section 22.1: Regulatory context, conditional acceptability standard, risk scenarios, disclaimers, red lines - Section 22.2: PII redaction and data residency controls - Section 22.3: Required logging fields and provenance metadata - Section 22.4: Hallucination detection and QA gates - Section 22.5: Drift monitoring and retraining triggers - Section 22.6: UI labeling and transparency requirements - *Section 24 (Model Registry):* Schema, API contract, lifecycle governance, and validation requirements for all AI model artifacts referenced by provenance fields - AI Regulatory Acceptance Report: Full regulatory analysis, risk exposure assessment, and recommended controls

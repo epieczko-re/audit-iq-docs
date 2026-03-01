@@ -1,0 +1,348 @@
+== 24. Model Registry & AI Model Metadata
+
+____
+*v0.2 Addition.* Section 22.3 mandates that every AI API call logs `model_name`, `model_version`, `prompt_template_id`, `prompt_template_version`, `retrieval_corpus_id`, and `retrieval_corpus_version`. This section defines *where* that metadata lives, *how* model versions are registered and governed, and *the API contract* for recording and querying model provenance at run-time. Without a model registry, the provenance fields in Section 22.3 are unanchored — there is no authoritative source to validate that a given `model_name + model_version` combination is approved for production use.
+____
+
+=== 24.1 Purpose
+
+The Model Registry serves three functions:
+
+[arabic]
+. *Inventory:* SR 11-7 requires a model inventory. The registry is that inventory for all AI/ML components used by AuditIQ.
+. *Gating:* Only models with `status = 'approved'` may be called in production. The AI Narrative Engine and Schema Mapping Service query the registry at call time.
+. *Provenance anchoring:* The `ai_provenance.model_name` and `ai_provenance.model_version` fields logged per Section 22.3 are foreign-key references to registry records, ensuring traceability.
+
+=== 24.2 What Constitutes a "Model"
+
+Under SR 11-7, a model is any quantitative method, system, or approach that applies statistical, economic, financial, or mathematical theories to process input data into quantitative estimates. In AuditIQ, the following components are registered as models:
+
+[width="100%",cols="20%,20%,30%,30%",options="header"]
+|===
+|Model Type |Example |Owner |Risk Tier
+
+|*LLM (third-party)*
+|GPT-4 Turbo, Claude 3 Opus
+|ML Engineer
+|High — generates audit narratives
+
+|*Prompt template*
+|`narrative_finding_v1.2`, `summary_report_v1.0`
+|ML Engineer
+|Medium — controls LLM behavior
+
+|*System prompt*
+|`system_prompt_v1.0`
+|ML Engineer
+|Medium — sets LLM persona and constraints
+
+|*Schema matcher*
+|Hybrid heuristic matcher v1.0
+|Data Architect
+|Medium — suggests field mappings
+
+|*Confidence calibrator*
+|Temperature scaling model (Phase 1), isotonic regression (Phase 2)
+|ML Engineer
+|Medium — tunes confidence routing
+
+|*RAG corpus*
+|`hmda_rules_v2`, `trid_rules_v1`
+|Domain SME
+|Medium — retrieval context for narratives
+|===
+
+=== 24.3 Storage: `model_registry` Table
+
+The registry is a Postgres table in the `ai` schema. Each row represents one versioned artifact.
+
+[source,sql]
+----
+CREATE TABLE ai.model_registry (
+  model_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID,                          -- NULL = global (shared across tenants)
+
+  -- Identity
+  model_type VARCHAR(50) NOT NULL,         -- 'llm', 'prompt_template', 'system_prompt',
+                                           -- 'schema_matcher', 'calibrator', 'rag_corpus'
+  model_name VARCHAR(255) NOT NULL,        -- e.g., 'gpt-4-turbo', 'narrative_finding'
+  model_version VARCHAR(100) NOT NULL,     -- e.g., '2024-04-09', 'v1.2'
+  provider VARCHAR(100),                   -- e.g., 'openai', 'anthropic', 'self-hosted', 'internal'
+
+  -- Governance
+  status VARCHAR(50) NOT NULL DEFAULT 'draft',
+    -- 'draft'     → under development; cannot be used in production
+    -- 'staging'   → approved for testing environments only
+    -- 'approved'  → cleared for production use
+    -- 'deprecated'→ still functional but new runs should use successor
+    -- 'retired'   → disabled; calls will fail
+  approved_by UUID,                        -- User who approved for production
+  approved_at TIMESTAMP,
+  risk_tier VARCHAR(20) NOT NULL,          -- 'high', 'medium', 'low'
+
+  -- Metadata
+  description TEXT,
+  config JSONB,                            -- Model-specific config (temperature, max_tokens, etc.)
+  input_schema JSONB,                      -- Expected input shape (for validation)
+  output_schema JSONB,                     -- Expected output shape
+
+  -- Validation
+  validation_dataset_id VARCHAR(255),      -- Reference to test dataset used for approval
+  validation_metrics JSONB,                -- e.g., {"accuracy": 0.92, "hallucination_rate": 0.03}
+  validation_report_url VARCHAR(512),      -- Link to full validation report (S3 or wiki)
+
+  -- Lineage
+  predecessor_model_id UUID,              -- Which model version this replaces
+  training_dataset_id VARCHAR(255),       -- For internally trained models (calibrators)
+  training_completed_at TIMESTAMP,
+
+  -- Audit trail
+  created_by UUID NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  UNIQUE (model_type, model_name, model_version, COALESCE(tenant_id, '00000000-0000-0000-0000-000000000000'::UUID)),
+  FOREIGN KEY (approved_by) REFERENCES users(user_id),
+  FOREIGN KEY (created_by) REFERENCES users(user_id),
+  FOREIGN KEY (predecessor_model_id) REFERENCES ai.model_registry(model_id)
+);
+
+CREATE INDEX idx_model_registry_lookup
+  ON ai.model_registry(model_type, model_name, status);
+CREATE INDEX idx_model_registry_status
+  ON ai.model_registry(status);
+----
+
+=== 24.4 API Contract
+
+==== 24.4.1 Register a Model Version
+
+[source,typescript]
+----
+// POST /api/v1/models
+interface RegisterModelRequest {
+  model_type: 'llm' | 'prompt_template' | 'system_prompt'
+            | 'schema_matcher' | 'calibrator' | 'rag_corpus';
+  model_name: string;
+  model_version: string;
+  provider?: string;
+  risk_tier: 'high' | 'medium' | 'low';
+  description?: string;
+  config?: Record<string, unknown>;      // e.g., { temperature: 0.2, max_tokens: 2048 }
+  input_schema?: Record<string, unknown>;
+  output_schema?: Record<string, unknown>;
+  predecessor_model_id?: string;         // UUID of the version this replaces
+  training_dataset_id?: string;
+  validation_dataset_id?: string;
+  validation_metrics?: Record<string, number>;
+  validation_report_url?: string;
+}
+
+interface RegisterModelResponse {
+  model_id: string;                      // UUID
+  model_type: string;
+  model_name: string;
+  model_version: string;
+  status: 'draft';                       // Always starts as draft
+  created_at: string;                    // ISO 8601
+}
+----
+
+==== 24.4.2 Approve a Model for Production
+
+[source,typescript]
+----
+// POST /api/v1/models/{model_id}/approve
+// Requires role: Manager or IT Admin
+interface ApproveModelRequest {
+  validation_dataset_id: string;         // Must reference a completed validation run
+  validation_metrics: Record<string, number>;
+  approval_notes?: string;
+}
+
+interface ApproveModelResponse {
+  model_id: string;
+  status: 'approved';
+  approved_by: string;                   // user_id
+  approved_at: string;                   // ISO 8601
+}
+----
+
+==== 24.4.3 Resolve Model at Call Time
+
+The AI Narrative Engine and Schema Mapping Service call this endpoint (or use a cached in-memory lookup) before every AI API call to confirm the model is approved and retrieve its configuration.
+
+[source,typescript]
+----
+// GET /api/v1/models/resolve?model_type={type}&model_name={name}&status=approved
+// Returns the latest approved version for the given model_type + model_name
+interface ResolveModelResponse {
+  model_id: string;
+  model_type: string;
+  model_name: string;
+  model_version: string;
+  provider: string;
+  status: 'approved';
+  config: Record<string, unknown>;
+  risk_tier: string;
+}
+----
+
+*Call-time gating:* If `resolve` returns no approved model for the requested `model_type + model_name`, the AI service must *fail closed* — return a structured error rather than calling an unapproved model. This is logged as an `ai_model_resolution_failed` audit event.
+
+==== 24.4.4 Deprecate / Retire a Model
+
+[source,typescript]
+----
+// POST /api/v1/models/{model_id}/deprecate
+// POST /api/v1/models/{model_id}/retire
+// Requires role: Manager or IT Admin
+interface DeprecateModelRequest {
+  successor_model_id?: string;           // Recommended replacement
+  reason: string;
+}
+----
+
+Deprecation is advisory (existing runs continue; new runs get a warning). Retirement is hard — calls to a retired model fail with `MODEL_RETIRED` error.
+
+=== 24.5 Lifecycle State Machine
+
+....
+draft → staging → approved → deprecated → retired
+                      ↓
+                   retired  (direct retirement if critical issue found)
+....
+
+[width="100%",cols="20%,20%,60%",options="header"]
+|===
+|Transition |Required Role |Conditions
+
+|draft → staging
+|ML Engineer
+|Validation metrics provided; no blocking issues in test environment
+
+|staging → approved
+|Manager or IT Admin
+|Validation dataset run completed; metrics meet thresholds (Section 24.6); approval notes documented
+
+|approved → deprecated
+|Manager or IT Admin
+|Successor model identified (recommended); deprecation reason documented
+
+|approved → retired
+|Manager or IT Admin
+|Critical issue found (e.g., safety, accuracy degradation); retirement reason documented
+
+|deprecated → retired
+|Manager or IT Admin
+|All active audit runs migrated off this version
+|===
+
+=== 24.6 Validation Requirements by Model Type
+
+[width="100%",cols="20%,40%,40%",options="header"]
+|===
+|Model Type |Required Metrics |Approval Threshold
+
+|*LLM (third-party)*
+|Hallucination rate, citation accuracy, override rate on test set
+|Hallucination rate < 5%; citation accuracy ≥ 80%; override rate < 10%
+
+|*Prompt template*
+|Output quality score (1–5 human rating on 100-sample test), format compliance rate
+|Mean quality ≥ 4.0; format compliance ≥ 95%
+
+|*Schema matcher*
+|Precision, recall, override rate on labeled mapping set
+|Precision ≥ 95% at conf ≥ 0.90; override rate ≤ 25% (per Decision D2)
+
+|*Confidence calibrator*
+|ECE, reliability diagram, calibration error
+|ECE ≤ 0.05 (see Glossary G.4)
+
+|*RAG corpus*
+|Coverage (% of rules with retrievable context), relevance score
+|Coverage ≥ 90%; relevance ≥ 0.80 on test queries
+|===
+
+=== 24.7 How `ai_provenance` References the Registry
+
+When the AI Narrative Engine generates a finding narrative (Section 22.3), it populates provenance fields by querying the registry:
+
+[source,json]
+----
+{
+  "ai_provenance": {
+    "ai_provider": "openai",
+    "model_name": "gpt-4-turbo",
+    "model_version": "2024-04-09",
+    "model_registry_id": "550e8400-e29b-41d4-a716-446655440000",
+
+    "prompt_template_id": "narrative_finding",
+    "prompt_template_version": "v1.2",
+    "prompt_registry_id": "660e8400-e29b-41d4-a716-446655440001",
+
+    "system_prompt_version": "v1.0",
+    "system_prompt_registry_id": "770e8400-e29b-41d4-a716-446655440002",
+
+    "retrieval_corpus_id": "hmda_rules_v2",
+    "retrieval_corpus_version": "2026-01-15",
+    "corpus_registry_id": "880e8400-e29b-41d4-a716-446655440003"
+  }
+}
+----
+
+Each `*_registry_id` is a foreign key to `ai.model_registry.model_id`, providing a join path from any AI output back to the exact model metadata, validation report, and approval record.
+
+=== 24.8 Seed Data (Phase 1)
+
+The following models are pre-registered at system deployment:
+
+[width="100%",cols="18%,22%,15%,15%,30%",options="header"]
+|===
+|Type |Name |Version |Status |Notes
+
+|llm
+|gpt-4-turbo
+|2024-04-09
+|approved
+|Primary narrative engine; OpenAI API
+
+|prompt_template
+|narrative_finding
+|v1.2
+|approved
+|Finding narrative generation
+
+|prompt_template
+|summary_report
+|v1.0
+|approved
+|Audit summary generation
+
+|system_prompt
+|system_prompt
+|v1.0
+|approved
+|LLM persona and constraints
+
+|schema_matcher
+|hybrid_heuristic_matcher
+|v1.0
+|approved
+|5-signal weighted matcher (Section 10.3)
+
+|rag_corpus
+|hmda_rules_v2
+|2026-01-15
+|approved
+|HMDA regulation rules for RAG context
+|===
+
+=== 24.9 Cross-References
+
+* *Section 22.3 (Provenance):* Defines the 14 mandatory logging fields that reference registry records
+* *Section 22.5 (Drift Monitoring):* Drift alerts may trigger model deprecation/retirement
+* *Section 22.7 (External Expertise):* Third-party model validation per SR 11-7
+* *Section 12.4 (Confidence Calibration):* Calibrator model versions tracked in registry
+* *Canonical Glossary (Appendix):* Confidence thresholds that calibrator models must satisfy
