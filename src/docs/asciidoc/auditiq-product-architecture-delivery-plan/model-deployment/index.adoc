@@ -1,125 +1,186 @@
-== 25. Model Deployment: Mistral Self-Hosted (Guidance)
+== 25. Model Deployment: Mistral Self-Hosted (Production Decision)
 
 ____
-*v0.2 Addition.* AuditIQ can host Mistral models in-house for LLM-based extraction via the Docling-Graph LiteLLM interface. Self-hosting reduces per-call cost, improves latency and data residency, and aligns with regulated deployments where customer data must not leave the institution's network. This section provides deployment guidance — not binding requirements — for infrastructure teams evaluating self-hosted LLM inference.
+*Executive decision (2026-03-01): YES.* AuditIQ should self-host selected open-weight Mistral models for regulated production extraction, with a deliberate hybrid fallback to cloud for difficult edge cases and burst elasticity. This section records the rationale, target architecture, and implementation plan.
 ____
 
-=== 25.1 Runtime Options
+=== 25.1 Decision Summary
 
-[width="100%",cols="20%,30%,50%",options="header"]
+AuditIQ's extraction workload is a strong fit for controlled local inference:
+
+* High-throughput, batch-oriented extraction where queueing and continuous batching improve utilization.
+* Strong data residency and privacy requirements.
+* Audit-grade provenance requirements (model/version pinning, request traces, reproducibility).
+* Existing Docling-Graph architecture already supports local runtimes (vLLM/Ollama) and remote providers through LiteLLM.
+
+*Production posture:*
+
+* *Default path (self-host):* `Mistral Small 3.2 (24B)` as primary production extraction model.
+* *Cost/latency tier (self-host):* `Ministral 3 (8B/14B)` for lower-complexity or high-volume jobs.
+* *Exception path:* Route low-confidence OCR, schema-failure retries, and complex edge documents to `Mistral Large 3` (if provisioned) or approved cloud models through LiteLLM policy routing.
+
+=== 25.2 Why This Is the Right Choice for AuditIQ
+
+[width="100%",cols="30%,70%",options="header"]
 |===
-|Runtime |Use Case |Notes
+|Driver |AuditIQ Implication
 
-|*vLLM*
-|Production GPU inference — high throughput, tensor parallelism, continuous batching
-|Recommended for production. Supports multi-GPU sharding, OpenAI-compatible API server, PagedAttention for efficient memory use.
+|*Residency + compliance*
+|Self-hosting keeps documents/prompts in AuditIQ-controlled infrastructure and simplifies evidence generation for audits.
 
-|*Ollama*
-|Single-host or developer inference — simple setup, good for testing and private deployment
-|Good for Phase 0 POC and local development. Supports quantized models for reduced GPU requirements.
+|*Provenance control*
+|AuditIQ can pin model artifacts, capture digests, control rollout cadence, and retain deterministic execution metadata.
 
-|*LiteLLM*
-|Docling-Graph's unified LLM interface — routes to vLLM, Ollama, or cloud providers via a single API
-|Docling-Graph integrates natively with LiteLLM. Set `provider_override: mistral` in Docling-Graph config to target self-hosted Mistral.
-|===
+|*Framework fit*
+|Docling-Graph already supports LiteLLM-based routing to local or cloud endpoints with structured JSON enforcement.
 
-=== 25.2 Hardware Guidance (Planning Estimates)
+|*Throughput control*
+|vLLM provides OpenAI-compatible serving, continuous batching, and queue-friendly operations for batch extraction.
 
-____
-*Disclaimer:* Hardware requirements depend on the specific Mistral model, quantization level, batch size, and throughput targets. The figures below are planning estimates — validate with infrastructure benchmarks before procurement.
-____
-
-[width="100%",cols="25%,25%,25%,25%",options="header"]
-|===
-|Tier |Model Size |GPU Requirement |Throughput (est.)
-
-|*Development / POC*
-|Mistral 7B (quantized)
-|1× A10G (24GB) or equivalent
-|~50–100 tokens/s per request
-
-|*Staging / small production*
-|Mistral Medium (~48B params)
-|1× A100 80GB or 2× A100 40GB
-|~20–40 tokens/s per request; supports batching
-
-|*Production (high throughput)*
-|Mistral Large or custom fine-tune
-|2–4× A100 80GB or H100 nodes with tensor parallelism
-|Batch processing; target ≥500 pages/hour sustained
+|*Cost model realism*
+|Self-hosting is not automatically cheapest per token; it wins when utilization is high, fallback is constrained, and compliance requirements dominate.
 |===
 
-=== 25.3 Integration Pattern
+=== 25.3 Recommended Model Tiers (2026 Baseline)
+
+[width="100%",cols="28%,24%,48%",options="header"]
+|===
+|Tier |Model |Usage Guidance
+
+|*Fast/low-cost tier*
+|Ministral 3 8B
+|Best for high-volume straightforward extractions; practical single-GPU economics.
+
+|*Balanced tier*
+|Ministral 3 14B
+|Accuracy improvement while retaining near single-GPU deployment profile.
+
+|*Primary quality tier*
+|Mistral Small 3.2 24B
+|Default production extraction model for regulated workloads.
+
+|*Escalation tier*
+|Mistral Large 3
+|Use for exceptional documents only; treat as high-cost, multi-GPU capability tier.
+|===
+
+*Licensing posture:* Prioritize open-weight Apache-2.0 model families for production self-hosting. Treat premier/API-only families as cloud/contractual unless legal explicitly grants self-host rights.
+
+=== 25.4 Production Architecture Pattern
+
+*Target serving pattern:*
 
 [arabic]
-. Use *vLLM* (production) or *Ollama* (dev/POC) as the inference runtime.
-. Configure Docling-Graph with `provider_override: mistral` and `model_override: <model-name>` via LiteLLM.
-. Run inference inside an *internal VPC* with TLS encryption and IAM access controls.
-. Expose inference via an *internal inference service* with rate limiting, request batching, health checks, and circuit breakers.
-. Instrument per-call GPU seconds and estimated cost for chargeback and monitoring.
+. Docling conversion and chunking run in standard AuditIQ pipeline.
+. LiteLLM router enforces model policy (allowlist + routing rules).
+. Default traffic goes to private vLLM OpenAI-compatible service.
+. Fallback traffic can route to approved cloud providers for overflow/edge complexity.
+. Response handling enforces structured output and JSON repair before downstream graph materialization.
+. Provenance logs capture model digests, config hashes, runtime metadata, and timing.
 
-*Example Docling-Graph config (YAML):*
+[plantuml]
+....
+@startuml
+left to right direction
+rectangle "Docling Conversion\nOCR/Layout/Tables" as A
+rectangle "Docling-Graph\nChunking + Contracts" as B
+rectangle "LiteLLM Router\nPolicy + Allowlist" as C
+rectangle "vLLM Service\nOpenAI-compatible" as D
+rectangle "Cloud Fallback\n(OpenAI/Anthropic/Mistral API)" as E
+rectangle "JSON Validation + Repair\nResponseHandler" as F
+database "Provenance Store" as G
 
-[source,yaml]
-----
-pipeline:
-  backend: llm
-  inference: remote
-  provider_override: mistral
-  model_override: mistral-medium-latest
-  structured_output: true
-  use_chunking: true
-  litellm_config:
-    api_base: "https://llm-internal.auditiq.local:8443/v1"
-    timeout: 30
-    max_retries: 2
-----
+A --> B
+B --> C
+C --> D : default
+C --> E : fallback
+D --> F
+E --> F
+C --> G
+F --> G
+@enduml
+....
 
-=== 25.4 Cost & Operational Tradeoffs
+=== 25.5 Security, Compliance, and Provenance Requirements
 
-[width="100%",cols="30%,35%,35%",options="header"]
+* *Private inference boundary:* No public inference endpoints. Run within private subnets/VPC.
+* *Transport security:* mTLS/TLS between pipeline services, router, and inference runtime.
+* *PII controls remain mandatory:* Apply deterministic redaction before LLM calls for both self-hosted and fallback paths.
+* *Model registry (deny-by-default):* Permit only approved model IDs and artifact digests.
+* *Provenance fields (minimum):* `doc_sha256`, `prompt_sha256`, `schema_sha256`, `response_sha256`, model ID, model artifact digest, container digest, runtime version, decoding params, queue/latency metrics, fallback reason.
+* *Legal gate:* Legal/compliance sign-off required before production rollout of each model family and checkpoint.
+
+=== 25.6 Hardware and Scaling Guidance
+
+____
+*Planning note:* Capacity must be validated with AuditIQ document distributions and Docling-Graph contract modes. Published throughput claims are directional only.
+____
+
+[width="100%",cols="25%,25%,50%",options="header"]
 |===
-|Factor |Self-Hosted Mistral |Cloud LLM (OpenAI / Anthropic)
+|Infra tier |Typical GPU profile |Practical guidance
 
-|*Per-call cost*
-|Low (GPU amortized over volume)
-|$0.01–$0.05 per extraction call
+|*Entry tier*
+|A10G 24GB
+|Good for 8B and some 14B quantized workloads; use for early production canary lanes.
 
-|*Infrastructure cost*
-|GPU instances ($2–$8/hr per A100); requires SRE/ops
-|Zero infra overhead
+|*Core production tier*
+|A100 40/80GB
+|Better headroom for 24B models, larger contexts, and higher concurrency.
 
-|*Data residency*
-|Full control — data never leaves VPC
-|Data sent to third-party; contract required (Section 22.8)
+|*High-end tier*
+|H100 80GB
+|Preferred for high-throughput clusters and heavy long-context workloads.
 
-|*Latency*
-|Low (local network); ~50–200ms per call
-|Variable (100–2000ms); network dependent
-
-|*Scalability*
-|Manual — add GPU nodes; implement autoscaling
-|Automatic — cloud provider handles scaling
-
-|*Auditability*
-|Full control over model weights, versions, logs
-|Depends on provider contract for audit access
+|*Frontier escalation tier*
+|Multi-GPU node (A100/H100)
+|Required for practical Mistral Large 3 operation; treat as specialized exception capacity.
 |===
 
-*Recommendation:* Self-hosted is attractive for AuditIQ because audit workloads are predictable (batch-oriented, not real-time), data is regulatory-sensitive, and per-call volumes at scale make cloud LLM fees significant. Start with cloud LLM for Phase 0 POC, transition to self-hosted for Phase 1a production.
+Operational guardrails:
 
-=== 25.5 Security & Licensing
+* Cap max context length and batched tokens to avoid KV-cache-driven OOM.
+* Enforce admission control and queue backpressure.
+* Prefer data-parallel replicas for smaller models; use tensor parallelism only when memory constraints force it.
 
-* *VPC isolation:* Run all LLM inference within a private VPC. No public endpoints for inference services.
-* *TLS everywhere:* Encrypt all traffic between Docling-Graph, LiteLLM, and the inference runtime.
-* *No-training clause:* If using managed Mistral models (Mistral API), ensure contractual ``no training on customer data'' clause per Section 22.8.
-* *Model license:* *CRITICAL — obtain legal sign-off* confirming the chosen Mistral model license permits self-hosting under your deployment terms before Phase 1a. Some Mistral models have restrictive licenses for commercial use.
-* *PII controls:* Self-hosted inference does not exempt AuditIQ from PII redaction requirements (Section 22.2). Apply the same pre-call PII redaction regardless of inference location.
+=== 25.7 Rollout Plan and Go/No-Go Gates
 
-=== 25.6 Cross-References
+*Stage A — Baseline (cloud):*
+
+* Establish extraction quality, latency, and cost baselines with current cloud setup.
+
+*Stage B — Self-host canary:*
+
+* Route 5–10% traffic to vLLM self-hosted tier through LiteLLM.
+* Compare F1, schema-valid JSON rate, retry/repair rate, P95 latency, and fallback rate.
+
+*Stage C — Hybrid production default:*
+
+* 80–95% self-host default path.
+* Keep cloud fallback for burst and exception handling.
+
+*Go/No-Go acceptance gates:*
+
+* Quality: agreed F1 target met; schema-valid JSON >=99% post-repair.
+* Reliability: fallback rate within threshold and queue drains within SLA windows.
+* Compliance: model license and provenance controls approved.
+* Security: private networking, secrets management, and logging controls validated.
+* Cost: per-extraction cost meets approved budget threshold.
+
+=== 25.8 Immediate Next Actions
+
+[arabic]
+. Stand up private vLLM OpenAI-compatible service in VPC and expose through internal LB.
+. Integrate Docling-Graph via LiteLLM custom endpoint while preserving structured output enforcement.
+. Implement model allowlist registry and runtime policy checks.
+. Implement provenance logger with immutable model + config evidence.
+. Run a 500+ document benchmark suite across 8B/14B/24B tiers; publish capacity and cost findings.
+. Launch canary rollout with explicit rollback routing to cloud fallback.
+
+=== 25.9 Cross-References
 
 * *Section 10.2.0:* Docling-Graph integration and pipeline design
-* *Section 22.2:* PII redaction requirements (apply regardless of inference location)
-* *Section 22.3:* Provenance logging — includes `llm_inference_runtime`, `llm_runtime_cluster_id`, `llm_inference_config`
-* *Section 22.8:* Third-party AI provider requirements (apply if using Mistral cloud API)
-* *Section 24:* Model Registry — self-hosted Mistral versions must be registered and approved before production use
+* *Section 22.2:* PII redaction requirements
+* *Section 22.3:* Provenance logging requirements
+* *Section 22.8:* Third-party AI provider requirements
+* *Section 24:* Model Registry approvals and controls
