@@ -13,7 +13,7 @@ ____
 
 |*AFC* (AuditIQ Field Confidence)
 |0.0–1.0
-|Per-field composite score measuring extraction reliability. Computed from 5 weighted signals: `docling_page_grade` (0.15), `ocr_segment_confidence` (0.25), `pattern_validity` (0.25), `layout_anchor_consistency` (0.20), `cross_doc_redundancy` (0.15).
+|Per-field composite score measuring extraction reliability. *AFC v2* (with Docling-Graph): computed from 6 weighted signals: `docling_page_grade` (0.12), `ocr_segment_confidence` (0.23), `pattern_validity` (0.20), `layout_anchor_consistency` (0.18), `cross_doc_redundancy` (0.12), `graph_corrob_score` (0.15). AFC v1 (5-signal, without `graph_corrob_score`) remains valid during Phase 0 POC.
 |Section 10.2.1
 
 |*extraction_confidence*

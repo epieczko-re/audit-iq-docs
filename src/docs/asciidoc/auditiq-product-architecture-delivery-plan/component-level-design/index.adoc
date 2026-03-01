@@ -72,29 +72,69 @@ ____
 *Critical Architecture Clarification (per Docling Technical Validation Report v1):* Docling is a *document conversion + layout understanding engine*, not a per-field extraction system. Its confidence scores (`layout_score`, `ocr_score`, `parse_score`) are *conversion-quality indicators* (POOR/FAIR/GOOD/EXCELLENT) that grade how well the page was converted—they are NOT per-field extraction confidence. AuditIQ must build its own *deterministic field extractor* that consumes Docling’s `DoclingDocument` output and produces per-field AFC scores. Do not use Docling’s numeric scores directly for field-level gating.
 ____
 
+==== 10.2.0 Docling-Graph Integration
+
+*Overview.* AuditIQ adopts *Docling-Graph* as the Phase 1 baseline for document extraction and structured output. Docling-Graph combines Docling’s document conversion and VLM extraction capabilities with a Pydantic-based schema enforcement layer and a directed knowledge graph. This transforms free-text and OCR outputs into validated, strongly-typed Pydantic objects and a directed graph of entities and relationships that the Schema Mapping Service and Comparison Engine consume.
+
+*Primary pipeline (Phase 1):*
+
+....
+Docling (document conversion & VLM)
+  → Docling-Graph (Pydantic templates & structured extraction)
+    → Knowledge Graph (directed graph with stable node IDs & edge metadata)
+      → Schema Mapping Service (graph-aware mapping)
+        → Comparison & Scoring Engine
+....
+
+*Why Docling-Graph:*
+
+* Deterministic, schema-validated outputs (Pydantic objects) — extraction results are typed and validated at extraction time, not downstream
+* Cross-document corroboration through explicit graph edges — improves `cross_doc_redundancy` and adds a new `graph_corrob_score` AFC signal
+* Exportable graph artifacts for exam-ready bundles (CSV, Cypher, Neo4j) — supports Section 21 evidence requirements
+* Supports both VLM and LLM extraction backends — flexible inference routing
+* Trace/debug exports for provenance and troubleshooting
+* *MIT-licensed* — lower licensing risk than GPL-linked alternatives
+
+_(Source: Docling-Graph README, https://github.com/docling-project/docling-graph)_
+
+*LLM Integration (LiteLLM / Mistral):* Docling-Graph integrates with *LiteLLM* — a single interface to local and remote LLM runtimes (vLLM, Ollama) and cloud providers (Mistral, OpenAI). For Phase 1 the recommended LLM inference path is *self-hosted Mistral* using vLLM or Ollama orchestrated via LiteLLM, with `provider_override` set to `mistral` in Docling-Graph configs. This provides high throughput, lower per-call cost at scale, and improved data residency controls while preserving the option to use cloud LLMs during early validation. See Section 25 (Model Deployment: Mistral Self-Hosted) for hardware and operational guidance.
+
+*Integration guidance:*
+
+* *Templates:* Implement Pydantic templates for each key document type (Closing Disclosure, Loan Estimate, 1003/URLA) and version them. Templates must include `model_config` fields for stable graph IDs.
+* *Fallback strategy:* Prefer Docling-Graph LLM extraction (LiteLLM → self-hosted Mistral) when Docling page grade or initial AFC is borderline. Use cloud OCR fallback only for documents where Docling conversion fails at the page level (e.g., encrypted PDFs, severely degraded scans). See updated fallback logic in Section 10.2.3.
+* *Provenance:* Every extracted Pydantic object records `pydantic_template_id`, `template_version`, `graph_node_id`, and `graph_export_version` in the extraction metadata (see Section 22.3 for provenance fields).
+* *Legal:* Docling-Graph is MIT-licensed. If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms.
+
 ==== 10.2.1 AuditIQ Field Confidence (AFC)
 
-AFC is a deterministic, per-field composite score built from five signals:
+AFC is a deterministic, per-field composite score built from six signals (v2 — updated to include Docling-Graph corroboration):
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[width="100%",cols="20%,10%,30%,40%",options="header",]
 |===
 |Signal |Weight |Source |Description
-|`docling_page_grade` |0.15 |Docling conversion output |Page-level conversion quality (POOR=0.2, FAIR=0.5, GOOD=0.8, EXCELLENT=1.0)
-|`ocr_segment_confidence` |0.25 |Docling OCR or cloud OCR fallback |Character-level OCR confidence for the text segment containing this field
-|`pattern_validity` |0.25 |AuditIQ field extractor |Regex/parse validation (e.g., date format, currency pattern, HMDA enum membership)
-|`layout_anchor_consistency` |0.20 |AuditIQ field extractor |Does the field appear in the expected document region with expected label proximity?
-|`cross_doc_redundancy` |0.15 |AuditIQ field extractor |Does the same value appear in a corroborating document (e.g., loan amount on both CD and LE)?
+|`docling_page_grade` |0.12 |Docling conversion output |Page-level conversion quality (POOR=0.2, FAIR=0.5, GOOD=0.8, EXCELLENT=1.0)
+|`ocr_segment_confidence` |0.23 |Docling OCR or cloud OCR fallback |Character-level OCR confidence for the text segment containing this field
+|`pattern_validity` |0.20 |AuditIQ field extractor |Regex/parse validation (e.g., date format, currency pattern, HMDA enum membership)
+|`layout_anchor_consistency` |0.18 |AuditIQ field extractor |Does the field appear in the expected document region with expected label proximity?
+|`cross_doc_redundancy` |0.12 |AuditIQ field extractor |Does the same value appear in a corroborating document (e.g., loan amount on both CD and LE)?
+|`graph_corrob_score` |0.15 |Docling-Graph knowledge graph |Graph-based corroboration: does the extracted value appear as a graph node with matching normalized values and correct linking edges across documents? Exploits Docling-Graph's directed knowledge graph for explicit entity-relationship validation.
 |===
 
-*AFC formula:*
+NOTE: AFC v1 (5-signal) remains valid during Phase 0 POC and early Phase 1a until Docling-Graph pipeline is integrated. Systems must support both v1 and v2 formulas and log which version was used.
+
+*AFC formula (v2 — with Docling-Graph):*
 
 ....
-afc = (docling_page_grade * 0.15) +
-      (ocr_segment_confidence * 0.25) +
-      (pattern_validity * 0.25) +
-      (layout_anchor_consistency * 0.20) +
-      (cross_doc_redundancy * 0.15)
+afc = (docling_page_grade * 0.12) +
+      (ocr_segment_confidence * 0.23) +
+      (pattern_validity * 0.20) +
+      (layout_anchor_consistency * 0.18) +
+      (cross_doc_redundancy * 0.12) +
+      (graph_corrob_score * 0.15)
 ....
+
+NOTE: Weights are calibration targets — tune during Phase 1a using labeled extraction data. See Canonical Glossary (Appendix) for routing thresholds (unchanged: ≥0.85 auto-confirm, 0.50–0.85 human review, <0.50 manual entry).
 
 *AFC routing thresholds:* - `afc >= 0.85`: Auto-confirm (no human review required) - `0.50 <= afc < 0.85`: Human review required (field highlighted in UI) - `afc < 0.50`: Flag as extraction failure; route to manual entry queue
 
@@ -113,9 +153,16 @@ interface DocumentProcessingRequest {
 
 interface ExtractionResult {
   documentId: string;
-  extractionEngine: 'docling' | 'cloud-ocr' | 'docling+cloud-ocr-fallback';
+  extractionEngine: 'docling' | 'docling-graph-vlm' | 'docling-graph-llm'
+                   | 'cloud-ocr' | 'docling+cloud-ocr-fallback';
   doclingVersion: string; // Docling library version
+  doclingGraphVersion?: string; // Docling-Graph library version (if used)
   fieldExtractorVersion: string; // AuditIQ field extractor version
+  pydanticTemplateId?: string; // Docling-Graph template (e.g., 'closing_disclosure_v1')
+  pydanticTemplateVersion?: string; // e.g., 'v1.0'
+  graphExportVersion?: string; // Graph export format version
+  llmInferenceRuntime?: string; // e.g., 'vllm', 'ollama', 'litellm'
+  llmProvider?: string; // e.g., 'mistral', 'openai'
   extractedFields: ExtractedField[];
   tables: ExtractedTable[];
   pageGrades: PageGrade[]; // Docling page-level conversion grades
@@ -134,7 +181,9 @@ interface ExtractedField {
     patternValidity: number;
     layoutAnchorConsistency: number;
     crossDocRedundancy: number;
+    graphCorrobScore?: number; // AFC v2: Docling-Graph corroboration (0 if graph not used)
   };
+  graphNodeId?: string; // Stable Docling-Graph node ID for this field
   boundingBox?: { x: number; y: number; width: number; height: number };
   pageNumber: number;
   extractionMethod: 'pattern' | 'table_cell' | 'key_value_pair' | 'positional';
@@ -150,7 +199,43 @@ interface PageGrade {
 }
 ----
 
-==== 10.2.3 Fallback Logic (Refined)
+==== 10.2.3 Fallback Logic (Refined — Docling-Graph-First)
+
+*Phase 1 fallback chain:* Docling-Graph (VLM) → Docling-Graph (LLM via LiteLLM/Mistral) → Cloud OCR → Manual entry
+
+....
+for each document:
+  // Step 1: Attempt Docling-Graph structured extraction (VLM backend)
+  context = docling.convertDocument(document)
+  graph_result = docling_graph.run_pipeline(
+    context, template=pydantic_template, backend="vlm"
+  )
+  compute afc including graph_corrob_score
+
+  if graph_result.success and afc >= 0.50:
+    persist extraction (Pydantic objects + graph)
+    recordExtractionEvent(auditId, documentId, 'docling_graph_vlm')
+  else:
+    // Step 2: Attempt LLM extraction via LiteLLM (self-hosted Mistral/vLLM)
+    llm_result = docling_graph.run_pipeline(
+      context, template=pydantic_template, backend="llm",
+      provider="lite_llm", provider_override="mistral"
+    )
+    recompute afc
+
+    if llm_result.success and afc >= 0.50:
+      persist extraction (Pydantic objects + graph)
+      recordExtractionEvent(auditId, documentId, 'docling_graph_llm_mistral')
+    else:
+      // Step 3: Fall back to cloud OCR or manual entry
+      triggerCloudOCRFallback(document)
+      recordFallbackEvent(auditId, documentId, 'cloud_ocr_fallback')
+    end
+  end
+end
+....
+
+*Legacy page-level fallback (still applies within each step):*
 
 ....
 for each page in document:
@@ -203,6 +288,8 @@ Based on Docling validation report benchmarks:
 
 ____
 *GPL Risk:* The `docling-surya` integration package wraps SuryaOCR, which is licensed under GPL. If AuditIQ links or imports `docling-surya`, the entire application may be subject to GPL copyleft obligations. *For commercial SaaS deployment, either (a) ensure Docling is used WITHOUT `docling-surya` (use EasyOCR or Tesseract OCR backends instead), or (b) obtain legal review of GPL implications before Phase 1a.*
+
+*Docling-Graph (MIT):* Docling-Graph is MIT-licensed and represents a lower-risk integration option than GPL-linked adapters such as `docling-surya`. Where possible prefer Docling-Graph for production deployments to avoid GPL copyleft risk. If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms before Phase 1a.
 ____
 
 ==== 10.2.7 POC Test Plan (Phase 0)
@@ -222,7 +309,7 @@ ____
 
 *Go criteria:* ≥85% precision on key HMDA fields at AFC ≥ 0.85 threshold. *Kill criteria:* <70% precision at AFC ≥ 0.85 OR fallback rate >40% on representative corpus.
 
-*DECISION LOCKED:* Docling baseline + cloud OCR fallback + AuditIQ Field Confidence layer. See Section 19.2.
+*DECISION LOCKED:* Docling-Graph pipeline as baseline (Docling + Docling-Graph); primary LLM inference via LiteLLM / self-hosted Mistral/vLLM; cloud OCR fallback for degraded documents only. AuditIQ Field Confidence layer (AFC v2 with graph_corrob_score). See Section 19.2.
 
 *Determinism:* Deterministic within a Docling version + field extractor version. Same document + same versions = same extraction + same AFC. All versions logged as provenance.
 

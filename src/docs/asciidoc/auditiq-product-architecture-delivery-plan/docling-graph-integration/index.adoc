@@ -1,0 +1,187 @@
+== 26. Docling-Graph Integration with Schema Mapping
+
+____
+*v0.2 Addition.* This section documents how the Schema Mapping Service (Section 10.3) consumes Docling-Graph's Pydantic objects and directed knowledge graph, and how Audit Packs must reference Pydantic templates. The graph-aware mapping approach improves determinism and reduces heuristic noise by operating on typed, validated entities and explicit relationships rather than raw OCR text.
+____
+
+=== 26.1 Purpose
+
+With Docling-Graph adopted as the baseline extraction pipeline (Section 10.2.0), the Schema Mapping Service can consume structured graph outputs rather than flat extracted fields. This enables:
+
+* *Graph-pattern matching:* Map HMDA target fields to graph node properties rather than raw text positions
+* *Typed validation:* Pydantic objects enforce field types at extraction time — invalid values are rejected before mapping
+* *Cross-document corroboration:* Graph edges between entities (e.g., CD ↔ Loan Application ↔ Appraisal) enable the `graph_corrob_score` AFC signal and boost `mapping_confidence`
+* *Provenance:* Every mapping traces to specific graph node IDs, not raw text offsets — more stable across re-extractions
+
+=== 26.2 Pydantic Template Design
+
+Each document type requires a versioned Pydantic template that defines the extraction schema and graph node identity fields.
+
+*Example: Closing Disclosure template*
+
+[source,python]
+----
+from pydantic import BaseModel
+from typing import Optional
+
+class ClosingDisclosure(BaseModel):
+    """Pydantic template for Closing Disclosure extraction via Docling-Graph."""
+
+    model_config = {
+        'is_entity': True,
+        'graph_id_fields': ['loan_number'],  # Stable graph node identity
+    }
+
+    # Key HMDA fields extracted from CD
+    loan_number: str
+    loan_amount: str
+    interest_rate: str
+    property_address: str
+    borrower_name: str
+    co_borrower_name: Optional[str] = None
+    loan_type: str                          # e.g., 'Conventional', 'FHA', 'VA'
+    loan_purpose: str                       # e.g., 'Purchase', 'Refinance'
+    loan_term_months: Optional[str] = None
+    closing_date: str
+    disbursement_date: Optional[str] = None
+    total_closing_costs: Optional[str] = None
+    cash_to_close: Optional[str] = None
+
+    # Metadata
+    document_date: Optional[str] = None
+    page_count: Optional[int] = None
+----
+
+*Template requirements:*
+
+* Every template must include `model_config` with `is_entity: True` and `graph_id_fields` identifying the stable entity key
+* Templates are versioned (e.g., `closing_disclosure_v1.0`) and registered in the Model Registry (Section 24)
+* Template version is logged in extraction provenance (`pydantic_template_id` + `pydantic_template_version`)
+
+*Phase 1 templates required:*
+
+[width="100%",cols="25%,25%,25%,25%",options="header"]
+|===
+|Document Type |Template Name |Graph ID Field |Key HMDA Fields
+
+|Closing Disclosure
+|`closing_disclosure`
+|`loan_number`
+|~15–20 CD-supported fields
+
+|Loan Estimate
+|`loan_estimate`
+|`loan_number`
+|~10–12 overlapping fields (corroboration)
+
+|1003/URLA (Phase 2)
+|`urla_1003`
+|`loan_number`
+|~40–60 additional HMDA fields
+
+|Appraisal (Phase 2)
+|`appraisal_report`
+|`property_address`
+|~5–10 property-related fields
+|===
+
+=== 26.3 Graph Consumption by Schema Mapping Service
+
+*Step 1: Extract entities as graph nodes*
+
+Docling-Graph produces a directed knowledge graph where each extracted entity is a node with typed properties:
+
+[source,json]
+----
+{
+  "node_id": "cd_12345",
+  "entity_type": "ClosingDisclosure",
+  "template_version": "v1.0",
+  "properties": {
+    "loan_number": "2026-001234",
+    "loan_amount": "250000.00",
+    "interest_rate": "6.25",
+    "borrower_name": "Jane Doe",
+    "property_address": "123 Main St, Springfield, IL 62701"
+  },
+  "extraction_metadata": {
+    "afc_scores": {
+      "loan_amount": 0.92,
+      "interest_rate": 0.88,
+      "borrower_name": 0.95
+    },
+    "source_document_id": "doc_abc123",
+    "page_numbers": [1, 2, 3]
+  }
+}
+----
+
+*Step 2: Graph edges for cross-document corroboration*
+
+When multiple documents reference the same loan (matched by `graph_id_fields`), Docling-Graph creates edges:
+
+[source,json]
+----
+{
+  "edge_id": "edge_001",
+  "source_node": "cd_12345",
+  "target_node": "le_67890",
+  "relationship": "corroborates",
+  "matched_fields": ["loan_number", "loan_amount", "borrower_name"],
+  "match_strength": 0.97
+}
+----
+
+*Step 3: Mapping service uses graph for mapping decisions*
+
+The Schema Mapping Service evaluates candidate graph nodes using:
+
+[arabic]
+. *Node property matching:* Map HMDA target fields to `node.properties` keys using the existing 5-signal heuristic matcher (name similarity, synonym, type compatibility, document section, historical acceptance)
+. *Graph edge boosting:* If target field value is corroborated by a graph edge (e.g., loan_amount matches across CD and LE nodes), boost `mapping_confidence` by the edge's `match_strength` factor
+. *Entity type filtering:* Only consider nodes whose `entity_type` matches the expected document type for this field
+. *Graph corroboration score:* Compute `graph_corrob_score` for AFC v2 based on the number and strength of corroborating edges
+
+=== 26.4 Pack Manifest Changes
+
+Audit Pack manifests must be extended to reference Pydantic templates:
+
+[source,json]
+----
+{
+  "pack_id": "hmda-origination",
+  "pack_version": "1.1.0",
+  "extraction_config": {
+    "docling_graph_enabled": true,
+    "pydantic_templates": [
+      {
+        "document_type": "closing_disclosure",
+        "template_module": "auditiq.templates.closing_disclosure",
+        "template_class": "ClosingDisclosure",
+        "template_version": "v1.0",
+        "graph_id_field": "loan_number"
+      },
+      {
+        "document_type": "loan_estimate",
+        "template_module": "auditiq.templates.loan_estimate",
+        "template_class": "LoanEstimate",
+        "template_version": "v1.0",
+        "graph_id_field": "loan_number"
+      }
+    ],
+    "graph_export_formats": ["csv", "cypher"],
+    "fallback_to_legacy_extraction": true
+  }
+}
+----
+
+*Migration path:* Existing packs without `extraction_config.docling_graph_enabled` default to legacy extraction (Docling only, AFC v1). Packs opt into Docling-Graph by setting this flag and providing template references.
+
+=== 26.5 Cross-References
+
+* *Section 10.2.0:* Docling-Graph pipeline design and integration guidance
+* *Section 10.2.1:* AFC v2 formula including `graph_corrob_score`
+* *Section 10.3:* Schema Mapping Service — existing heuristic matcher, now graph-aware
+* *Section 8:* Audit Pack Specification — pack manifest schema
+* *Section 21:* Exam-Ready Bundle — graph exports as evidence artifacts
+* *Section 24:* Model Registry — Pydantic template versions registered as model artifacts

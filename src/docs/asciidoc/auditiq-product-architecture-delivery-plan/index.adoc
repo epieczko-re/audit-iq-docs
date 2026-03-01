@@ -55,4 +55,8 @@ include::ui-workflows-and-user-journeys/index.adoc[]
 
 include::model-registry/index.adoc[]
 
+include::model-deployment/index.adoc[]
+
+include::docling-graph-integration/index.adoc[]
+
 include::glossary/index.adoc[]
