@@ -2,16 +2,41 @@
 
 === 13.1 Market Context: ACES Pricing Intelligence
 
-Based on survey and interview data from ~141 customers (Source: Internal ACES Pricing Study v0.1):
+Based on internal competitive analysis of ~141 ACES customers (circa 2023 data). See Section 4.1 for full tier-by-tier breakdown.
 
-[cols=",",options="header",]
+[width="100%",cols="40%,60%",options="header"]
 |===
 |Metric |Value
-|Average Contract Value (ACV) |$135,000 / year
-|Pricing Range |$3,300 – $27,500 / month
-|Median Deployment Size |Mid-to-large regional banks; credit unions
-|Primary Driver |Risk volume + regulatory jurisdiction complexity
+
+|*Average ACV (all customers)*
+|$135,000/yr (141 customers)
+
+|*Contract minimums (~90% of ARR)*
+|$118,000/yr
+
+|*ACV by segment*
+|Mortgage lenders: $124K (61 customers) · Banks: $167K (40) · Servicers: $158K (13)
+
+|*Top-logo ACVs*
+|Top-10 mortgage lender: $481K · Top-tier bank: $934K
+
+|*Pricing model*
+|Subscription: flat monthly fee per audit pack + per-audit excess fees, tiered by volume
+
+|*Monthly range (Origination)*
+|$3,300/mo (100 audits) → $27,500/mo (5,000 audits)
+
+|*Monthly range (HMDA)*
+|$1,100/mo (200 audits) → $4,200/mo (3,000 audits)
+
+|*Multi-pack discount*
+|Available but % undisclosed; ACV data implies significant bundling uplift
+
+|*Primary ACV driver*
+|Number of packs purchased × audit volume tier
 |===
+
+*Key competitive insight:* ACES prices each audit type (Origination, Servicing, Consumer, HMDA) as a separate subscription. Customers buying multiple packs at high volume drive the $135K average ACV. Banks average $167K because they buy more pack types. AuditIQ's pack architecture is a natural fit for the same per-pack pricing model — but with AI governance controls included at no surcharge.
 
 === 13.2 RiskExec Baseline & AuditIQ Uplift Strategy
 
@@ -21,53 +46,417 @@ Based on survey and interview data from ~141 customers (Source: Internal ACES Pr
 * Modules: Enterprise risk dashboard, regulatory reporting, model governance
 * Growth: Existing customer base; limited new module uptake
 
-*AuditIQ positioning & uplift target:*
+*AuditIQ dual positioning:*
 
-* Expected ACV uplift: *20–30% of RiskExec base* for customers adopting audit automation
-* Rationale: Reduces audit labor cost by ~40% per engagement; enables higher audit frequency
-* Target: $8,000–$12,000/year add-on to RiskExec contracts (or standalone for new audit-first prospects)
+* *RiskExec add-on:* 20–30% ACV uplift for existing customers adopting audit automation → target $8K–$12K/yr for single-pack entry, scaling to $50K–$120K/yr for multi-pack enterprise
+* *Standalone product:* For audit-first prospects (e.g., ACES displacement), AuditIQ competes directly at $40K–$150K ACV with full pack portfolio
+* *Rationale:* Reduces audit labor cost by ~40% per engagement; enables higher audit frequency; consolidates 3 lines of defense into one system
 
-=== 13.3 Pricing Model (PLACEHOLDER – Decisions Needed)
+=== 13.3 Pricing Model
 
-*DECISION LOCKED (D6):* Pricing model framework TBD pending:
-1. *Tier structure:* Usage-based (audits/year), volume-based (loans audited), or seat-based?
-2. *Monetization of packs:* Do customers pay per pack? Per version? Tiered by complexity?
-3. *AI/intelligence premium:* Separate SKU for copilot, predictive validation, adaptive learning?
-4. *Bundle with RiskExec:* Bundled discount vs. standalone pricing?
-5. *Professional services:* Implementation, training, custom pack development—separate P&M or included?
+*DECISION PROPOSED (D6):* Platform + Pack subscription model, mirroring the ACES tiered structure that the market understands, with AI governance controls included as a competitive differentiator.
 
+==== 13.3.1 Pricing Architecture
 
-*Placeholder tiers (for discussion only — NOT final):*
+AuditIQ pricing consists of three components:
 
-[cols="1,2,2,2",options="header"]
+[arabic]
+. *Platform access fee* (required) — covers core workflow, audit trail, evidence management, exam-ready bundles, dashboards, RBAC, and SSO
+. *Pack subscriptions* (per pack, tiered by monthly audit volume) — each regulatory pack priced independently with volume tiers
+. *Add-ons* (optional) — AI Copilot, custom pack development, professional services
+
+This mirrors ACES's proven model while adding value through included AI governance features.
+
+==== 13.3.2 Platform Access Fee
+
+[width="100%",cols="18%,22%,20%,40%",options="header"]
 |===
-|Tier |Target Customer |Est. ACV |Key Features
+|Tier |Monthly Fee |Annual |Includes
 
-|*Starter*
-|Community banks, tier-2 credit unions
-|$6K–$12K/year
-|Core audit workflow, 100 audits/year, 5 standard packs
+|*Essentials*
+|$1,500/mo
+|$18,000/yr
+|Core audit workflow, evidence management, exam-ready bundles, audit trail, standard dashboards, up to 10 users, email support
 
 |*Professional*
-|Regional banks, large credit unions
-|$18K–$35K/year
-|+ Custom packs, 500 audits/year, Copilot, Advanced scoring
+|$3,000/mo
+|$36,000/yr
+|Everything in Essentials + AI Copilot (finding drafts, narrative generation), advanced analytics, custom dashboards, up to 50 users, priority support
 
 |*Enterprise*
-|Large banks, holding companies, RiskExec customers
-|$40K–$75K/year
-|+ Unlimited audits, pack marketplace, dedicated support, SLA
+|$5,000/mo
+|$60,000/yr
+|Everything in Professional + SSO/SAML, custom RBAC policies, pack marketplace access, dedicated CSM, SLA (99.9% uptime), unlimited users, phone support
 |===
 
+*RiskExec bundle discount:* Existing RiskExec customers receive *20% off platform access fee*. (Essentials: $1,200/mo; Professional: $2,400/mo; Enterprise: $4,000/mo.)
 
-*Exclusions (do NOT include in pricing):* - Data licensing (HMDA, regulatory feeds) – separate procurement - Regulatory audit/compliance services – partner model - White-label packs – not in v0.2 scope
+==== 13.3.3 Pack Subscriptions (Per Pack, Tiered by Volume)
 
-=== 13.4 What Must Be Decided (Pre-Launch)
+Each audit pack is licensed as a separate monthly subscription with included audit volume and per-audit excess fees. Customers select a tier based on expected monthly audit volume. Annual contracts required; monthly billing.
 
-* ☐ Final tier structure and feature gates
-* ☐ Pack licensing model (bundled vs. à la carte)
-* ☐ Professional services pricing (day rates, implementation packages)
-* ☐ Discount structure for existing RiskExec customers
-* ☐ Annual vs. usage-based contract terms
-* ☐ Trial/freemium eligibility and limits
-* ☐ Geographic/regulatory pricing adjustments (if any)
+*HMDA Audit Pack (Phase 1 — launch pack):*
+
+[width="100%",cols="14%,18%,18%,18%,16%,16%",options="header"]
+|===
+|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
+
+|Tier 1
+|$900
+|200
+|$4.50
+|$10,800
+|−18% vs. ACES Tier 1
+
+|Tier 2
+|$1,500
+|500
+|$3.00
+|$18,000
+|−17% vs. ACES Tier 2
+
+|Tier 3
+|$2,800
+|1,500
+|$1.50
+|$33,600
+|−20% vs. ACES Tier 3
+
+|Enterprise
+|$3,500
+|3,000
+|$0.75
+|$42,000
+|−17% vs. ACES Enterprise
+|===
+
+NOTE: HMDA pricing deliberately undercuts ACES by 17–20% to drive Phase 1 adoption. AuditIQ HMDA includes AI-assisted field extraction and confidence scoring at no surcharge — features ACES does not offer at any tier.
+
+*Origination Audit Pack (Phase 2):*
+
+[width="100%",cols="14%,18%,18%,18%,16%,16%",options="header"]
+|===
+|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
+
+|Tier 1
+|$2,800
+|100
+|$24.00
+|$33,600
+|−15% vs. ACES Tier 1
+
+|Tier 2
+|$4,700
+|200
+|$19.00
+|$56,400
+|−15% vs. ACES Tier 2
+
+|Tier 3
+|$9,400
+|500
+|$14.50
+|$112,800
+|−15% vs. ACES Tier 3
+
+|Tier 4
+|$11,600
+|800
+|$10.00
+|$139,200
+|−15% vs. ACES Tier 4
+
+|Tier 5
+|$14,000
+|1,500
+|$7.50
+|$168,000
+|−15% vs. ACES Tier 5
+
+|Enterprise
+|$23,400
+|5,000
+|$3.50
+|$280,800
+|−15% vs. ACES Enterprise
+|===
+
+*Servicing Audit Pack (Phase 2):*
+
+[width="100%",cols="14%,18%,18%,18%,16%,16%",options="header"]
+|===
+|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
+
+|Tier 1
+|$2,700
+|150
+|$18.00
+|$32,400
+|−16% vs. ACES Tier 1
+
+|Tier 2
+|$4,500
+|300
+|$14.50
+|$54,000
+|−15% vs. ACES Tier 2
+
+|Tier 3
+|$9,000
+|750
+|$12.00
+|$108,000
+|−15% vs. ACES Tier 3
+
+|Enterprise
+|$22,400
+|5,000
+|$3.50
+|$268,800
+|−15% vs. ACES Enterprise
+|===
+
+*Consumer Audit Pack (Phase 3):*
+
+[width="100%",cols="14%,18%,18%,18%,16%,16%",options="header"]
+|===
+|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
+
+|Tier 1
+|$1,800
+|200
+|$9.00
+|$21,600
+|−14% vs. ACES Tier 1
+
+|Tier 2
+|$3,000
+|400
+|$7.50
+|$36,000
+|−14% vs. ACES Tier 2
+
+|Tier 3
+|$6,000
+|1,000
+|$6.00
+|$72,000
+|−14% vs. ACES Tier 3
+
+|Enterprise
+|$9,000
+|3,000
+|$3.00
+|$108,000
+|−14% vs. ACES Enterprise
+|===
+
+==== 13.3.4 Multi-Pack Discount
+
+Customers purchasing 2+ packs simultaneously receive a *10% discount on pack subscription fees* (platform fee unchanged). Customers purchasing 4+ packs receive *15% discount*. This encourages multi-pack adoption and drives ACV toward the $100K+ range that competes with ACES.
+
+[width="100%",cols="30%,35%,35%",options="header"]
+|===
+|Packs Purchased |Discount on Pack Fees |Rationale
+
+|1 pack
+|0%
+|Entry point; low barrier
+
+|2–3 packs
+|10%
+|Encourages cross-sell; matches inferred ACES behavior
+
+|4+ packs
+|15%
+|Locks in enterprise commitment; drives ACV toward $120K+
+|===
+
+==== 13.3.5 AI Copilot Add-On
+
+[width="100%",cols="30%,30%,40%",options="header"]
+|===
+|Feature |Pricing |Details
+
+|*AI Copilot*
+|Included in Professional and Enterprise platform tiers; $1,500/mo add-on for Essentials tier
+|AI-drafted findings, narrative generation with citations, predictive validation suggestions, adaptive learning from reviewer feedback. All AI outputs labeled and governed per Section 22.
+
+|*Custom AI Model Training*
+|$10,000 one-time setup + $500/mo hosting
+|Organization-specific model fine-tuning for custom terminology, pack-specific patterns, and institution-specific field naming conventions. Enterprise tier only.
+|===
+
+NOTE: Including AI Copilot in Professional tier (free) is a key competitive differentiator. ACES charges separately for AI features via bolt-on partnerships. AuditIQ's governance-first AI is a core value proposition, not an upsell.
+
+==== 13.3.6 Professional Services
+
+[width="100%",cols="30%,25%,45%",options="header"]
+|===
+|Service |Pricing |Scope
+
+|*Standard Implementation*
+|$12,500 (5 days)
+|Environment setup, SSO configuration, user onboarding, first pack activation, audit trail verification
+
+|*Custom Pack Development*
+|$15,000–$25,000
+|Requirements gathering, rule definition, test case creation, validation, deployment. Price varies by regulatory complexity.
+
+|*Training Program*
+|$5,000 (2 days)
+|Reviewer workflow training, admin training, AI governance overview, exam-ready bundle walkthrough
+
+|*Dedicated Solution Architect*
+|$2,500/day
+|On-demand consulting for complex integrations, custom workflows, regulatory interpretation
+|===
+
+=== 13.4 Revenue Model & Scenario Analysis
+
+*Target: $3–4M incremental ARR within 24 months of GA launch.*
+
+[width="100%",cols="20%,20%,20%,20%,20%",options="header"]
+|===
+|Scenario |Customers |Avg ACV |Total ARR |Assumption
+
+|*Conservative*
+|25
+|$65,000
+|$1,625,000
+|RiskExec upsell only; HMDA + 1 pack; mostly Essentials/Professional
+
+|*Base case*
+|40
+|$90,000
+|$3,600,000
+|Mix of upsell + new logos; 2–3 packs avg; Professional/Enterprise mix
+
+|*Upside*
+|50
+|$120,000
+|$6,000,000
+|ACES displacement wins; 3–4 packs; Enterprise tier; top logos at $200K+
+
+|*Whale scenario*
+|5 whales + 30 base
+|$175K whales / $70K base
+|$2,975,000
+|Pursue top-10 mortgage lenders and top-tier banks per ACES logo analysis
+|===
+
+*ACV buildup example — Regional bank, Professional tier, 3 packs:*
+
+[width="100%",cols="50%,25%,25%",options="header"]
+|===
+|Component |Monthly |Annual
+
+|Platform (Professional)
+|$3,000
+|$36,000
+
+|HMDA Pack (Tier 2, 500 audits)
+|$1,500
+|$18,000
+
+|Origination Pack (Tier 2, 200 audits)
+|$4,700
+|$56,400
+
+|Servicing Pack (Tier 1, 150 audits)
+|$2,700
+|$32,400
+
+|Multi-pack discount (10% on pack fees)
+|−$890
+|−$10,680
+
+|*Total ACV*
+|*$11,010*
+|*$132,120*
+|===
+
+This $132K ACV is competitive with ACES's $135K average and $167K bank average, while including AI governance features that ACES charges extra for.
+
+=== 13.5 Contract Terms
+
+[width="100%",cols="30%,70%",options="header"]
+|===
+|Term |Policy
+
+|*Contract length*
+|Annual contracts required. Multi-year (2–3 year) contracts receive 5% / 10% additional discount.
+
+|*Billing*
+|Monthly billing against annual commitment. Excess audit fees invoiced monthly in arrears.
+
+|*Annual true-up*
+|If actual audit volume exceeds tier for 3+ consecutive months, customer is moved to next tier at renewal (or mid-term with mutual agreement).
+
+|*Cancellation*
+|90-day written notice. Data export provided at no charge. Audit trail data retained for 7 years per regulatory requirement.
+
+|*Trial*
+|30-day free trial: Essentials platform + HMDA pack, limited to 50 audits, 3 users. No credit card required. Trial data migrates to paid account.
+|===
+
+=== 13.6 Pricing Exclusions
+
+The following are *not* included in AuditIQ pricing and are procured separately:
+
+* Data licensing (HMDA LAR data, regulatory feeds) — customer responsibility
+* Regulatory audit/compliance consulting services — partner referral model
+* White-label packs — not in scope for v1.0; roadmap item for pack marketplace
+* On-premises deployment — cloud-only SaaS for Phase 1; on-prem evaluation in Phase 3 based on demand
+
+=== 13.7 Decision Status & Validation Plan
+
+*DECISION STATUS (D6):* PROPOSED — pending validation with design partners and CEO approval.
+
+[width="100%",cols="5%,50%,20%,25%",options="header"]
+|===
+|# |Decision |Status |Rationale
+
+|1
+|*Tier structure:* Platform fee + per-pack subscription with volume tiers
+|☑ PROPOSED
+|Mirrors ACES model that market understands; allows granular upsell
+
+|2
+|*Pack licensing:* Per-pack subscription, tiered by audit volume
+|☑ PROPOSED
+|Matches ACES's proven per-pack model; drives ACV through multi-pack adoption
+
+|3
+|*AI premium:* Included in Professional/Enterprise platform tiers; add-on for Essentials
+|☑ PROPOSED
+|AI is a core differentiator, not an upsell — drives Professional tier adoption
+
+|4
+|*RiskExec bundle:* 20% discount on platform fee for existing customers
+|☑ PROPOSED
+|Reduces barrier for upsell; target $8K–$12K entry for single-pack add-on
+
+|5
+|*Professional services:* Separate pricing; $2,500/day rate; $12.5K standard implementation
+|☑ PROPOSED
+|Industry-standard day rates; implementation scoped to 5 days
+
+|6
+|*Contract terms:* Annual contracts, monthly billing, quarterly true-up
+|☑ PROPOSED
+|Standard SaaS terms; excess fees provide usage-based upside
+
+|7
+|*Trial:* 30-day, 50 audits, 3 users, HMDA pack only
+|☑ PROPOSED
+|Low-friction entry; trial data migrates to reduce adoption friction
+|===
+
+*Validation required before LOCKED status:*
+
+* ☐ Present proposed tiers to 5 design partner candidates; collect willingness-to-pay feedback
+* ☐ Model revenue at 25/40/50 customer scenarios with segment mix
+* ☐ Legal review of pack licensing terms and multi-year discount structure
+* ☐ CEO approval of final tier structure and discount policies
+* ☐ Sales enablement: create pricing calculator and proposal templates

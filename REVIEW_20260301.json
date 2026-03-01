@@ -1,0 +1,59 @@
+{
+  "review_id": "auditiq_review_20260301T165045",
+  "repository": "epieczko-re/audit-iq-docs",
+  "branch": "claude/repo-review-automation-TDUoD",
+  "review_date": "2026-03-01",
+  "reviewer": "Claude Opus 4.6 (automated)",
+  "scores": {
+    "document_quality": {"score": 79, "weight": 0.25, "weighted": 19.75},
+    "content_quality": {"score": 85, "weight": 0.30, "weighted": 25.50},
+    "product_market_fit": {"score": 65, "weight": 0.25, "weighted": 16.25},
+    "architecture_design": {"score": 76, "weight": 0.20, "weighted": 15.20},
+    "overall_weighted": 76.7
+  },
+  "issue_summary": {
+    "total": 20,
+    "p1_critical": 7,
+    "p2_important": 9,
+    "p3_minor": 4,
+    "total_story_points": 83
+  },
+  "issues": [
+    {"id": "ISSUE-001", "severity": "P1", "title": "Missing companion artifacts (WBS, MVP Cutline)", "owner": "Product-Lead", "sp": 5},
+    {"id": "ISSUE-002", "severity": "P1", "title": "No CI/CD pipeline", "owner": "DevOps-Engineer", "sp": 3},
+    {"id": "ISSUE-003", "severity": "P1", "title": "GPL licensing risk has no automated enforcement", "owner": "Compliance-SME", "sp": 2},
+    {"id": "ISSUE-004", "severity": "P1", "title": "Pricing model entirely undefined", "owner": "Product-Lead", "sp": 8},
+    {"id": "ISSUE-005", "severity": "P1", "title": "Key delivery roles unfilled (PM, Eng Lead TBD)", "owner": "CEO", "sp": 1},
+    {"id": "ISSUE-006", "severity": "P1", "title": "Document approvals blank — no executive sign-off", "owner": "Product-Lead", "sp": 1},
+    {"id": "ISSUE-007", "severity": "P1", "title": "PII redaction regexes naive — will miss real PII", "owner": "ML-Engineer", "sp": 5},
+    {"id": "ISSUE-008", "severity": "P2", "title": "AFC weight inconsistency (UI Workflow vs Glossary)", "owner": "TechWriter", "sp": 1},
+    {"id": "ISSUE-009", "severity": "P2", "title": "Schema mapping threshold inconsistency", "owner": "TechWriter", "sp": 1},
+    {"id": "ISSUE-010", "severity": "P2", "title": "RLS tenant isolation is TODO", "owner": "Backend-Engineer", "sp": 5},
+    {"id": "ISSUE-011", "severity": "P2", "title": "No synthetic HMDA test data or benchmarks", "owner": "Data-Engineer", "sp": 8},
+    {"id": "ISSUE-012", "severity": "P2", "title": "Frontend framework not decided (React/Angular)", "owner": "Engineering-Lead", "sp": 1},
+    {"id": "ISSUE-013", "severity": "P2", "title": "Query partitioning strategy TODO for 100K+ records", "owner": "Backend-Engineer", "sp": 3},
+    {"id": "ISSUE-014", "severity": "P2", "title": "Pack test harness CLI tool TODO", "owner": "Full-Stack-Engineer", "sp": 5},
+    {"id": "ISSUE-015", "severity": "P2", "title": "Terraform/CloudFormation IaC templates missing", "owner": "DevOps-Engineer", "sp": 13},
+    {"id": "ISSUE-016", "severity": "P2", "title": "Appendix X referenced but does not exist", "owner": "TechWriter", "sp": 2},
+    {"id": "ISSUE-017", "severity": "P3", "title": "severity_weight[] mapping undefined in risk_score formula", "owner": "TechWriter", "sp": 1},
+    {"id": "ISSUE-018", "severity": "P3", "title": "Phase 0 exit gate accuracy targets conflict across sections", "owner": "TechWriter", "sp": 1},
+    {"id": "ISSUE-019", "severity": "P3", "title": "TypeScript timestamp type invalid in Scoring API", "owner": "TechWriter", "sp": 1},
+    {"id": "ISSUE-020", "severity": "P3", "title": "Mermaid Diagram 3 uses wrong confidence threshold", "owner": "TechWriter", "sp": 1}
+  ],
+  "top_risks": [
+    "Phase 0 starts today with no PM, no Eng Lead, no approved spec",
+    "GPL licensing has no automated enforcement gate",
+    "Pricing model entirely undefined — blocks GTM"
+  ],
+  "sprint_plan_summary": {
+    "sprint_1": {"name": "Foundation & Governance", "dates": "Mar 1-14", "sp": 25},
+    "sprint_2": {"name": "Data Foundation & Test Infra", "dates": "Mar 15-28", "sp": 30},
+    "sprint_3": {"name": "Quality Hardening", "dates": "Mar 29 - Apr 11", "sp": 28}
+  },
+  "artifacts": {
+    "full_json_review": "/tmp/auditiq_review_20260301T165045.json",
+    "pr_diffs": "/tmp/auditiq_prs/20260301T165045/",
+    "remediation_prompts": "/tmp/auditiq_prompts/20260301T165045/",
+    "sprint_plan": "/tmp/auditiq_sprint_plan_20260301T165045.json"
+  }
+}
