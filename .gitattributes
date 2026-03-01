@@ -1,0 +1,17 @@
+# AsciiDoc source files
+*.adoc text eol=lf
+*.yml text eol=lf
+*.css text eol=lf
+
+# Binary files
+*.ttf binary
+*.otf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+
+# Ensure consistent line endings
+*.json text eol=lf
+*.md text eol=lf

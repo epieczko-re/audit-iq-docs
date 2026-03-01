@@ -1,4 +1,4 @@
-== Section 19: MVP Decisions Locked (Default Unless Overridden)
+== 19. MVP Decisions Locked (Default Unless Overridden)
 
 === 19.1 Purpose & Authority
 

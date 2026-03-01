@@ -1,4 +1,4 @@
-== Section 17: Decisions Needed, Open Questions, and Assumptions
+== 17. Decisions Needed, Open Questions, and Assumptions
 
 === 17.1 Decision Log – Status Update from v0.1 to v0.2
 

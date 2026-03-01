@@ -1,4 +1,4 @@
-== Section 13: Pricing and Packaging
+== 13. Pricing and Packaging
 
 === 13.1 Market Context: ACES Pricing Intelligence
 
@@ -37,17 +37,26 @@ Based on survey and interview data from ~141 customers (Source: Internal ACES Pr
 5. *Professional services:* Implementation, training, custom pack development—separate P&M or included?
 
 
-[cols="1,2",options="header"]
+*Placeholder tiers (for discussion only — NOT final):*
+
+[cols="1,2,2,2",options="header"]
 |===
-|*Placeholder tiers (for discussion only—NOT final):* |Tier
-|Target Customer |Est. ACV
-|Key Features |–
-|– |*Starter*
-|Community banks, tier-2 credit unions |$6K–$12K/year
-|Core audit workflow, 100 audits/year, 5 standard packs |*Professional*
-|Regional banks, large credit unions |$18K–$35K/year
-|+ Custom packs, 500 audits/year, Copilot, Advanced scoring |*Enterprise*
-|Large banks, holding companies, RiskExec customers |$40K–$75K/year
+|Tier |Target Customer |Est. ACV |Key Features
+
+|*Starter*
+|Community banks, tier-2 credit unions
+|$6K–$12K/year
+|Core audit workflow, 100 audits/year, 5 standard packs
+
+|*Professional*
+|Regional banks, large credit unions
+|$18K–$35K/year
+|+ Custom packs, 500 audits/year, Copilot, Advanced scoring
+
+|*Enterprise*
+|Large banks, holding companies, RiskExec customers
+|$40K–$75K/year
+|+ Unlimited audits, pack marketplace, dedicated support, SLA
 |===
 
 

@@ -1,4 +1,4 @@
-== Section 18: Appendices
+== 18. Appendices
 
 === Appendix A: Glossary (Expanded from v0.1)
 
@@ -123,7 +123,7 @@
 
 === Appendix C: Audit Event Schema
 
-*Reference:* See Section 10.9 (``Audit Trail & Event Log'') for detailed event design.
+*Reference:* See Section 10.8 (``Audit Trail & Event Store (Immutable Log)'') for detailed event design.
 
 *Example Audit Events (JSON):*
 
@@ -237,7 +237,7 @@ Attachments:
 
 *Carry forward from v0.1:* 1. AuditIQ_Comprehensive_Spec_v0.1.md – Original specification 2. HMDA_Rule_2024_Amendment – Federal Register citation & full text 3. CRA_Examination_Procedures – Federal Reserve publication 4. ECOA_Fair_Lending_Handbook – FRB, OCC publication 5. SOC_2_2022_Trust_Service_Criteria – AICPA framework
 
-*New references for v0.2:* 6. Docling Documentation – PDF/document extraction library (https://github.com/ds4sd/docling) 7. GraphQL Best Practices – Apollo & community resources 8. PostgreSQL RLS Documentation – Row-level security implementation guide 9. OpenAI API Reference – Completion & embedding models 10. PCI DSS v3.2.1 – Payment Card Industry security framework 11. NIST AI Risk Management Framework – AI governance guidance (https://nvlm.nist.gov/) 12. Immutable Audit Trail Patterns – Journal of Information Security & Privacy 13. Internal ACES Pricing Study – Proprietary pricing intelligence (~141 customers)
+*New references for v0.2:* 6. Docling Documentation – PDF/document extraction library (https://github.com/ds4sd/docling) 7. GraphQL Best Practices – Apollo & community resources 8. PostgreSQL RLS Documentation – Row-level security implementation guide 9. OpenAI API Reference – Completion & embedding models 10. PCI DSS v3.2.1 – Payment Card Industry security framework 11. NIST AI Risk Management Framework – AI governance guidance (https://airc.nist.gov/AI_RMF_Interactivity) 12. Immutable Audit Trail Patterns – Journal of Information Security & Privacy 13. Internal ACES Pricing Study – Proprietary pricing intelligence (~141 customers)
 
 '''''
 
@@ -261,7 +261,7 @@ We will communicate progress weekly to the board and escalate blockers immediate
 
 === Appendix G: Mermaid Diagram Sources (All Diagrams in Document)
 
-*Diagram 1: Audit Workflow State Machine (Section 2.2)*
+*Diagram 1: Audit Workflow State Machine (Section 5 / 6.5)*
 
 [source,mermaid]
 ----
@@ -295,7 +295,7 @@ graph LR
   H -->|Immutable| I[Evidence Store]
 ----
 
-*Diagram 3: AI & Human-in-Loop (Section 11.1)*
+*Diagram 3: AI & Human-in-Loop (Section 22)*
 
 [source,mermaid]
 ----
@@ -311,7 +311,7 @@ graph TD
   H -->|Resubmit| F
 ----
 
-*Diagram 4: Multi-Tenant Data Isolation (Section 5.2)*
+*Diagram 4: Multi-Tenant Data Isolation (Section 9 / 19.6)*
 
 [source,mermaid]
 ----
@@ -325,7 +325,7 @@ graph TD
   G -->|Immutable| H[Event Store]
 ----
 
-*Diagram 5: Document Processing Pipeline (Section 3.2)*
+*Diagram 5: Document Processing Pipeline (Section 10.2)*
 
 [source,mermaid]
 ----

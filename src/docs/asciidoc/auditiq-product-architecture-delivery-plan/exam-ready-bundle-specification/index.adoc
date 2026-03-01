@@ -1,4 +1,4 @@
-== Section 21: Exam-Ready Bundle Specification
+== 21. Exam-Ready Bundle Specification
 
 === 21.1 Purpose
 

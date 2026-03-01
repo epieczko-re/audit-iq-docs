@@ -1,4 +1,4 @@
-== Section 23: UI Workflows and User Journeys
+== 23. UI Workflows and User Journeys
 
 ____
 *v0.2 Addition.* This section defines the primary user workflows through the AuditIQ system. Each workflow is represented as a flowchart diagram showing user actions, system actions, AI actions, decision points, and audit trail integration. These workflows serve as the foundation for screen design and front-end sprint planning.
@@ -36,7 +36,31 @@ This is the primary happy-path workflow from login to exam-ready bundle export. 
 
 *Audit Trail:* Every step from extraction through finalization emits an immutable audit event (RFC 8785 + hash chain, Section 10.8).
 
-image:diagrams/workflow1_audit_lifecycle.png[Workflow 1: Audit Lifecycle]
+[source,mermaid]
+----
+flowchart TD
+    A[Auditor Login] -->|Select/Create Audit| B[Configure Audit]
+    B -->|Select pack, sample, scope| C[Upload Documents]
+    C -->|CD, 1003, Appraisals| D[Docling Extraction + AFC Scoring]
+    D --> E[Schema Mapping]
+    E -->|AI suggests, reviewer validates| F[Rules Engine Scoring]
+    F --> G[AI Drafts Findings]
+    G -->|LLM narratives + citations| H[Reviewer Effective Challenge]
+    H -->|Approve / Edit / Reject| I[Finalize Audit]
+    I -->|Lock scorecard, sign off| J[Export Exam-Ready Bundle]
+    J -->|ZIP + PDF| K((Done))
+    H -->|Corrections needed| G
+
+    style A fill:#4A90D9,color:#fff
+    style C fill:#4A90D9,color:#fff
+    style H fill:#4A90D9,color:#fff
+    style D fill:#7B68EE,color:#fff
+    style F fill:#7B68EE,color:#fff
+    style E fill:#20B2AA,color:#fff
+    style G fill:#20B2AA,color:#fff
+    style I fill:#FF8C00,color:#fff
+    style J fill:#2E8B57,color:#fff
+----
 
 '''''
 
@@ -68,7 +92,33 @@ This workflow details the document processing pipeline from upload through field
 
 *Design Reference:* Section 10.2, Decision D1 (Section 19.2)
 
-image:diagrams/workflow2_doc_extraction.png[Workflow 2: Document Upload & Extraction]
+[source,mermaid]
+----
+flowchart TD
+    A[Upload Documents] -->|Drag-and-drop / Batch| B[Document Classification]
+    B -->|CD, 1003, Appraisal, Title| C[Docling Conversion]
+    C -->|PDF to structured JSON| D[OCR Processing]
+    D -->|docling-tesseract| E[AFC Score Computation]
+    E --> F{AFC Score?}
+    F -->|AFC >= 0.85| G[Auto-Confirm]
+    F -->|0.50 <= AFC < 0.85| H[Human Review Queue]
+    F -->|AFC < 0.50| I[Manual Entry Required]
+    H -->|Reviewer validates| J[Field Confirmed]
+    G --> J
+    I -->|Reviewer enters value| J
+    J --> K[Pass to Schema Mapping]
+    C -->|Page-grade POOR/FAIR| L[Cloud OCR Fallback]
+    L --> E
+
+    style A fill:#4A90D9,color:#fff
+    style C fill:#7B68EE,color:#fff
+    style D fill:#7B68EE,color:#fff
+    style E fill:#7B68EE,color:#fff
+    style F fill:#FF8C00,color:#fff
+    style G fill:#2E8B57,color:#fff
+    style H fill:#FFD700,color:#000
+    style I fill:#DC143C,color:#fff
+----
 
 '''''
 
@@ -110,7 +160,33 @@ This workflow details how extracted fields are mapped to the HMDA/MISMO target s
 
 *Design Reference:* Section 10.3, Decision D2 (Section 19.3)
 
-image:diagrams/workflow3_schema_mapping.png[Workflow 3: Schema Mapping Review]
+[source,mermaid]
+----
+flowchart TD
+    A[Extracted Fields Arrive] -->|With AFC scores| B[Hybrid Heuristic Matcher]
+    B -->|5 weighted signals| C[Layer 1: Raw Signals]
+    C -->|conf_extraction, conf_mapping, conf_rule| D[Layer 2: Calibrated Score]
+    D --> E{Calibrated Score?}
+    E -->|>= 0.95| F[Auto-Accept]
+    E -->|0.70 to 0.95| G[Human Review]
+    E -->|< 0.70| H[Manual Entry]
+    G --> I{Reviewer Action}
+    I -->|Accept ~10s| J[Mapping Approved]
+    I -->|Override ~45s| K[Select Alternative]
+    K --> J
+    H -->|Type field name| J
+    F --> J
+    J --> L[Feed to Rules Engine]
+    I -->|Override recorded| M[Synonym Dictionary Update]
+
+    style A fill:#7B68EE,color:#fff
+    style B fill:#20B2AA,color:#fff
+    style D fill:#20B2AA,color:#fff
+    style E fill:#FF8C00,color:#fff
+    style F fill:#2E8B57,color:#fff
+    style G fill:#FFD700,color:#000
+    style H fill:#DC143C,color:#fff
+----
 
 '''''
 
@@ -145,9 +221,35 @@ This workflow details the human oversight process for AI-generated findings, enf
 
 *Required Disclaimers (Section 22.1.3):* - ``This content was drafted by an AI assistant and requires human verification before use'' - ``AI-generated content may contain inaccuracies — reviewer is responsible for verifying accuracy'' - ``This finding has been reviewed and approved by [reviewer name] on [date]''
 
-*Design Reference:* Section 10.7, Section 22, Decision D1–D3
+*Design Reference:* Section 10.6 (Findings Management), Section 10.9 (Reporting), Section 22, Decision D1–D3
 
-image:diagrams/workflow4_findings_review.png[Workflow 4: Findings Review & Approval]
+[source,mermaid]
+----
+flowchart TD
+    A[Rules Engine Fires] -->|Exceptions identified| B[LLM Drafts Finding Narrative]
+    B -->|With citations| C[AI Label Applied]
+    C -->|AI-Drafted badge + disclaimer| D[AI Provenance Logged]
+    D -->|model, version, prompt, context| E[Finding Enters Review Queue]
+    E -->|Sorted by severity + confidence| F[Reviewer Opens Finding]
+    F -->|AI label, evidence panel, source highlights| G[Effective Challenge]
+    G --> H{Reviewer Disposition}
+    H -->|Approve| I[Finding Finalized]
+    H -->|Edit| J[Modify Narrative/Severity]
+    H -->|Reject| K[Flag False Positive]
+    J -->|System captures diff| L[Document Challenge]
+    K -->|Must provide rationale| L
+    I --> L
+    L -->|effective_challenge_notes, disposition, output_diff| M[Audit Event Created]
+    M --> N[Finding on Scorecard]
+
+    style A fill:#7B68EE,color:#fff
+    style B fill:#20B2AA,color:#fff
+    style D fill:#FFD700,color:#000
+    style G fill:#4A90D9,color:#fff
+    style H fill:#FF8C00,color:#fff
+    style I fill:#2E8B57,color:#fff
+    style M fill:#FFD700,color:#000
+----
 
 '''''
 

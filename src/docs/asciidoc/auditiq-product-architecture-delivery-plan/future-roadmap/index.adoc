@@ -1,4 +1,4 @@
-== Section 16: Future Roadmap and Platform Leverage
+== 16. Future Roadmap and Platform Leverage
 
 === 16.1 Carry-Forward from v0.1: Platform Expansion Vision
 

@@ -1,4 +1,4 @@
-== Section 22: AI Governance & Model Risk Controls
+== 22. AI Governance & Model Risk Controls
 
 === 22.1 Purpose & Regulatory Context
 

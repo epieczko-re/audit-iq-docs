@@ -248,36 +248,51 @@ CREATE INDEX idx_evidence_hash ON audits.evidence(sha256_hash);
 
 ==== audit_trail.events (Immutable Log)
 
+NOTE: This schema must match the authoritative definition in Section 10.8.6 (Audit Trail & Event Store).
+
 [source,sql]
 ----
 CREATE TABLE audit_trail.events (
-  event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sequence_number BIGSERIAL NOT NULL,
+  event_id UUID PRIMARY KEY,                   -- UUID v7 (time-sortable)
+  tenant_id UUID NOT NULL,                     -- Multi-tenant isolation
+  sequence_id BIGINT NOT NULL,                 -- Global monotonic per tenant
   audit_id UUID NOT NULL,
-  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  timestamp TIMESTAMPTZ NOT NULL,              -- Server-assigned only; no client timestamps
   entity_type VARCHAR(50) NOT NULL,
-  entity_id VARCHAR(255),
+  entity_id VARCHAR(255) NOT NULL,
   event_type VARCHAR(100) NOT NULL,
 
-  actor_id UUID NOT NULL,
-  actor_role VARCHAR(50),
+  actor_id VARCHAR(255) NOT NULL,
+  actor_role VARCHAR(50) NOT NULL,
 
-  payload JSONB NOT NULL, -- Event-specific data
+  payload JSONB NOT NULL,                      -- Must be RFC 8785-serializable
 
-  -- Hash chain for tamper detection
-  previous_event_hash VARCHAR(64),
+  -- Hash chain for tamper detection (RFC 8785 canonical JSON + SHA-256)
+  previous_event_hash VARCHAR(64) NOT NULL,
   event_hash VARCHAR(64) NOT NULL UNIQUE,
 
-  source_system VARCHAR(100),
-  api_version VARCHAR(20),
-  is_immutable BOOLEAN DEFAULT TRUE,
+  -- Cryptographic anchoring (WORM-stored every N events)
+  is_anchor BOOLEAN DEFAULT FALSE,
+  anchor_hash VARCHAR(64),                     -- Populated only when is_anchor = true
 
-  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
-  FOREIGN KEY (actor_id) REFERENCES users(user_id)
+  source_system VARCHAR(100) NOT NULL,
+  api_version VARCHAR(20) NOT NULL,
+  schema_version VARCHAR(20) NOT NULL DEFAULT '1.0',
+
+  UNIQUE (tenant_id, sequence_id),             -- Enforces monotonic per tenant
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id)
 );
+
+-- Performance indexes
 CREATE INDEX idx_events_audit ON audit_trail.events(audit_id, timestamp);
 CREATE INDEX idx_events_entity ON audit_trail.events(entity_id);
 CREATE INDEX idx_events_actor ON audit_trail.events(actor_id);
+CREATE INDEX idx_tenant_sequence ON audit_trail.events(tenant_id, sequence_id);
+CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE is_anchor = TRUE;
+
+-- CRITICAL: No DELETE permission on this schema
+-- REVOKE DELETE ON audit_trail.events FROM app_role;
+-- REVOKE TRUNCATE ON audit_trail.events FROM app_role;
 ----
 
 === 11.4 Data Types and Constraints
@@ -325,7 +340,7 @@ CREATE TABLE schema_migrations (
 
 *Policy:* - New audit runs always use latest pack version and schema - Active audits remain pinned to their pack version; no auto-upgrade - Schema changes are backward-compatible within MINOR versions - MAJOR schema changes require audit run completion or explicit migration
 
-=== 11.6 Analytics Storage (Separate Read-Only Replica)
+=== 11.7 Analytics Storage (Separate Read-Only Replica)
 
 *Rationale:* Aggregation queries (dashboards, trend reports) impact operational DB. A read-only replica is cheaper and doesn’t contend with transactional workload.
 
