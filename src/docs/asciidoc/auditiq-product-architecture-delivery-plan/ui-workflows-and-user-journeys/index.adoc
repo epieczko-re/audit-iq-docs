@@ -5,14 +5,17 @@ ____
 
 *Color Legend:*
 
-* *Steel Blue* (#4A6FA5) = Process nodes (user actions, system actions, AI actions)
+* *Blue* (#4A6FA5) = User actions (auditor/reviewer interactions)
+* *Purple* (#7B68EE) = System actions (deterministic processing)
+* *Teal* (#20B2AA) = AI actions (LLM or ML-assisted)
 * *Orange* (#FF7E2D) = Decision points (routing logic)
-* *Green* (#2E8B57) = Success / confirmed / terminal states (audit trail, evidence store)
+* *Dark* (#2B3E50) = Data / configuration / annotation boxes
+* *Green* (#2E8B57) = Success / confirmed states
 * *Red* (#C0392B) = Error / manual entry / rejection states
-* *Gold* (#DAA520) = Audit trail / governance controls
+* *Maroon* (#8B0000) = Terminal completion
 
-NOTE: Simplified versions of these diagrams appear in Appendix G.
-Detailed workflow versions below add intermediate steps and governance detail.
+NOTE: Simplified versions of these diagrams (unstyled) appear in Appendix G.
+The detailed workflow versions below add intermediate steps, side annotations, and governance detail.
 ____
 
 === 23.1 Workflow 1: Audit Lifecycle (End-to-End)
@@ -40,29 +43,44 @@ This is the primary happy-path workflow from login to exam-ready bundle export. 
 [source,mermaid]
 ----
 flowchart TD
-    A[Auditor Login] -->|Select/Create Audit| B[Configure Audit]
-    B -->|Select pack, sample, scope| C[Upload Documents]
-    C -->|CD, 1003, Appraisals| D[Docling Extraction + AFC Scoring]
-    D --> E[Schema Mapping]
-    E -->|AI suggests, reviewer validates| F[Rules Engine Scoring]
-    F --> G[AI Drafts Findings]
-    G -->|LLM narratives + citations| H[Reviewer Effective Challenge]
-    H -->|Approve / Edit / Reject| I[Finalize Audit]
-    I -->|Lock scorecard, sign off| J[Export Exam-Ready Bundle]
-    J -->|ZIP + PDF| K((Done))
-    H -->|Corrections needed| G
+    A([Auditor Logs In]) --> B[Create New Audit<br/>Select Pack Template]
+    B --> C[Configure Audit Parameters<br/>Loan Sample, Date Range]
+    C --> D[Upload Loan Documents<br/>CD, 1003, Appraisal, Title]
+    D --> E[Docling Extraction<br/>+ AFC Scoring]
+    E --> F[Schema Mapping<br/>AI Suggestions + Review]
+    F --> G[Rules Engine Scoring<br/>Pack Rules × Extracted Data]
+    G --> H[AI Generates<br/>Draft Findings]
+    H --> I[Reviewer: Effective Challenge<br/>Approve / Edit / Reject]
+    I --> J{All Findings<br/>Reviewed?}
+    J -->|No — next finding| I
+    J -->|Yes| K[Finalize Audit<br/>Lock + Sign Off]
+    K --> L[Export Exam-Ready<br/>Bundle — Section 21]
+    L --> M([Audit Complete])
 
-    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    %% Audit Trail annotation (right side)
+    N[Audit Trail:<br/>All Events Immutable<br/>RFC 8785 + Hash Chain]
+    E -.-> N
+    F -.-> N
+    G -.-> N
+    H -.-> N
+    I -.-> N
+    K -.-> N
+    L -.-> N
+
+    style A fill:#2E8B57,color:#fff,stroke:#1B5E3B
     style B fill:#4A6FA5,color:#fff,stroke:#2B4570
     style C fill:#4A6FA5,color:#fff,stroke:#2B4570
     style D fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style E fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style F fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style G fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style H fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style E fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style F fill:#20B2AA,color:#fff,stroke:#178A83
+    style G fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style H fill:#20B2AA,color:#fff,stroke:#178A83
     style I fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
-    style K fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style J fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style K fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style L fill:#3B4F6B,color:#fff,stroke:#2B3E50
+    style M fill:#8B0000,color:#fff,stroke:#660000
+    style N fill:#FF7E2D,color:#fff,stroke:#CC5500
 ----
 
 '''''
@@ -98,33 +116,46 @@ This workflow details the document processing pipeline from upload through field
 [source,mermaid]
 ----
 flowchart TD
-    A[Upload Documents] -->|Drag-and-drop / Batch| B[Document Classification]
-    B -->|CD, 1003, Appraisal, Title| C[Docling Conversion]
-    C -->|PDF to structured JSON| D[OCR Processing]
-    D -->|docling-tesseract| E[AFC Score Computation]
-    E --> F{AFC Score?}
-    F -->|AFC >= 0.85| G[Auto-Confirm]
-    F -->|0.50 <= AFC < 0.85| H[Human Review Queue]
-    F -->|AFC < 0.50| I[Manual Entry Required]
-    H -->|Reviewer validates| J[Field Confirmed]
-    G --> J
-    I -->|Reviewer enters value| J
-    J --> K[Pass to Schema Mapping]
-    C -->|Page-grade POOR/FAIR| L[Cloud OCR Fallback]
-    L --> E
+    A([User Uploads Documents]) --> B[Document Classifier<br/>CD / 1003 / Appraisal / Other]
+    B --> C[Docling Conversion<br/>PDF → Structured JSON]
+    C --> D[OCR Layer<br/>docling-tesseract, Apache 2.0]
+    D --> E[AFC Score Computation<br/>5 Weighted Signals]
 
-    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    %% AFC signal weights annotation
+    E -.-> AFC[docling_page_grade 0.15<br/>ocr_segment_conf 0.25<br/>pattern_validity 0.25<br/>layout_anchor 0.20<br/>cross_doc_redundancy 0.15]
+
+    E --> F{AFC Score<br/>Routing?}
+    F -->|≥ 0.85| G([Auto-Confirm<br/>AFC ≥ 0.85])
+    F -->|0.50 – 0.85| H[Human Review Queue<br/>0.50 ≤ AFC < 0.85]
+    F -->|< 0.50| I[Manual Entry Required<br/>AFC < 0.50]
+
+    H --> J[Reviewer Validates<br/>Extracted Value]
+    I --> K[Reviewer Enters<br/>Correct Value]
+    J --> L{Accept<br/>or Override?}
+    L -->|Accept| M
+    L -->|Override| K
+    K --> M([Field Value Confirmed<br/>→ Schema Mapping])
+    G --> M
+
+    %% Cloud OCR fallback
+    C -->|Page-grade POOR/FAIR| N[Cloud OCR Fallback]
+    N --> E
+
+    style A fill:#7B68EE,color:#fff,stroke:#5B4CB8
     style B fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style C fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style D fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style D fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style E fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style AFC fill:#2B3E50,color:#fff,stroke:#1A2A3A
     style F fill:#FF7E2D,color:#fff,stroke:#CC5500
     style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
-    style H fill:#DAA520,color:#fff,stroke:#B8860B
+    style H fill:#FF7E2D,color:#fff,stroke:#CC5500
     style I fill:#C0392B,color:#fff,stroke:#922B21
-    style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
-    style K fill:#2E8B57,color:#fff,stroke:#1B5E3B
-    style L fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style J fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style K fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style L fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style N fill:#4A6FA5,color:#fff,stroke:#2B4570
 ----
 
 '''''
@@ -170,35 +201,50 @@ This workflow details how extracted fields are mapped to the HMDA/MISMO target s
 [source,mermaid]
 ----
 flowchart TD
-    A[Extracted Fields Arrive] -->|With AFC scores| B[Hybrid Heuristic Matcher]
-    B -->|5 weighted signals| C[Layer 1: Raw Signals]
-    C -->|conf_extraction, conf_mapping, conf_rule| D[Layer 2: Calibrated Score]
-    D --> E{Calibrated Score?}
-    E -->|>= 0.95| F[Auto-Accept]
-    E -->|0.70 to 0.95| G[Human Review]
-    E -->|< 0.70| H[Manual Entry]
-    G --> I{Reviewer Action}
-    I -->|Accept ~10s| J[Mapping Approved]
-    I -->|Override ~45s| K[Select Alternative]
-    K --> J
-    H -->|Type field name| J
-    F --> J
-    J --> L[Feed to Rules Engine]
-    I -->|Override recorded| M[Synonym Dictionary Update]
+    A([Extracted Fields<br/>from Docling + AFC]) --> B[Hybrid Heuristic Matcher<br/>5 Weighted Signals]
+    B --> C[Layer 1: Raw Signals<br/>conf_extraction, conf_mapping, conf_rule]
 
-    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    %% Coverage note annotation
+    C -.-> COV[Coverage Note:<br/>CD-only = 10–20% at ≥ 0.85<br/>Full coverage requires<br/>1003 + Appraisal + Title]
+
+    C --> D[Layer 2: Calibrated Score<br/>Temperature Scaling /<br/>Isotonic Regression]
+    D --> E{Routing<br/>Decision?}
+    E -->|≥ 0.95| F([Auto-Accept<br/>calibrated ≥ 0.95])
+    E -->|0.70 – 0.95| G[Human Review<br/>0.70 ≤ score < 0.95]
+    E -->|< 0.70| H[Manual Entry<br/>score < 0.70]
+
+    G --> UI[UI Shows:<br/>Suggested mapping,<br/>Confidence badge,<br/>Matching pattern,<br/>Alternatives]
+    UI --> I{Reviewer<br/>Action?}
+    I -->|Accept| J([Accept Suggestion<br/>~10s per field])
+    I -->|Override| K[Override → Select<br/>Alternative ~45s]
+    I -->|Manual| L[Manual Entry<br/>Type Field Name]
+
+    K --> SYN{Update Synonym<br/>Dictionary?}
+    SYN -->|Yes| DICT[Synonym Dictionary<br/>Updated]
+    SYN -->|No| M
+    DICT --> M
+    J --> M
+    L --> M
+    H --> L
+    F --> M([Mapping Approved<br/>→ Rules Engine])
+
+    style A fill:#7B68EE,color:#fff,stroke:#5B4CB8
     style B fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style C fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style COV fill:#2B3E50,color:#ccc,stroke:#555,stroke-dasharray:5 5
+    style D fill:#2B3E50,color:#fff,stroke:#1A2A3A
     style E fill:#FF7E2D,color:#fff,stroke:#CC5500
     style F fill:#2E8B57,color:#fff,stroke:#1B5E3B
-    style G fill:#DAA520,color:#fff,stroke:#B8860B
+    style G fill:#20B2AA,color:#fff,stroke:#178A83
     style H fill:#C0392B,color:#fff,stroke:#922B21
+    style UI fill:#4A6FA5,color:#fff,stroke:#2B4570
     style I fill:#FF7E2D,color:#fff,stroke:#CC5500
     style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
-    style K fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style L fill:#2E8B57,color:#fff,stroke:#1B5E3B
-    style M fill:#DAA520,color:#fff,stroke:#B8860B
+    style K fill:#20B2AA,color:#fff,stroke:#178A83
+    style L fill:#C0392B,color:#fff,stroke:#922B21
+    style SYN fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style DICT fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
 
 '''''
@@ -239,36 +285,45 @@ This workflow details the human oversight process for AI-generated findings, enf
 [source,mermaid]
 ----
 flowchart TD
-    A[Rules Engine Fires] -->|Exceptions identified| B[LLM Drafts Finding Narrative]
-    B -->|With citations| C[AI Label Applied]
-    C -->|AI-Drafted badge + disclaimer| D[AI Provenance Logged]
-    D -->|model, version, prompt, context| E[Finding Enters Review Queue]
-    E -->|Sorted by severity + confidence| F[Reviewer Opens Finding]
-    F -->|AI label, evidence panel, source highlights| G[Effective Challenge]
-    G --> H{Reviewer Disposition}
-    H -->|Approve| I[Finding Finalized]
-    H -->|Edit| J[Modify Narrative/Severity]
-    H -->|Reject| K[Flag False Positive]
-    J -->|System captures diff| L[Document Challenge]
-    K -->|Must provide rationale| L
-    I --> L
-    L -->|effective_challenge_notes, disposition, output_diff| M[Audit Event Created]
-    M --> N[Finding on Scorecard]
+    A[Rules Engine<br/>Generates Exceptions] --> B[LLM Drafts Finding<br/>Narrative + Citations]
+
+    %% AI Provenance annotation
+    B -.-> PROV[AI Provenance Logged:<br/>model_id, prompt_version,<br/>input_hash, timestamp,<br/>retrieval_corpus]
+
+    B --> C[AI Label Applied:<br/>AI-Drafted — Requires<br/>Human Verification]
+    C --> D[Finding Enters<br/>Review Queue]
+    D --> E[Reviewer Opens Finding<br/>Sees AI label + evidence]
+    E --> F[Effective Challenge:<br/>Reviewer must independently<br/>verify against source docs]
+
+    %% RED LINES annotation
+    F -.-> RL[RED LINES Section 22.1.4:<br/>× No AI in official record<br/>without human approval<br/>× No representing AI output<br/>as definitive conclusions<br/>× Reviewer responsible<br/>for accuracy]
+
+    F --> G{Reviewer<br/>Disposition?}
+    G -->|Approve| H[Approve Finding<br/>Confirm AI draft is accurate]
+    G -->|Edit| I[Edit Finding<br/>Modify narrative/severity]
+    G -->|Reject| J[Reject Finding<br/>False positive / not applicable]
+
+    H --> K[Document Challenge:<br/>effective_challenge_notes,<br/>disposition rationale,<br/>output_diff if edited]
+    I --> K
+    J --> K
+    K --> L[Audit Event Created:<br/>human_approval event<br/>with full provenance]
+    L --> M([Finding Finalized<br/>→ Scorecard])
 
     style A fill:#4A6FA5,color:#fff,stroke:#2B4570
     style B fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style C fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style D fill:#DAA520,color:#fff,stroke:#B8860B
+    style PROV fill:#2B3E50,color:#ccc,stroke:#555,stroke-dasharray:5 5
+    style C fill:#20B2AA,color:#fff,stroke:#178A83
+    style D fill:#4A6FA5,color:#fff,stroke:#2B4570
     style E fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style F fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style G fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style H fill:#FF7E2D,color:#fff,stroke:#CC5500
-    style I fill:#2E8B57,color:#fff,stroke:#1B5E3B
-    style J fill:#4A6FA5,color:#fff,stroke:#2B4570
-    style K fill:#C0392B,color:#fff,stroke:#922B21
-    style L fill:#DAA520,color:#fff,stroke:#B8860B
-    style M fill:#DAA520,color:#fff,stroke:#B8860B
-    style N fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style F fill:#20B2AA,color:#fff,stroke:#178A83
+    style RL fill:#C0392B,color:#fff,stroke:#922B21,stroke-dasharray:5 5
+    style G fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style I fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style J fill:#C0392B,color:#fff,stroke:#922B21
+    style K fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style L fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
 
 '''''
@@ -283,7 +338,7 @@ ____
 
 *Phase 2 — Interactive Screen Wireframes (planned):* - Audit dashboard (create, manage, monitor audits) - Document upload + extraction review screen (AFC confidence badges, field-level review) - Schema mapping review screen (suggestion cards, confidence routing, synonym management) - Findings review + approval screen (effective challenge, AI labels, provenance panel) - Exam bundle export screen (manifest preview, format options)
 
-*Design Principles:* - Confidence is visible everywhere — color-coded badges (green ≥0.85, gold 0.50–0.85, red <0.50) - AI provenance is always one click away — every AI-generated element links to its provenance record - Effective challenge is enforced by design — reviewer cannot approve without documenting their independent verification - Audit trail is ambient — every action generates an event; users see event count and last-event timestamp per artifact
+*Design Principles:* - Confidence is visible everywhere — color-coded badges (green ≥0.85, orange 0.50–0.85, red <0.50) - AI provenance is always one click away — every AI-generated element links to its provenance record - Effective challenge is enforced by design — reviewer cannot approve without documenting their independent verification - Audit trail is ambient — every action generates an event; users see event count and last-event timestamp per artifact
 
 '''''
 
