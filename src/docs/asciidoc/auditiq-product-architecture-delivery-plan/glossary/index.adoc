@@ -36,6 +36,11 @@ ____
 |`min(mapping_confidence, extraction_confidence, rule_confidence)`. The floor-based composite that drives finding-level routing. If extraction is not applicable, `extraction_confidence` defaults to 1.0.
 |Section 12.1
 
+|*graph_corrob_score*
+|0.0–1.0
+|Cross-document graph corroboration signal introduced in AFC v2. Computed from the number and strength of corroborating edges in the Docling-Graph knowledge graph (e.g., loan_amount matching across Closing Disclosure and Loan Estimate nodes). Weighted at 0.15 in the AFC v2 formula. Absent (defaults to 0.0) when Docling-Graph is not enabled (AFC v1 mode).
+|Section 10.2.1, Section 26.3
+
 |*calibrated_score* (Layer 2 mapping)
 |0.0–1.0
 |Calibrated decision score combining `conf_mapping`, `conf_extraction`, and `conf_rule` via temperature scaling (Phase 1) or isotonic regression (Phase 2). Used for schema mapping routing only. ECE must be ≤ 0.05.
