@@ -1,0 +1,18 @@
+:myprojectbasedir: {asciidoctorconfigdir}/src/docs/asciidoc
+:myprojectbuilddir: {asciidoctorconfigdir}/build
+:myprojectresourcedir: {asciidoctorconfigdir}/src/docs/resources
+:stylesdir: {myprojectresourcedir}/styles
+:iconsdir: {myprojectresourcedir}/images/icons
+:imagesdir: {myprojectresourcedir}/images
+:toc: left
+:toclevels: 3
+:source-highlighter: coderay
+:stem: latexmath
+:icons: font
+:stylesheet: riskexec.css
+:copyright: © {docyear} RiskExec, Inc.
+:data-uri:
+
+:pdf-theme: riskexec-theme.yml
+:pdf-themesdir: {myprojectresourcedir}/themes
+:pdf-fontsdir: {myprojectresourcedir}/fonts

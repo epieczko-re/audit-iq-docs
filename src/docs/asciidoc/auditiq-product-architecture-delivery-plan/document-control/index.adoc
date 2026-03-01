@@ -1,0 +1,48 @@
+== 0. Document Control
+
+=== 0.1 Version History
+
+[width="100%",cols="9%,12%,32%,47%",options="header",]
+|===
+|Version |Date |Author(s) |Changes
+|0.1 |2026-02-27 |Erik Pieczkowski (via Claude) |Initial comprehensive spec — Sections 0–6 full; 7–18 detailed stubs
+|0.2 |2026-02-27 |Erik Pieczkowski (via Claude) |Build-ready spec — all stubs replaced with implementable detail; new sections 19–22 added (MVP Decisions, Immutability, Exam Bundle, AI Governance); MVP Cutline produced
+|===
+
+=== 0.2 Authors / Owners
+
+[width="100%",cols="31%,21%,48%",options="header",]
+|===
+|Role |Name |Responsibility
+|Product Lead |Arielle Sutherland |Product vision, requirements, prioritization
+|Principal Solutions Architect |Erik Pieczkowski |Architecture, scoring framework, tech decisions
+|Program Manager |TBD |Delivery planning, WBS, risk management
+|Engineering Lead |TBD |Component design, sprint execution
+|===
+
+=== 0.3 Approvals
+
+[cols=",,,",options="header",]
+|===
+|Approver |Role |Date |Signature
+|_________________ |CEO / GM | |
+|_________________ |VP Engineering | |
+|Arielle Sutherland |Product Lead | |
+|Erik Pieczkowski |Solutions Architect | |
+|===
+
+=== 0.4 How to Use This Document
+
+This document serves three audiences simultaneously:
+
+* *Engineering team:* Sprint-plan against Sections 7–12 and 19–22. Each section contains explicit contracts, schemas, and acceptance criteria that can be decomposed into user stories and tasks. See the companion WBS (AuditIQ_WBS_v0.2.xlsx) for task breakdown.
+* *Product / leadership:* Read Sections 1–6 for context and competitive positioning. Review Section 13 (Pricing placeholder), Section 14 (Delivery Plan), Section 19 (MVP Decisions), and the MVP Cutline (AuditIQ_MVP_Cutline_v0.2.md) for investment decisions.
+* *Compliance / regulatory stakeholders:* Focus on Sections 12 (Scoring), 20 (Immutability), 21 (Exam Bundle), and 22 (AI Governance) for regulatory defensibility.
+
+*Conventions used in this document:*
+
+* *TODO* = work item that must be completed before implementation starts
+* *ASSUMPTION* = a belief stated explicitly; risk if wrong is documented
+* *DECISION NEEDED* = requires stakeholder input before proceeding
+* *DECISION LOCKED* = decided for MVP; revisit criteria documented in Section 19
+* Items labeled _(Source: …)_ are traceable to reference documents listed in Appendix D.

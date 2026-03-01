@@ -1,0 +1,28 @@
+== 4. Competitive Intelligence
+
+=== 4.1 ACES Quality Management (Primary Competitor)
+
+* *Market position:* ~141 customers; avg ACV $135K; banks avg $167K, servicers $158K. (Source: ACES Pricing Model.txt)
+* *Pricing:* Tiered subscription: $3.3K/month (100 audits, $28/excess) to $27.5K/month (5,000 audits, $4/excess). Enterprise HMDA: $4.2K/month for 3,000 audits. (Source: ACES Pricing Model.txt)
+* *Defensibility:* MEDIUM-HIGH. Deep enterprise relationships and switching costs, but aging architecture and bolt-on AI. (Source: ACES_Competitive Analysis_vF.pdf)
+* *AI strategy:* Introduced AI features via partnerships (not native) in September 2025. Cannot easily retrofit governance-first AI controls.
+* *Weaknesses:* QC-only (not three lines of defense), documentation quality criticized, limited OCR/document extraction capabilities.
+
+=== 4.2 Other Competitors
+
+[width="100%",cols="27%,32%,41%",options="header",]
+|===
+|Competitor |Differentiator |AuditIQ Advantage
+|LoanLogics |Post-close QC automation |AuditIQ broader scope (3 lines of defense); modern architecture
+|TRK Connection |FHA/VA focus |AuditIQ regulation-agnostic audit pack model
+|TENA |Servicing-focused |AuditIQ origination-first with expansion path
+|===
+
+=== 4.3 AuditIQ Competitive Differentiation
+
+[arabic]
+. *Governance-first AI* vs. bolt-on partnerships — built natively, explainable, human-approved.
+. *Three-layer confidence scoring* vs. binary pass/fail — quantified trust signals.
+. *Three-lines-of-defense* vs. first-line-only — unified compliance system of record.
+. *Audit pack extensibility* vs. hard-coded logic — new regulations without platform changes.
+. *Immutable, exam-ready evidence management* vs. file shares and email.

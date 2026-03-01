@@ -1,0 +1,30 @@
+== 3. Product Vision and Strategic Positioning
+
+=== 3.1 Vision Statement
+
+Make every financial institution always exam-ready by providing a unified audit workflow platform that combines human expertise with AI-assisted efficiency, immutable evidence management, and confidence-scored transparency — so that compliance teams can focus on judgment, not data entry.
+
+=== 3.2 Strategic Positioning
+
+AuditIQ is positioned as:
+
+* *Not an AI product* — it is a governance and workflow platform that uses AI as an accelerant.
+* *Additive, not replacement* — it extends RiskExec’s existing compliance platform, increasing deal size by 20–30%.
+* *Examiner-friendly* — designed to produce the evidence packages and audit trails that regulators want to see.
+* *AI opt-out, not opt-in* — per Board directive, AI capabilities are available by default but can be fully disabled. (Source: 2026_02.10 - CEO Letter)
+
+=== 3.3 Target Users
+
+[width="100%",cols="21%,13%,33%,33%",options="header",]
+|===
+|Persona |Role |Primary Needs |AuditIQ Value
+|QC Reviewer |First-line quality control |Efficient field-by-field review; clear discrepancy reporting |Side-by-side viewer; confidence-scored findings; structured workflow
+|Compliance Manager |Second-line oversight |Sampling strategy; trend analysis; examiner readiness |Dashboards; exam-ready bundle; cross-audit analytics
+|Internal Auditor |Third-line assurance |Independent testing; evidence collection; methodology documentation |Separate audit trail view; sampling; methodology attestation
+|VP / Chief Compliance Officer |Executive oversight |Risk-based prioritization; regulatory posture visibility |Executive dashboards; trend reporting; materiality scoring
+|IT Administrator |System administration |User management; integration; data security |RBAC admin; SSO; audit log access; tenant configuration
+|===
+
+=== 3.4 Interested Clients (Design Partner Candidates)
+
+Commerce Bank, Ally Financial, Truist, Citizens Financial Group, and SoFi have expressed interest. (Source: 5 Audit-IQ - RiskExec New Product Brief.pdf) Board directive requires validation with 8–10 design partners. (Source: 2026_02.10 - CEO Letter)

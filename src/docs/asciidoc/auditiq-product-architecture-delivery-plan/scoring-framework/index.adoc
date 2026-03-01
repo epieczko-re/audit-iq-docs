@@ -1,0 +1,160 @@
+== 12. Scoring Framework
+
+=== 12.1 Confidence Scoring (Three Layers)
+
+*Layer 1: Mapping Confidence*
+
+* Measures: How confident is the system that target field X corresponds to source field Y?
+* Inputs: Field name similarity, data type compatibility, historical acceptance, value distribution
+* Range: 0.0–1.0
+* Formula (v1): `0.4 * name_similarity + 0.3 * type_compat + 0.2 * historical + 0.1 * value_dist_match`
+* Computed by: Schema Mapping Service during mapping phase
+* Immutable: No, can be corrected via new mapping approval
+
+*Layer 2: Extraction Confidence*
+
+* Measures: How confident is the system that the extracted value from a source document is correct?
+* Inputs: OCR engine quality, layout complexity, document page tier, model version
+* Range: 0.0–1.0
+* Determinant: Docling or cloud OCR output confidence score (engine-provided)
+* Computed by: Document Processing Service
+* Immutable: No (extraction confidence is metadata on extracted values, not a state change)
+
+*Layer 3: Rule Application Confidence*
+
+* Measures: How confident is the system that a validation rule correctly applies to this specific data context?
+* Inputs: Precondition satisfaction, data quality, rule specificity, normalization success
+* Range: 0.0–1.0
+* Formula (v1): `base_confidence = pack_rule_definition.confidence   if precondition_not_satisfied:     rule_confidence *= 0.7 (reduced due to uncertain context)   if normalization_failed:     rule_confidence *= 0.5 (values may not be comparable)   return max(0.0, min(1.0, rule_confidence))`
+* Computed by: Comparison & Rules Engine
+* Immutable: No (metadata on finding, not a state change)
+
+*Combined Confidence Formula:*
+
+....
+combined_confidence = min(
+  mapping_confidence,
+  extraction_confidence (if applicable, else 1.0),
+  rule_confidence
+)
+....
+
+*Interpretation:*
+
+* *≥0.85:* High confidence. Auto-confirm if desired; does not require human review.
+* *0.50–0.84:* Medium confidence. Recommend human verification; display in UI for secondary review.
+* *<0.50:* Low confidence. Reject finding; flag for manual re-review if critical issue.
+
+=== 12.2 Severity Scoring (Pack-Defined)
+
+*Severity defines regulatory importance, not system confidence. Orthogonal to confidence.*
+
+*Severity levels (per HMDA pack):*
+
+[width="100%",cols="13%,17%,16%,27%,27%",options="header",]
+|===
+|Level |Definition |Examples |Action Required |Review Timeline
+|*Critical* |Regulatory violation with potential enforcement action; data misrepresentation; prohibited conduct |Action Taken code wrong, pricing discrimination pattern, missing disclosure |Immediate remediation, escalation to Compliance Officer |Within 1 day
+|*High* |Potentially reportable discrepancy; regulatory attention likely if unresolved |Loan Amount mismatch >2%, co-applicant name inconsistent |Prompt investigation; remediation within 3 days |Within 3 days
+|*Medium* |Compliance or data quality issue; non-trivial to fix; not immediately reportable |Property address formatting inconsistent, fee description unclear |Standard remediation workflow |Within 7 days
+|*Low* |Minor data quality issue; cosmetic; no regulatory impact |Whitespace extra, trailing zeros |Log and monitor; no urgent action required |Within 14 days
+|*Informational* |Data point of interest; no action required |Historical note, data type conversion artifact |Log only; no action |Informational only
+|===
+
+*Severity is assigned by:* 1. Pack rule definition (default severity) 2. Optionally overridden by Reviewer with justification 3. May be escalated by Manager if pattern detected
+
+*Severity is immutable once finding is triaged* (unless explicitly re-scored by Manager with audit trail event).
+
+=== 12.3 Human-in-Loop Triggers
+
+*Conditions that require mandatory human approval before finalization:*
+
+[width="100%",cols="23%,25%,34%,18%",options="header",]
+|===
+|Trigger |Condition |Required Role |Action
+|*Critical finding* |Any finding with severity=`critical' |Manager or Audit Lead |Must review and sign off before audit finalization
+|*Low confidence finding* |combined_confidence < 0.50 |Reviewer |Cannot create finding; must re-review with manual document inspection
+|*AI-generated narrative* |Any narrative in report |Manager |Cannot finalize report without explicit ``Approve'' click on AI content
+|*Mapping override* |Reviewer overrides auto-suggested mapping |Reviewer |Must provide justification text before acceptance
+|*Second review required* |Configured sampling % applies to finding |Senior Reviewer (different from primary) |Independent re-review before closure
+|*Escalation override* |Manager resolves escalated finding |Manager |Must provide resolution rationale
+|===
+
+*Implementation:* API gateway middleware checks conditions before state transitions. If condition triggers, state change is blocked with error message and audit event is logged.
+
+=== 12.4 Confidence Calibration & Monitoring
+
+*Calibration rationale:* Confidence scores from Docling, schema matcher, and rules engine are learned/heuristic-based. They must be calibrated against ground truth (human decisions) to remain accurate.
+
+*Calibration approach (Phase 2):*
+
+[arabic]
+. *Collection:* After human review, compare AI-generated confidence scores to actual outcomes:
+* Did AI mark it high-confidence? Did human agree?
+* Did AI mark it low-confidence? Did human override?
+. *Metrics:*
+* *Calibration error:* % of high-confidence findings where human disagreed
+* *Coverage:* % of findings where AI confidence threshold correctly predicted human review need
+. *Adjustment:* If calibration error >5% for a given component (e.g., Docling), adjust thresholds or retrain model.
+
+*Monitoring dashboard (TODO Phase 2):*
+
+* Daily plots: Confidence vs. human agreement rate
+* Alert: If calibration error exceeds 5% threshold
+* Trends: How confidence scores evolve as packs mature
+
+=== 12.5 Risk-Based Prioritization
+
+*Not in MVP, but framework for Phase 2:*
+
+Findings can be prioritized by risk score combining severity, confidence, and customer risk profile:
+
+....
+risk_score = (
+  severity_weight[severity] * 0.4 +
+  (1 - combined_confidence) * 0.3 +  // Lower confidence = higher risk
+  materiality_score * 0.3             // Loan amount, violation type
+)
+....
+
+*Use case:* Manager can filter findings by risk_score descending to focus on highest-impact issues first.
+
+=== 12.6 Scoring Framework API Contract
+
+[source,typescript]
+----
+interface ScoringRequest {
+  finding: Finding;
+  pack: AuditPack;
+  context: ScoringContext; // Target record, source data, extracted values
+}
+
+interface ScoringResult {
+  finding_id: string;
+
+  // Confidence layers
+  mapping_confidence: number;
+  extraction_confidence: number;
+  rule_confidence: number;
+  combined_confidence: number;
+
+  // Confidence metadata
+  confidence_rationale: string; // Explanation for human review
+
+  // Severity
+  severity: string;
+  severity_rationale: string;
+
+  // Thresholds
+  auto_review_required: boolean; // If combined_confidence < threshold
+  critical_review_required: boolean; // If severity = 'critical'
+
+  // Risk score (Phase 2)
+  risk_score?: number;
+
+  // Audit trail
+  scored_at: timestamp;
+  scored_by_engine: string; // e.g., 'scoring-service-v1.2'
+  scoring_version: string; // e.g., '1.0'
+}
+----

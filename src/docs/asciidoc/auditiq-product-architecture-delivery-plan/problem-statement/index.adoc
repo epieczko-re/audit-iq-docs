@@ -1,0 +1,22 @@
+== 2. Problem Statement
+
+=== 2.1 The Manual Audit Problem
+
+Compliance officers at financial institutions face a systematic workflow problem. For HMDA alone, they must validate 110 reportable data fields per loan record against a stack of source documents — Closing Disclosures, Loan Estimates, URLAs, Promissory Notes, credit reports, and AUS findings. The current process is:
+
+[arabic]
+. *Export* target data (the HMDA LAR) from their LOS or data warehouse into a spreadsheet.
+. *Retrieve* the corresponding source documents — often from multiple systems, in multiple formats.
+. *Compare* each field manually (``stare and compare''), recording discrepancies in the spreadsheet or a separate tracking system.
+. *Triage and remediate* findings — routing them to originators, underwriters, or closers for correction.
+. *Assemble evidence* for examiner readiness — a multi-day exercise involving copying files into shared drives, creating cover memos, and formatting spreadsheets.
+
+This process is slow (2–5 minutes per field per record for complex documents), error-prone (human reviewers miss discrepancies, especially in high-volume periods), inconsistent (different reviewers apply different standards), and poorly documented (audit trails live in email threads and spreadsheet comments).
+
+=== 2.2 The Three-Lines-of-Defense Gap
+
+Regulators increasingly expect financial institutions to demonstrate a coordinated approach across three lines of defense. Today, first-line QC teams, second-line compliance teams, and third-line internal audit teams typically use separate tools — or the same spreadsheets in parallel — with no shared evidence repository or unified audit trail. This creates duplicated effort, inconsistent findings, and gaps in coverage that examiners flag.
+
+=== 2.3 The Competitive Landscape Gap
+
+ACES Quality Management dominates the lending QC software market with ~141 customers and a defensibility rating of MEDIUM-HIGH. (Source: ACES_Competitive Analysis_vF.pdf) However, ACES has critical limitations: it serves primarily first-line QC teams (not three lines of defense), its AI capabilities were added via partnerships in September 2025 (not native), its documentation is criticized as incomplete, and its legacy architecture makes it difficult to retrofit governance-first AI controls.

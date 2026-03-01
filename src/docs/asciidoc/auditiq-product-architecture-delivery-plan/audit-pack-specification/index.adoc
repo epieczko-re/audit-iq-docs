@@ -1,0 +1,389 @@
+== 8. Audit Pack Specification
+
+=== 8.1 Overview
+
+An audit pack is a versioned, declarative configuration artifact that encapsulates everything needed to audit a specific regulatory domain or business process. The platform interprets the pack—it does not execute code embedded in the pack. This ensures safety, reproducibility, and extensibility.
+
+*Pack components:* - Manifest (metadata, versioning, authorship) - Target schema (which fields are audit-reportable) - Source schema(s) (document types and expected layouts) - Comparison rules (how to validate target vs. source) - Scoring rules (severity, confidence thresholds) - Report templates (how to format findings into reports) - Test cases (reference data for validation harness)
+
+*DECISION LOCKED:* Declarative JSON v1 — no executable logic. See Section 19.3.
+
+=== 8.2 Pack Manifest JSON Schema
+
+[source,json]
+----
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AuditIQ Pack Manifest v1.0",
+  "type": "object",
+  "required": [
+    "pack_id",
+    "pack_name",
+    "pack_version",
+    "regulation",
+    "author",
+    "created_date",
+    "target_schema",
+    "comparison_rules",
+    "scoring_rules",
+    "report_template"
+  ],
+  "properties": {
+    "pack_id": {
+      "type": "string",
+      "description": "Immutable pack identifier, format: {regulation}-{version}, e.g. 'hmda-origination-v1'",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "pack_name": {
+      "type": "string",
+      "description": "Human-readable pack name",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "pack_version": {
+      "type": "string",
+      "description": "Semantic versioning: MAJOR.MINOR.PATCH",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "regulation": {
+      "type": "string",
+      "enum": [
+        "hmda-origination",
+        "hmda-servicing",
+        "cra",
+        "sbl-1071",
+        "fair-lending",
+        "trid",
+        "custom"
+      ]
+    },
+    "author": {
+      "type": "object",
+      "required": ["name", "email"],
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "organization": { "type": "string" }
+      }
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1024
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["origination", "servicing", "servicing-post-close", "portfolio"],
+      "description": "Audit scope this pack applies to"
+    },
+    "applicable_jurisdictions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "e.g., ['US Federal', 'State-CA', 'State-NY']"
+    },
+    "deprecation": {
+      "type": "object",
+      "properties": {
+        "is_deprecated": { "type": "boolean" },
+        "deprecation_date": { "type": "string", "format": "date-time" },
+        "replacement_pack_id": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    },
+    "target_schema": {
+      "type": "object",
+      "description": "Target data schema (e.g., HMDA LAR)",
+      "required": ["schema_id", "fields"],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "description": "e.g., 'hmda-lar-2024'"
+        },
+        "source_document": {
+          "type": "string",
+          "description": "Reference URI or citation"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["field_id", "field_name", "data_type"],
+            "properties": {
+              "field_id": { "type": "string" },
+              "field_name": { "type": "string" },
+              "data_type": {
+                "enum": ["string", "integer", "decimal", "date", "boolean", "enum"]
+              },
+              "required": { "type": "boolean" },
+              "auditable": {
+                "type": "boolean",
+                "description": "Whether this field is part of the audit scope"
+              },
+              "description": { "type": "string" },
+              "enum_values": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "source_schema": {
+      "type": "array",
+      "description": "Source document schemas (e.g., Closing Disclosure, Loan Estimate)",
+      "items": {
+        "type": "object",
+        "required": ["doc_type", "fields"],
+        "properties": {
+          "doc_type": {
+            "type": "string",
+            "description": "e.g., 'closing-disclosure', 'loan-estimate'"
+          },
+          "regulation_citation": { "type": "string" },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_id": { "type": "string" },
+                "field_name": { "type": "string" },
+                "data_type": {
+                  "enum": ["string", "integer", "decimal", "date", "boolean", "table"]
+                },
+                "location_hints": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "e.g., ['Page 1, Section A', 'Box 4a']"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "comparison_rules": {
+      "type": "array",
+      "description": "Pack-defined comparison rules",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "target_field", "comparison_type"],
+        "properties": {
+          "rule_id": { "type": "string" },
+          "rule_name": { "type": "string" },
+          "target_field": { "type": "string" },
+          "source_field": { "type": "string" },
+          "comparison_type": {
+            "enum": [
+              "exact_match",
+              "tolerance_absolute",
+              "tolerance_percentage",
+              "conditional",
+              "lookup",
+              "cross_field"
+            ]
+          },
+          "tolerance": {
+            "type": "object",
+            "properties": {
+              "value": { "type": "number" },
+              "unit": { "enum": ["absolute", "percentage"] }
+            }
+          },
+          "condition": {
+            "type": "string",
+            "description": "If comparison_type is 'conditional', e.g., 'if property_type = 1-4 family'"
+          },
+          "severity": {
+            "enum": ["critical", "high", "medium", "low", "informational"]
+          },
+          "regulation_citation": { "type": "string" },
+          "enabled": { "type": "boolean", "default": true }
+        }
+      }
+    },
+    "scoring_rules": {
+      "type": "object",
+      "description": "Severity and confidence thresholds",
+      "properties": {
+        "severity_definitions": {
+          "type": "object",
+          "properties": {
+            "critical": {
+              "type": "object",
+              "properties": {
+                "description": { "type": "string" },
+                "examples": { "type": "array", "items": { "type": "string" } },
+                "requires_immediate_action": { "type": "boolean" }
+              }
+            },
+            "high": {},
+            "medium": {},
+            "low": {},
+            "informational": {}
+          }
+        },
+        "confidence_thresholds": {
+          "type": "object",
+          "properties": {
+            "auto_accept": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "≥ this value: no human review needed"
+            },
+            "review_required": {
+              "type": "number",
+              "description": "Below auto_accept: human review required"
+            },
+            "reject": {
+              "type": "number",
+              "description": "Below this: finding rejected as too uncertain"
+            }
+          }
+        },
+        "human_in_loop_triggers": {
+          "type": "array",
+          "description": "Conditions that require mandatory human approval",
+          "items": {
+            "type": "object",
+            "properties": {
+              "trigger_id": { "type": "string" },
+              "condition": { "type": "string" },
+              "required_role": { "enum": ["reviewer", "manager", "audit_lead"] }
+            }
+          }
+        }
+      }
+    },
+    "report_template": {
+      "type": "object",
+      "description": "Report generation configuration",
+      "required": ["template_id", "format"],
+      "properties": {
+        "template_id": { "type": "string" },
+        "format": {
+          "enum": ["pdf", "html", "markdown"]
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "section_id": { "type": "string" },
+              "title": { "type": "string" },
+              "content_template": { "type": "string" },
+              "data_source": { "type": "string" },
+              "required": { "type": "boolean" }
+            }
+          }
+        },
+        "ai_narrative_sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "section_id": { "type": "string" },
+              "ai_prompt_template": { "type": "string" },
+              "requires_approval": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "test_cases": {
+      "type": "array",
+      "description": "Reference test data for pack validation harness",
+      "items": {
+        "type": "object",
+        "properties": {
+          "test_id": { "type": "string" },
+          "description": { "type": "string" },
+          "target_record": { "type": "object" },
+          "source_documents": { "type": "array" },
+          "expected_findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rule_id": { "type": "string" },
+                "expected_result": { "enum": ["match", "mismatch", "unable_to_determine"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+----
+
+=== 8.3 Pack Versioning and Distribution
+
+*Version format:* Semantic Versioning (MAJOR.MINOR.PATCH) - MAJOR: Breaking changes to schemas or rule logic (requires migration) - MINOR: New rules or schemas added (backward-compatible) - PATCH: Bug fixes, typo corrections (no functional changes)
+
+*Pack lifecycle:*
+1. *Draft:* Created by pack author, not available to audit runs.
+2. *Published:* Available for new audit runs. Existing runs remain pinned to their original version.
+3. *Deprecated:* Marked for removal with migration path. No new runs can be created. Existing runs continue.
+4. *Retired:* No longer available. Existing runs can reference archived pack version (read-only).
+
+*Distribution channel:*
+
+* *Phase 1:* RiskExec ships HMDA pack v1.0 in the platform binary.
+* *Phase 2+:* Packs distributed via pack marketplace API with version pinning and rollback capability.
+
+=== 8.4 Pack Testing and Validation Harness
+
+*Harness requirements:* - Load a pack manifest and test cases. - Execute each test case against the pack rules. - Compare actual findings to expected findings. - Report pass/fail, coverage metrics, and rule execution time.
+
+*Test harness success criteria (before publication):* - All test cases pass. - Code coverage ≥90% of pack rules executed. - No test case execution exceeds 5 seconds. - All AI suggestions (if any) are labeled and traced to model/version.
+
+*TODO:* Build test harness CLI tool for pack authors to validate locally before submission.
+
+=== 8.5 Pack Interface Contract (System-to-Pack)
+
+The platform interacts with packs via the following immutable contract:
+
+[source,typescript]
+----
+interface AuditPackContract {
+  // Manifest loading
+  loadManifest(packId: string, version: string): Promise<PackManifest>;
+
+  // Schema validation
+  validateTargetRecord(record: object, packId: string): ValidationResult;
+  validateSourceDocument(doc: object, docType: string, packId: string): ValidationResult;
+
+  // Mapping suggestion
+  suggestMappings(
+    targetSchema: object,
+    sourceSchema: object,
+    packId: string
+  ): MappingSuggestion[];
+
+  // Comparison execution (deterministic)
+  executeComparisons(
+    targetRecord: object,
+    sourceData: object,
+    mappings: FieldMapping[],
+    packId: string,
+    packVersion: string
+  ): ComparisonResult[];
+
+  // Scoring
+  scoreFindings(findings: Finding[], packId: string): ScoredFinding[];
+
+  // Report generation
+  generateReport(auditData: AuditData, packId: string): Report;
+}
+----
+
+*Immutability guarantee:* For a given (packId, packVersion, targetRecord, sourceData, mappings), the output of executeComparisons() is always identical. All non-deterministic outputs (AI narratives) are explicitly generated separately and labeled.

@@ -1,0 +1,869 @@
+== 10. Component-Level Design
+
+=== 10.1 Ingestion Service
+
+*Responsibilities:* - Accept target datasets (CSV, API endpoint, cross-module transfer) - Validate format and completeness - Detect and report encoding issues - Store validated data in staging area
+
+*Input contracts:*
+
+[source,typescript]
+----
+interface IngestionRequest {
+  auditId: string;
+  dataSource: 'csv_upload' | 'api_endpoint' | 'cross_module';
+  datasetName: string;
+  targetSchema: string; // e.g., 'hmda-lar-2024'
+  recordCount: number;
+  estimatedSize: number; // bytes
+  uploadedAt: timestamp;
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  recordsProcessed: number;
+  recordsRejected: number;
+  errors: ValidationError[];
+  warnings: ValidationWarning[];
+  completionTime: number; // ms
+}
+
+interface ValidationError {
+  recordId: string;
+  fieldId: string;
+  errorCode: string; // e.g., 'MISSING_REQUIRED', 'INVALID_FORMAT'
+  message: string;
+  suggestedFix?: string;
+}
+----
+
+
+[cols="1,2",options="header"]
+|===
+|*Error handling:* |Error
+|Handling |File size > 100MB
+|Client-side rejection before upload |Encoding issues (non-UTF-8)
+|Attempt conversion; flag if fails; allow skip |Missing required columns
+|Reject entire upload; list missing columns |Malformed date values
+|Reject affected rows; suggest expected format |Duplicate record IDs
+|===
+
+
+*Determinism:* Deterministic — same input file always produces same validated output.
+
+*Storage:* Validated records stored in audit.staging_datasets table (temporary, cleaned up after audit completion or 30 days, whichever first).
+
+=== 10.2 Document Processing Service (Docling + OCR)
+
+*Responsibilities:* - Process source documents through Docling (document conversion + layout understanding substrate) - Build AuditIQ Field Confidence (AFC) scores per extracted field (see below) - Extract text, tables, key-value pairs via deterministic field extractor layer on top of Docling - Fall back to cloud OCR for pages graded POOR or FAIR by Docling - Store extracted text, AFC metadata, and Docling page-level confidence grades
+
+____
+*Critical Architecture Clarification (per Docling Technical Validation Report v1):* Docling is a *document conversion + layout understanding engine*, not a per-field extraction system. Its confidence scores (`layout_score`, `ocr_score`, `parse_score`) are *conversion-quality indicators* (POOR/FAIR/GOOD/EXCELLENT) that grade how well the page was converted—they are NOT per-field extraction confidence. AuditIQ must build its own *deterministic field extractor* that consumes Docling’s `DoclingDocument` output and produces per-field AFC scores. Do not use Docling’s numeric scores directly for field-level gating.
+____
+
+==== 10.2.1 AuditIQ Field Confidence (AFC)
+
+AFC is a deterministic, per-field composite score built from five signals:
+
+[width="100%",cols="25%,25%,25%,25%",options="header",]
+|===
+|Signal |Weight |Source |Description
+|`docling_page_grade` |0.15 |Docling conversion output |Page-level conversion quality (POOR=0.2, FAIR=0.5, GOOD=0.8, EXCELLENT=1.0)
+|`ocr_segment_confidence` |0.25 |Docling OCR or cloud OCR fallback |Character-level OCR confidence for the text segment containing this field
+|`pattern_validity` |0.25 |AuditIQ field extractor |Regex/parse validation (e.g., date format, currency pattern, HMDA enum membership)
+|`layout_anchor_consistency` |0.20 |AuditIQ field extractor |Does the field appear in the expected document region with expected label proximity?
+|`cross_doc_redundancy` |0.15 |AuditIQ field extractor |Does the same value appear in a corroborating document (e.g., loan amount on both CD and LE)?
+|===
+
+*AFC formula:*
+
+....
+afc = (docling_page_grade * 0.15) +
+      (ocr_segment_confidence * 0.25) +
+      (pattern_validity * 0.25) +
+      (layout_anchor_consistency * 0.20) +
+      (cross_doc_redundancy * 0.15)
+....
+
+*AFC routing thresholds:* - `afc >= 0.85`: Auto-confirm (no human review required) - `0.50 <= afc < 0.85`: Human review required (field highlighted in UI) - `afc < 0.50`: Flag as extraction failure; route to manual entry queue
+
+==== 10.2.2 Input/Output Contracts
+
+[source,typescript]
+----
+interface DocumentProcessingRequest {
+  auditId: string;
+  documentId: string;
+  filePath: string; // S3 path
+  fileType: 'pdf' | 'tiff' | 'jpeg' | 'png';
+  documentType: string; // e.g., 'closing-disclosure'
+  pageCount: number;
+}
+
+interface ExtractionResult {
+  documentId: string;
+  extractionEngine: 'docling' | 'cloud-ocr' | 'docling+cloud-ocr-fallback';
+  doclingVersion: string; // Docling library version
+  fieldExtractorVersion: string; // AuditIQ field extractor version
+  extractedFields: ExtractedField[];
+  tables: ExtractedTable[];
+  pageGrades: PageGrade[]; // Docling page-level conversion grades
+  processingTimeMs: number;
+  rawText: string; // Full OCR text output
+  fallbackPages: number[]; // Pages where cloud OCR was used
+}
+
+interface ExtractedField {
+  fieldId: string;
+  value: string;
+  afc: number; // AuditIQ Field Confidence: 0.0–1.0
+  afcBreakdown: {
+    doclingPageGrade: number;
+    ocrSegmentConfidence: number;
+    patternValidity: number;
+    layoutAnchorConsistency: number;
+    crossDocRedundancy: number;
+  };
+  boundingBox?: { x: number; y: number; width: number; height: number };
+  pageNumber: number;
+  extractionMethod: 'pattern' | 'table_cell' | 'key_value_pair' | 'positional';
+}
+
+interface PageGrade {
+  pageNumber: number;
+  doclingGrade: 'POOR' | 'FAIR' | 'GOOD' | 'EXCELLENT';
+  layoutScore: number;
+  ocrScore: number;
+  parseScore: number;
+  fallbackTriggered: boolean;
+}
+----
+
+==== 10.2.3 Fallback Logic (Refined)
+
+....
+for each page in document:
+  grade = docling.convertPage(page).grade  // POOR | FAIR | GOOD | EXCELLENT
+
+  if grade in ['POOR', 'FAIR']:
+    triggerCloudOCRFallback(page)
+    recordFallbackEvent(auditId, documentId, pageNumber, grade)
+  end
+
+  // Even for GOOD/EXCELLENT pages, if >30% of key fields have AFC < 0.50:
+  if (countKeyFieldsBelowThreshold(page, 0.50) / totalKeyFields(page)) > 0.30:
+    triggerCloudOCRFallback(page)
+    recordFallbackEvent(auditId, documentId, pageNumber, 'key_field_threshold')
+  end
+end
+....
+
+*Cloud OCR fallback providers (ranked by cost):* 1. AWS Textract `DetectDocumentText` — $0.0015/page 2. Google Enterprise Document OCR — $0.0015/page ($1.50/1000 pages) 3. AWS Textract `AnalyzeDocument` — $0.01/page (tables/forms; use only when needed)
+
+==== 10.2.4 Known Extraction Failure Modes
+
+The Docling validation report identified 10 failure modes AuditIQ must handle:
+
+[width="100%",cols="25%,25%,25%,25%",options="header",]
+|===
+|# |Failure Mode |Likely Impact |Mitigation
+|1 |Scanned PDF with degraded OCR quality |Low AFC on text-heavy fields |Cloud OCR fallback; AFC flags for review
+|2 |Multi-column layouts mis-parsed by Docling |Fields assigned to wrong columns |Layout anchor consistency check in AFC
+|3 |Table cells merged/split incorrectly |Numeric values extracted from wrong cell |Table structure validation + cross-doc redundancy
+|4 |Handwritten annotations overlaid on printed text |OCR garbles both layers |Fallback to cloud OCR; manual review flag
+|5 |Non-standard document templates |Field extractor patterns don’t match |Pattern library per document type; fallback to manual
+|6 |Watermarks / stamps obscuring text |Reduced OCR segment confidence |Pre-processing (watermark removal); AFC flags
+|7 |Mixed-orientation pages (landscape tables in portrait doc) |Layout analysis failure |Docling orientation detection; page rotation preprocessing
+|8 |Extremely long documents (>50 pages) |Timeout / memory exhaustion |Chunked processing; page-level parallelism
+|9 |Encrypted or password-protected PDFs |Docling cannot open |Pre-check + user notification; manual upload path
+|10 |Digital signatures / form fields (XFA) |Docling may skip interactive form data |Flatten PDF before processing; extract XFA data separately
+|===
+
+==== 10.2.5 Performance Model
+
+Based on Docling validation report benchmarks:
+
+* *Throughput target:* ~175,000 pages/day on a single 8-vCPU / 32GB instance
+* *Per-page latency:* Docling standard pipeline ~0.5–2s/page; VLM pipeline ~3–8s/page (use standard for MVP)
+* *Cloud OCR fallback adds:* 1–3s/page (network roundtrip + API processing)
+* *Estimated monthly cost:* $1,000–$3,000/month for compute + $500–$2,000/month for cloud OCR fallback (assuming 10–15% fallback rate)
+
+==== 10.2.6 Licensing Warning
+
+____
+*GPL Risk:* The `docling-surya` integration package wraps SuryaOCR, which is licensed under GPL. If AuditIQ links or imports `docling-surya`, the entire application may be subject to GPL copyleft obligations. *For commercial SaaS deployment, either (a) ensure Docling is used WITHOUT `docling-surya` (use EasyOCR or Tesseract OCR backends instead), or (b) obtain legal review of GPL implications before Phase 1a.*
+____
+
+==== 10.2.7 POC Test Plan (Phase 0)
+
+[width="100%",cols="34%,33%,33%",options="header",]
+|===
+|Step |Activity |Pass Criteria
+|1 |Install Docling; convert 10 representative CDs |All 10 produce DoclingDocument output
+|2 |Run standard + VLM pipelines; compare output |Document which pipeline is better for CDs
+|3 |Build field extractor for 37 key HMDA fields on CD |Extractor produces values for ≥30 of 37 fields
+|4 |Compute AFC on 50-document sample |AFC distribution: ≥60% of fields above 0.85
+|5 |Trigger cloud OCR fallback on POOR/FAIR pages |Fallback improves AFC on ≥80% of affected fields
+|6 |Measure throughput on 100-page batch |≥50 pages/minute on target hardware
+|7 |Test on degraded scans (photocopies, faxes) |Document fallback rate and AFC distribution
+|8 |End-to-end: CD → extracted fields → schema mapping |Full pipeline completes without errors
+|===
+
+*Go criteria:* ≥85% precision on key HMDA fields at AFC ≥ 0.85 threshold. *Kill criteria:* <70% precision at AFC ≥ 0.85 OR fallback rate >40% on representative corpus.
+
+*DECISION LOCKED:* Docling baseline + cloud OCR fallback + AuditIQ Field Confidence layer. See Section 19.2.
+
+*Determinism:* Deterministic within a Docling version + field extractor version. Same document + same versions = same extraction + same AFC. All versions logged as provenance.
+
+=== 10.3 Schema Mapping Service
+
+*Responsibilities:* - Suggest field-level mappings between MISMO-aligned canonical target schema (see Section 11.2) and source schema (customer-uploaded data from LOS, CSV, or document extraction) - Validate that target field references exist in the `mismo_dictionary` (or use `custom:` namespace) - Produce two-layer confidence scores for each suggestion (raw signals + calibrated decision score) - Clearly demarcate CD-supported fields (~10–20% auto-mappable at ≥0.85) vs. fields requiring additional document types or manual entry - Provide UI for human review and override with confidence-based routing - Version and store approved mappings; feed override data back into calibration
+
+____
+*Scope constraint (per Schema Mapping Strategy Report):* HMDA LAR spans 48 data points → ~110 fields, with 37 ``key HMDA data fields'' (Fed CA Letter 18-9). Closing Disclosure (CD) documents alone cover only ~10–20% of these at ≥0.85 auto-mappable confidence. MVP must explicitly label fields as ``CD-supported,'' ``requires 1003/URLA,'' ``requires appraisal,'' or ``manual entry required.''
+____
+
+==== 10.3.1 Matching Algorithm (Phase 1 — Hybrid Heuristic)
+
+The matcher uses a COMA-style combination of multiple independent signals, weighted to produce a raw mapping confidence:
+
+* *Name similarity (0.30):* Levenshtein distance + Jaccard token overlap on field names, boosted by MISMO field description matching (uses `mismo_dictionary.description`)
+* *HMDA/CD synonym dictionary (0.25):* Curated domain-specific equivalence table mapping known HMDA field names to CD label variants, abbreviations, and industry synonyms (e.g., `loan_type` ↔ `mortgage_product`, `prop_addr` ↔ `property_address`)
+* *Type compatibility (0.20):* Target (MISMO) and source types must be compatible; MISMO enum fields validated against `mismo_dictionary.enum_values`
+* *Document-section context (0.15):* Boost confidence when source field appears in expected document section (e.g., loan amount in CD page 1, Section J)
+* *Historical acceptance (0.10):* If this mapping has been approved before by any reviewer in this tenant, confidence += up to 0.10 (decayed by recency)
+
+*Mapping Pattern Taxonomy (5 types):*
+
+[width="100%",cols="34%,33%,33%",options="header",]
+|===
+|Pattern |Example |Signal Used
+|Exact name match |`loan_amount` → `loan_amount` |Name similarity = 1.0
+|Abbreviation mismatch |`prop_addr` → `property_address` |Synonym dictionary
+|Synonym |`loan_type` → `mortgage_product` |Synonym dictionary
+|Derived field |`ltv_ratio` (computed) |Rule engine; flagged as ``derived'' not ``mapped''
+|Multi-source field |`total_income` (W-2 + 1003 + pay stubs) |Flagged as ``Phase 2: requires additional documents''
+|===
+
+==== 10.3.2 Two-Layer Confidence Design
+
+*Layer 1 — Raw signals (produced per mapping suggestion):*
+
+....
+conf_mapping = (
+  (name_sim * 0.30) +
+  (synonym_match * 0.25) +
+  (type_compat * 0.20) +
+  (doc_section_context * 0.15) +
+  (historical_acceptance * 0.10)
+)
+....
+
+where each component is normalized to [0.0, 1.0].
+
+Additional raw signals passed to Layer 2: - `conf_extraction`: AFC score from Section 10.2 (how confident we are in the extracted value) - `conf_rule`: Business rule pass/fail from Section 10.5 (does the mapped value pass validation?)
+
+*Layer 2 — Calibrated decision score:* - Combines `conf_mapping`, `conf_extraction`, and `conf_rule` into a single calibrated probability - Phase 1: Temperature scaling on logistic regression of Layer 1 signals (requires ≥200 labeled mapping decisions for initial calibration) - Phase 2: Isotonic regression for non-parametric calibration (requires ≥500 labeled decisions) - Calibration validation: Reliability diagrams (predicted confidence vs. actual accuracy in 10 bins); Expected Calibration Error (ECE) must be ≤0.05
+
+*Routing thresholds (calibrated score):* - ≥0.90: Auto-accept (reviewer sees green checkmark; ~10s visual confirmation) - 0.60–0.90: Human review required (reviewer evaluates suggestion; ~45s per field) - <0.60: Manual mapping required (no suggestion shown; reviewer selects from field list)
+
+==== 10.3.3 Input/Output Contracts
+
+[source,typescript]
+----
+interface MappingRequest {
+  auditId: string;
+  targetSchema: FieldDefinition[];        // MISMO-aligned target fields
+  sourceSchema: FieldDefinition[];         // Extracted source fields with AFC scores
+  packId: string;
+  userId: string;
+  documentTypes: string[];                 // e.g., ["closing_disclosure", "1003_urla"]
+}
+
+interface MappingSuggestion {
+  targetFieldId: string;
+  suggestedSourceFieldId: string;
+  confMapping: number;                     // Layer 1 raw mapping confidence
+  confExtraction: number;                  // AFC score from extraction
+  confRule: number;                        // Business rule confidence
+  calibratedScore: number;                 // Layer 2 calibrated decision score
+  routingDecision: 'auto_accept' | 'human_review' | 'manual_entry';
+  matchingPattern: 'exact' | 'abbreviation' | 'synonym' | 'derived' | 'multi_source';
+  matchingReason: string;                  // Human-readable explanation
+  alternativeSuggestions: MappingSuggestion[]; // Top 2 alternatives
+  documentCoverage: 'cd_supported' | 'requires_1003' | 'requires_appraisal' | 'requires_title' | 'manual_only';
+}
+
+interface ApprovedMapping {
+  auditId: string;
+  mappingId: string;
+  targetFieldId: string;
+  sourceFieldId: string;
+  approvedBy: string;                      // userId
+  approvedAt: string;                      // ISO 8601 timestamp
+  disposition: 'accepted' | 'overridden' | 'manual';
+  overrideReason?: string;                 // Required if disposition = 'overridden'
+  originalSuggestionId?: string;           // Links back to suggestion for calibration feedback
+  calibratedScoreAtDecision: number;       // Captures score at time of decision for recalibration
+  versionHash: string;                     // For reproducibility tracking
+  matcherVersion: string;                  // Matcher algorithm version for determinism
+  synonymDictVersion: string;              // Dictionary version for reproducibility
+}
+----
+
+==== 10.3.4 Synonym Dictionary Management
+
+The HMDA/CD synonym dictionary is a versioned JSON artifact stored alongside pack definitions:
+
+[source,typescript]
+----
+interface SynonymEntry {
+  canonical: string;          // MISMO field ID (e.g., "mismo:LoanAmount")
+  synonyms: string[];         // Known equivalents (e.g., ["loan_amt", "mortgage_amount", "principal_balance"])
+  context?: string;           // Document type where this synonym is expected (e.g., "closing_disclosure")
+  confidence_boost: number;   // Additional confidence when synonym matches (typically 0.15–0.25)
+}
+----
+
+* Dictionary stored in version control; pack creators can propose additions via PR
+* Reviewed quarterly; auto-additions from reviewer overrides (when override rate >10% for a specific field pair, propose as new synonym)
+* Initial dictionary: ~150 entries covering 37 key HMDA data fields across CD, 1003, and common LOS exports
+
+==== 10.3.5 Reviewer Burden Model
+
+[cols=",,,",options="header",]
+|===
+|Scenario |Fields |Override Rate |Est. Session Time
+|CD-only, good extraction |~15–20 CD fields |10–15% |8–12 min
+|CD-only, mixed extraction |~15–20 CD fields |20–30% |15–25 min
+|Full HMDA (Phase 2) |~110 fields |15–25% |30–45 min
+|===
+
+Target: ≤25% override rate on CD-supported fields by end of Phase 1b UAT.
+
+==== 10.3.6 UI Workflow
+
+[arabic]
+. System presents mappings grouped by confidence tier (auto-accept → review → manual)
+. Auto-accept mappings shown as confirmed with green indicators; reviewer can still override
+. Review-tier mappings highlighted in yellow; reviewer must explicitly accept or override
+. Manual-entry fields shown in red with empty mapping; reviewer selects from searchable field list
+. Fields clearly labeled with `documentCoverage` badge (e.g., ``CD-supported'' vs. ``Requires 1003'')
+. Override decisions captured with reason and fed back into calibration pipeline
+. Same pack version + matcher version + synonym dictionary version + approved mappings = reproducible across audit runs
+
+*Determinism:* Deterministic for a given matcher version, synonym dictionary version, and input schemas.
+
+*DECISION LOCKED:* Hybrid heuristic matcher with two-layer confidence for v1. See Section 19.3 (Decision D2) for go/kill criteria and Phase 2 upgrade path.
+
+*Phase 2 upgrade path:* Embedding-based candidate expansion → LLM-based reranking → LogMap ontology track → isotonic regression calibration.
+
+=== 10.4 Normalization Engine
+
+*Responsibilities:* - Standardize values before comparison (remove formatting, case, whitespace) - Coerce types (string to decimal, date string to ISO 8601) - Apply format rules defined in pack
+
+*Normalization rules (pack-defined):*
+
+[source,json]
+----
+{
+  "field_normalizations": [
+    {
+      "field_id": "loan_amount",
+      "type": "decimal",
+      "rules": [
+        "remove_currency_symbols",
+        "remove_thousands_separators",
+        "round_to_2_decimals"
+      ]
+    },
+    {
+      "field_id": "property_address",
+      "type": "string",
+      "rules": [
+        "uppercase",
+        "remove_extra_whitespace",
+        "normalize_state_abbrev"
+      ]
+    },
+    {
+      "field_id": "loan_origination_date",
+      "type": "date",
+      "rules": ["parse_to_iso8601", "normalize_timezone_utc"]
+    }
+  ]
+}
+----
+
+*Determinism:* Deterministic — same input + same rules = same output.
+
+=== 10.5 Comparison & Rules Engine
+
+*Responsibilities:* - Load pack comparison rules - Execute rules against normalized target and source values - Generate findings with confidence and severity scores - Support rule types: exact match, tolerance, conditional, lookup, cross-field
+
+*Rule execution (deterministic):*
+
+[source,typescript]
+----
+interface ComparisonContext {
+  targetRecord: object; // Normalized target values
+  sourceData: object; // Normalized extracted/matched source values
+  mappings: FieldMapping[]; // Approved mappings
+  packId: string;
+  packVersion: string;
+}
+
+interface ComparisonRule {
+  rule_id: string;
+  target_field: string;
+  comparison_type: 'exact_match' | 'tolerance_absolute' | 'tolerance_percentage' | ...;
+  tolerance?: { value: number, unit: string };
+  condition?: string; // Precondition (if any)
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'informational';
+  regulation_citation: string;
+}
+
+interface FindingOutput {
+  finding_id: string; // UUID
+  audit_id: string;
+  record_id: string;
+  rule_id: string;
+  target_field: string;
+  target_value: any;
+  source_value: any;
+  match_result: 'match' | 'mismatch' | 'unable_to_determine';
+  mapping_confidence: number; // 0.0–1.0
+  extraction_confidence: number; // 0.0–1.0
+  rule_confidence: number; // 0.0–1.0
+  combined_confidence: number; // min(mapping, extraction, rule) unless N/A
+  severity: string;
+  regulation_citation: string;
+  generated_at: timestamp;
+  generated_by_engine: 'rules_engine' | 'ai_generated';
+}
+----
+
+*Execution performance target:* ≥500 records/minute for structured data (record-to-record).
+
+*Determinism:* Fully deterministic. Same inputs → same findings.
+
+=== 10.6 Findings Management Service
+
+*Responsibilities:* - Create, retrieve, update findings - Manage finding lifecycle (IDENTIFIED → TRIAGED → … → CLOSED) - Track remediation, corrective actions, evidence - Enforce segregation of duties (reviewers cannot close own findings) - Generate escalation events for aging findings
+
+*Finding lifecycle state machine:*
+
+....
+IDENTIFIED
+  ↓ (reviewer triages)
+TRIAGED
+  ↓ (root cause identified, owner assigned)
+REMEDIATION_ASSIGNED
+  ↓ (owner corrects; reviewer confirms)
+CORRECTED
+  ↓ (manager retests)
+RETEST_PENDING → RETEST_PASSED
+  ↓
+CLOSED
+
+(At any stage: DISMISSED with justification)
+....
+
+*Data model:*
+
+[source,typescript]
+----
+interface Finding {
+  finding_id: string;
+  audit_id: string;
+  record_id: string;
+  field_id: string;
+  status: FindingStatus;
+  severity: 'critical' | 'high' | 'medium' | 'low' | 'informational';
+  combined_confidence: number;
+
+  // Comparison details
+  target_value: any;
+  source_value: any;
+  rule_id: string;
+  regulation_citation: string;
+
+  // Triage & remediation
+  triaged_by: userId;
+  triaged_at: timestamp;
+  root_cause: string;
+  remediation_owner: userId;
+  due_date: date;
+
+  // Corrective action
+  corrective_action: string;
+  corrective_action_evidence: EvidenceRef[];
+  corrected_at: timestamp;
+
+  // Retest
+  retested_by: userId;
+  retest_result: 'passed' | 'failed';
+  retest_date: timestamp;
+
+  // Closure
+  closed_by: userId;
+  closed_at: timestamp;
+  resolution: string;
+
+  // Audit trail
+  status_transitions: StatusTransition[];
+  created_at: timestamp;
+}
+
+interface StatusTransition {
+  from_status: FindingStatus;
+  to_status: FindingStatus;
+  changed_by: userId;
+  changed_at: timestamp;
+  reason?: string;
+  event_id: string; // Links to audit trail event
+}
+----
+
+*Segregation of duties:* Before closing a finding, system checks: if current_user == created_by, then deny with error message and log violation attempt.
+
+
+[cols="1,2",options="header"]
+|===
+|*Escalation rules (configurable):* |Severity
+|Days Untriaged |Escalation Path
+|– |Critical
+|1 |Manager notification + audit log
+|High |3
+|Manager notification |Medium
+|7 |Email notification to owner
+|Low |14
+|===
+
+
+=== 10.7 Evidence & Attachment Service
+
+*Responsibilities:* - Accept document, image, and note attachments - Compute and store SHA-256 hash for integrity verification - Maintain chain-of-custody metadata - Implement append-only semantics (new versions do not modify originals) - Enable full-text search on evidence content
+
+*Chain-of-custody metadata:*
+
+[source,typescript]
+----
+interface EvidenceRecord {
+  evidence_id: string;
+  audit_id: string;
+  finding_id?: string; // If attached to finding
+  uploaded_by: userId;
+  uploaded_at: timestamp;
+  filename: string;
+  file_size_bytes: number;
+  mime_type: string;
+  sha256_hash: string; // For tamper detection
+
+  // Metadata
+  document_classification: 'closing_disclosure' | 'loan_estimate' | 'urla' | 'other';
+  source_system?: string; // e.g., 'loan_origination_system'
+
+  // Version control
+  superseded_by?: evidence_id; // If this evidence was replaced
+  supersedes?: evidence_id; // If this supersedes an older version
+
+  // Search & retrieval
+  full_text_indexed: boolean;
+  s3_path: string;
+
+  // Audit trail link
+  audit_event_id: string; // Immutable link to event store
+}
+----
+
+*Append-only semantics:* When a user ``replaces'' an evidence file, the system: 1. Stores the new file with a new evidence_id 2. Creates a ``supersedes'' link from new to old 3. Marks the original as visible in history (never deleted) 4. Audit trail records both the original and the replacement
+
+=== 10.8 Audit Trail & Event Store (Immutable Log)
+
+*Responsibilities:* - Record every state change as an immutable, hash-chained event with RFC 8785 canonical JSON serialization - Maintain global monotonic sequence IDs (per-tenant) for gap and reorder detection - Produce cryptographic anchor points at configurable intervals for tamper resistance - Support querying events by audit, finding, user, date range - Enable audit replay for investigations and regulator exam response - Support litigation defensibility via FRE Rule 902(13)/(14) self-authentication
+
+____
+*Critical design requirement (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient. An attacker with database write access can rewrite the entire chain. This design adds three mandatory layers: (1) RFC 8785 canonical JSON serialization for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points that cannot be silently rewritten. See Section 19.4 (Decision D3) for design tier rationale.
+____
+
+==== 10.8.1 Event Schema
+
+[source,typescript]
+----
+interface AuditEvent {
+  event_id: string;                    // UUID v7 (time-ordered)
+  tenant_id: string;                   // Tenant isolation boundary
+  sequence_id: number;                 // Global monotonic per tenant (NOT per audit)
+  timestamp: string;                   // Server-assigned ISO 8601; client timestamps rejected
+  audit_id: string;
+  entity_type: 'finding' | 'mapping' | 'evidence' | 'audit_run' | 'user_action' | 'ai_action' | 'system';
+  entity_id: string;
+
+  event_type: string;                  // e.g., 'FindingCreated', 'FindingTriaged', 'FindingClosed'
+  actor_id: string;                    // userId or system principal
+  actor_role: string;
+
+  // Event payload — MUST be serializable via RFC 8785
+  payload: object;
+
+  // Tamper evidence (hash chain)
+  previous_event_hash: string;         // SHA-256 of RFC 8785-canonicalized predecessor event
+  event_hash: string;                  // SHA-256 of RFC 8785-canonicalized THIS event
+
+  // Cryptographic anchor (populated on anchor events only)
+  is_anchor: boolean;                  // True every N events (configurable; default N=100)
+  anchor_hash?: string;                // If is_anchor: hash written to WORM storage
+
+  // Metadata
+  source_system: string;               // e.g., 'comparison_engine', 'audit_ui', 'remediation_workflow'
+  api_version: string;
+  schema_version: string;              // Event schema version for forward compatibility
+}
+----
+
+==== 10.8.2 RFC 8785 Canonical JSON Serialization
+
+*MANDATORY:* All event payloads MUST be serialized using RFC 8785 (JSON Canonicalization Scheme) before hashing. This ensures: - Deterministic key ordering (lexicographic) - Consistent number formatting (no trailing zeros, no positive sign) - Consistent Unicode normalization - No optional whitespace
+
+....
+canonical_json = RFC8785.canonicalize(event_without_hash_fields)
+event_hash = SHA-256(canonical_json)
+....
+
+*Implementation requirement:* Use a well-tested RFC 8785 library (e.g., `canonicalize` npm package or equivalent). Do NOT hand-roll canonical JSON — edge cases (Unicode escaping, number precision, key ordering with special characters) are subtle and produce silent hash mismatches.
+
+*Write-time validation:* Every event MUST pass round-trip verification before persistence:
+
+....
+assert(RFC8785.canonicalize(JSON.parse(RFC8785.canonicalize(event))) === RFC8785.canonicalize(event))
+....
+
+==== 10.8.3 Hash Chain Computation
+
+....
+event_hash = SHA-256(
+  RFC8785.canonicalize({
+    event_id, tenant_id, sequence_id, timestamp, audit_id,
+    entity_type, entity_id, event_type, actor_id, actor_role,
+    payload, previous_event_hash, source_system, api_version, schema_version
+  })
+)
+....
+
+*Chain rules:* - First event in tenant chain: `previous_event_hash = SHA-256("GENESIS:" + tenant_id)` - Each subsequent event: `previous_event_hash = event_hash` of the immediately preceding event (by sequence_id) - Gap in sequence_id → chain is broken → alert + investigation required
+
+==== 10.8.4 Cryptographic Anchor Points
+
+Every N events (default N=100, configurable per tenant), the system writes an *anchor event*: - `is_anchor = true` - `anchor_hash` = SHA-256 of the event_hash at this point - Anchor hash is written to *WORM storage* (e.g., AWS S3 Object Lock, Azure Immutable Blob) — cannot be overwritten or deleted during retention period - Anchor verification: compare stored anchor hash against recomputed hash from event chain; mismatch = tampering detected
+
+*Phase 2 upgrade:* Replace WORM anchors with KMS-signed checkpoint events (AWS KMS, Azure Key Vault) for non-repudiation and litigation support under FRE 902(13)/(14).
+
+==== 10.8.5 Operational Integrity Controls (NIST AU-9 / FFIEC)
+
+Per NIST SP 800-53 Rev 5 AU-9 and FFIEC IT Examination Handbook:
+
+* *No admin delete:* Database roles for audit_trail schema must NOT include DELETE permission; enforced at PostgreSQL role level
+* *Separate storage:* Audit trail stored in dedicated schema/database; not co-located with application data that admins routinely modify
+* *Read-only access for audit:* Regulator/auditor access via read-only database replica or export; no write access to production audit trail
+* *Retention:* Minimum 7 years (configurable per tenant; aligned with NIST AU-11); events never purged during retention window
+* *Backup verification:* Weekly automated restore-and-verify of audit trail backup; hash chain re-verified on restored data
+
+==== 10.8.6 Event Store Table
+
+[source,sql]
+----
+CREATE TABLE audit_trail.events (
+  event_id UUID PRIMARY KEY,
+  tenant_id UUID NOT NULL,
+  sequence_id BIGINT NOT NULL,              -- Global monotonic per tenant
+  audit_id UUID NOT NULL,
+  timestamp TIMESTAMPTZ NOT NULL,           -- Server-assigned only
+  entity_type VARCHAR(50) NOT NULL,
+  entity_id VARCHAR(255) NOT NULL,
+  event_type VARCHAR(100) NOT NULL,
+  actor_id VARCHAR(255) NOT NULL,
+  actor_role VARCHAR(50) NOT NULL,
+  payload JSONB NOT NULL,                   -- Must be RFC 8785-serializable
+  previous_event_hash VARCHAR(64) NOT NULL,
+  event_hash VARCHAR(64) NOT NULL UNIQUE,
+  is_anchor BOOLEAN DEFAULT FALSE,
+  anchor_hash VARCHAR(64),                  -- Populated only when is_anchor = true
+  source_system VARCHAR(100) NOT NULL,
+  api_version VARCHAR(20) NOT NULL,
+  schema_version VARCHAR(20) NOT NULL DEFAULT '1.0',
+  UNIQUE (tenant_id, sequence_id),          -- Enforces monotonic per tenant
+  FOREIGN KEY (audit_id) REFERENCES audits(audit_id)
+);
+
+-- Performance indexes
+CREATE INDEX idx_audit_events ON audit_trail.events(audit_id, timestamp);
+CREATE INDEX idx_entity_events ON audit_trail.events(entity_id);
+CREATE INDEX idx_actor_events ON audit_trail.events(actor_id);
+CREATE INDEX idx_tenant_sequence ON audit_trail.events(tenant_id, sequence_id);
+CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE is_anchor = TRUE;
+
+-- CRITICAL: No DELETE permission on this schema
+-- REVOKE DELETE ON audit_trail.events FROM app_role;
+-- REVOKE TRUNCATE ON audit_trail.events FROM app_role;
+----
+
+==== 10.8.7 Tamper Detection & Verification
+
+*Chain verification tool (MVP — Phase 1a):*
+
+* CLI tool that reads entire tenant event chain and verifies: 1. Every `event_hash` matches recomputed SHA-256 of RFC 8785-canonicalized event 2. Every `previous_event_hash` matches `event_hash` of preceding event (by sequence_id) 3. No gaps in sequence_id 4. All anchor hashes match WORM-stored values
+* Output: ``OK'' or list of corrupted/missing events with sequence_id range
+
+*Periodic integrity check (automated):*
+
+* Daily: Verify last 24 hours of events (chain continuity + hash correctness)
+* Weekly: Full chain verification for each tenant
+* On anchor write: Verify chain from previous anchor to current anchor before writing to WORM
+
+*Snapshot integrity (see Section 20):* - When snapshots are materialized, compute snapshot hash and store in event stream - Periodic re-materialization from events; compare against stored snapshot hash; mismatch = drift alert
+
+=== 10.9 Reporting Service
+
+*Responsibilities:* - Generate pack-specific reports from findings - Support AI-assisted narrative generation - Enforce mandatory human approval for AI content - Export in multiple formats (PDF, CSV, XLSX, JSON)
+
+*Report generation flow:* 1. Admin or Manager initiates report generation 2. System loads pack report template 3. Findings data is aggregated per template sections 4. For AI-narrative sections: - AI generates draft labeled ``[AI-DRAFT — REQUIRES APPROVAL]'' - Manager reviews and approves - Approved narrative embedded in report 5. Report finalized, exported, and stored immutably
+
+*Report template (pack-defined):*
+
+[source,json]
+----
+{
+  "template_id": "hmda-audit-report-v1",
+  "sections": [
+    {
+      "section_id": "executive_summary",
+      "title": "Executive Summary",
+      "content_type": "static",
+      "template": "Total records audited: {total_records}. Findings: {critical_count} Critical, {high_count} High..."
+    },
+    {
+      "section_id": "findings_detail",
+      "title": "Detailed Findings",
+      "content_type": "dynamic",
+      "data_source": "findings_register",
+      "render_as": "table"
+    },
+    {
+      "section_id": "summary_narrative",
+      "title": "Audit Summary Narrative",
+      "content_type": "ai_generated",
+      "ai_prompt": "Summarize the audit findings, root causes, and remediation status in 200–300 words.",
+      "requires_approval": true
+    }
+  ]
+}
+----
+
+*Export formats:*
+
+* *PDF:* Formatted report, ready for printing and exam submission
+* *CSV:* Flat table of findings with all metadata fields
+* *XLSX:* Excel format with formatting, multiple sheets (findings, summary, metrics)
+* *JSON:* Machine-readable export for API consumers
+
+=== 10.10 Reporting Service Output Contracts
+
+*Report output:*
+
+[source,typescript]
+----
+interface GeneratedReport {
+  report_id: string;
+  audit_id: string;
+  generated_at: timestamp;
+  generated_by: userId;
+  approval_status: 'draft' | 'approved' | 'finalized';
+  approved_by?: userId;
+  approved_at?: timestamp;
+
+  content: {
+    sections: ReportSection[];
+    metadata: ReportMetadata;
+  };
+
+  formats: {
+    pdf: s3_path;
+    csv: s3_path;
+    xlsx: s3_path;
+    json: s3_path;
+  };
+
+  audit_trail_link: event_id; // Link to immutable event
+}
+
+interface ReportSection {
+  section_id: string;
+  title: string;
+  content: string; // HTML or Markdown
+  ai_generated: boolean;
+  ai_approval_status?: 'pending_approval' | 'approved' | 'rejected';
+  ai_approval_comments?: string;
+}
+----
+
+=== 10.11 RBAC & Permission Matrix
+
+*Roles and permissions:*
+
+[width="100%",cols="30%,70%",options="header",]
+|===
+|Role |Capabilities
+|*Reviewer* |Create findings, mark as confirmed/discrepancy. Cannot approve findings, close findings, or generate reports. Cannot view other reviewers’ work.
+|*Senior Reviewer* |As Reviewer, plus: approve findings, triage findings, assign remediation. Cannot generate reports.
+|*Manager* |Full audit oversight: create audit runs, approve/reject findings, generate and approve reports, view all audit data. Cannot modify audit pack definitions.
+|*Audit Lead* |As Manager, plus: manage second-review assignments, configure escalation rules. Cannot edit audit pack definitions.
+|*Executive* |Read-only dashboard access: view findings, metrics, trends, reports. Cannot create or modify findings.
+|*IT Admin* |Tenant administration: user management, audit log access, SSO configuration, backup management. Cannot view audit data.
+|===
+
+*Permission enforcement:* Implemented via API gateway middleware (every request is checked against user role and resource ownership before processing).
+
+*Segregation of duties enforcement:* - Reviewer cannot close own findings (query: `finding.created_by != current_user`) - Reviewer cannot approve own findings (query: `finding.created_by != current_user`) - Senior Reviewer cannot retest own triages (query: `finding.triaged_by != current_user`)
+
+=== 10.12 AI Governance & Approval Workflow
+
+*Core principle:* Every AI output is advisory, non-finalized, and requires explicit human approval before inclusion in official records.
+
+*AI output categories:*
+
+[arabic]
+. *Extracted values (OCR/Docling):* Labeled ``AI-extracted (advisory)'' in UI. Recommendation to use: > High confidence (≥0.85) can be pre-confirmed; lower values require manual verification.
+. *Mapping suggestions:* System suggests field pairings. Reviewer approves, rejects, or overrides. Approved mappings versioned and reusable.
+. *AI-generated narratives:* Audit summary, root cause analysis, remediation recommendations. Generated on-demand with explicit approval workflow:
+* Draft labeled ``[AI-DRAFT — REQUIRES APPROVAL]''
+* Manager reviews and approves or rejects
+* Approved version embedded in report
+* Rejected version discarded; Manager can request new draft
+. *Rule generation (TBD Phase 2):* System suggests new comparison rules from discovered patterns. Requires explicit pack author review before deployment.
+
+*Approval workflow contract:*
+
+[source,typescript]
+----
+interface AIOutputApprovalRequest {
+  output_id: string;
+  output_type: 'extraction' | 'mapping' | 'narrative' | 'rule';
+  audit_id: string;
+  content: string;
+  model_version: string;
+  prompt?: string; // Transparency: include prompt used
+  confidence_score?: number;
+  approval_required_role: 'manager' | 'audit_lead' | 'pack_author';
+}
+
+interface AIOutputApprovalAction {
+  output_id: string;
+  approved_by: userId;
+  approval_status: 'approved' | 'rejected' | 'request_revision';
+  approval_comments: string;
+  approved_at: timestamp;
+  recorded_in_audit_trail: event_id;
+}
+----
+
+*Immutability:* Once approved, the AI output is frozen (cannot be modified). If a Manager rejects and requests revision, the system generates a new output with a new output_id, creating an audit trail of iterations.

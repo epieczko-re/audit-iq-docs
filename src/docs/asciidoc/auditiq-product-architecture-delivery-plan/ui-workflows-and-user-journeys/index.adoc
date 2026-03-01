@@ -1,0 +1,170 @@
+== Section 23: UI Workflows and User Journeys
+
+____
+*v0.2 Addition.* This section defines the primary user workflows through the AuditIQ system. Each workflow is represented as a flowchart diagram showing user actions, system actions, AI actions, decision points, and audit trail integration. These workflows serve as the foundation for screen design and front-end sprint planning.
+
+*Color Legend:*
+
+* *Blue* = User actions (auditor/reviewer interactions)
+* *Purple* = System actions (deterministic processing)
+* *Teal* = AI actions (LLM or ML-assisted)
+* *Orange* = Decision points (routing logic)
+* *Yellow* = Audit trail / governance controls
+* *Green* = Success / confirmed states
+* *Red* = Manual entry / end states
+____
+
+=== 23.1 Workflow 1: Audit Lifecycle (End-to-End)
+
+This is the primary happy-path workflow from login to exam-ready bundle export. It represents the complete user journey through a single audit.
+
+*Actors:* Auditor (primary), System, AI Engine *Trigger:* Auditor creates a new audit *End State:* Exam-ready bundle exported; all events immutable
+
+*Key Steps:*
+
+[arabic]
+. *Auditor logs in* → selects or creates a new audit
+. *Configure audit* — select pack template, define loan sample, date range, regulatory scope
+. *Upload documents* — Closing Disclosures, 1003s, appraisals, title documents
+. *Docling extraction + AFC scoring* — system converts documents and computes field-level confidence (Section 10.2)
+. *Schema mapping* — AI suggests field mappings; reviewer validates per two-layer confidence routing (Section 10.3)
+. *Rules engine scoring* — pack rules execute against extracted + mapped data (Section 10.4)
+. *AI drafts findings* — LLM generates narratives with citations (Section 10.7)
+. *Reviewer effective challenge* — approve, edit, or reject each finding (Section 22)
+. *Finalize audit* — lock scorecard, sign off
+. *Export exam-ready bundle* — structured ZIP with manifest, PDF reports, evidence, audit trail (Section 21)
+
+*Audit Trail:* Every step from extraction through finalization emits an immutable audit event (RFC 8785 + hash chain, Section 10.8).
+
+image:diagrams/workflow1_audit_lifecycle.png[Workflow 1: Audit Lifecycle]
+
+'''''
+
+=== 23.2 Workflow 2: Document Upload & Extraction (Docling + AFC)
+
+This workflow details the document processing pipeline from upload through field-level confidence routing.
+
+*Actors:* Auditor (upload), System (Docling, OCR, AFC), Reviewer (validation) *Trigger:* Auditor uploads one or more loan documents *End State:* All extracted fields confirmed (auto, reviewed, or manual) and ready for schema mapping
+
+*Key Steps:*
+
+[arabic]
+. *Upload* — drag-and-drop or batch upload of loan documents (PDF, TIFF, scanned images)
+. *Document classification* — system identifies document type (CD, 1003, Appraisal, Title, Other)
+. *Docling conversion* — PDF → structured JSON using Docling layout understanding engine
+. *OCR processing* — `docling-tesseract` (Apache 2.0) extracts text from scanned/image-based regions
+. *AFC score computation* — 5 weighted signals combined into composite score per field:
+* `docling_page_grade` (0.15) — page-level conversion quality
+* `ocr_segment_confidence` (0.25) — OCR engine’s own confidence
+* `pattern_validity` (0.25) — regex/format validation
+* `layout_anchor_consistency` (0.20) — positional stability vs. template
+* `cross_doc_redundancy` (0.15) — cross-document corroboration
+. *Confidence routing:*
+* *AFC ≥ 0.85* → auto-confirm (no human review needed)
+* *0.50 ≤ AFC < 0.85* → human review queue (reviewer validates or overrides)
+* *AFC < 0.50* → manual entry required (value too unreliable)
+. *Reviewer validates* — for human-review fields, reviewer sees extracted value + confidence + source highlight
+. *Field confirmed* → value passes to schema mapping
+
+*Design Reference:* Section 10.2, Decision D1 (Section 19.2)
+
+image:diagrams/workflow2_doc_extraction.png[Workflow 2: Document Upload & Extraction]
+
+'''''
+
+=== 23.3 Workflow 3: Schema Mapping Review (Two-Layer Confidence)
+
+This workflow details how extracted fields are mapped to the HMDA/MISMO target schema with AI assistance and human oversight.
+
+*Actors:* System (matcher), AI (calibration), Reviewer (approval) *Trigger:* Extracted fields arrive from Document Processing Service *End State:* All fields mapped to target schema; approved mappings feed into rules engine
+
+*Key Steps:*
+
+[arabic]
+. *Extracted fields arrive* — each field carries its AFC score and source document type
+. *Hybrid heuristic matcher* — computes mapping suggestions using 5 weighted signals:
+* `name_similarity` (0.30) — Jaro-Winkler or Levenshtein distance
+* `synonym_match` (0.25) — lookup against curated synonym dictionary
+* `type_compatibility` (0.20) — data type agreement
+* `document_section` (0.15) — expected location in document
+* `historical_mapping` (0.10) — previously approved mappings for this customer
+. *Layer 1 raw signals* — `conf_extraction`, `conf_mapping`, `conf_rule` computed independently
+. *Layer 2 calibrated score* — temperature scaling or isotonic regression combines Layer 1 into a single calibrated decision score
+. *Routing decision:*
+* *Calibrated ≥ 0.95* → auto-accept (mapping locked without review)
+* *0.70 ≤ calibrated < 0.95* → human review (reviewer sees suggestion + alternatives)
+* *Calibrated < 0.70* → manual entry (no reliable suggestion)
+. *Human review UI* — reviewer sees:
+* Suggested target field with confidence badge (green/yellow/red)
+* Matching pattern type (exact, abbreviation, synonym, derived, multi-source)
+* Alternative suggestions ranked by score
+* Source document coverage indicator (CD-supported vs. requires other docs)
+. *Reviewer action:*
+* *Accept* (~10s per field) — confirm suggestion
+* *Override* (~45s per field) — select alternative or type different mapping
+* *Manual entry* — type target field name directly
+. *Synonym dictionary update* — overrides optionally feed back to improve future matching
+. *Mapping approved* → field proceeds to rules engine scoring
+
+*Coverage Note:* With CD-only documents, expect ~10-20% of HMDA fields at ≥0.85 confidence. Full coverage requires 1003, appraisal, and title documents (Phase 2).
+
+*Design Reference:* Section 10.3, Decision D2 (Section 19.3)
+
+image:diagrams/workflow3_schema_mapping.png[Workflow 3: Schema Mapping Review]
+
+'''''
+
+=== 23.4 Workflow 4: Findings Review & Approval (AI Governance Controls)
+
+This workflow details the human oversight process for AI-generated findings, enforcing the AI governance red lines from Section 22.
+
+*Actors:* Rules Engine, AI (LLM), Reviewer (effective challenge) *Trigger:* Rules engine generates exceptions from scored data *End State:* Finding finalized with full provenance and effective challenge documentation
+
+*Key Steps:*
+
+[arabic]
+. *Rules engine fires* — pack rules evaluate mapped data; exceptions identified
+. *LLM drafts finding narrative* — generates human-readable description with citations to source documents
+. *AI label applied* — every AI-drafted finding carries mandatory disclaimer: _``AI-Drafted — Requires Human Verification''_
+. *AI provenance logged* — system records: `model_id`, `model_version`, `prompt_template_version`, `input_context_hash`, `timestamp`, `retrieval_corpus`, `token_counts`, `data_handling_flags`
+. *Finding enters review queue* — sorted by severity and confidence
+. *Reviewer opens finding* — sees AI label, evidence panel, source document highlights
+. *Effective challenge* — reviewer must independently verify finding against source documents (SR 11-7 requirement)
+. *Reviewer disposition:*
+* *Approve* — confirm AI draft is accurate; finding becomes part of official record
+* *Edit* — modify narrative, severity, or scope; system captures diff
+* *Reject* — flag as false positive / not applicable; must provide rationale
+. *Document challenge* — system captures:
+* `effective_challenge_notes` — reviewer’s independent verification reasoning
+* `disposition` — approve / edit / reject
+* `output_diff` — if edited, what changed from AI draft
+. *Audit event created* — `human_approval` event with full provenance chain
+. *Finding finalized* → appears on scorecard
+
+*RED LINES (Section 22.1.4):* - No AI output enters the official audit record without explicit human approval - AI output must never be represented as definitive conclusions - Reviewer is responsible for accuracy of any approved finding
+
+*Required Disclaimers (Section 22.1.3):* - ``This content was drafted by an AI assistant and requires human verification before use'' - ``AI-generated content may contain inaccuracies — reviewer is responsible for verifying accuracy'' - ``This finding has been reviewed and approved by [reviewer name] on [date]''
+
+*Design Reference:* Section 10.7, Section 22, Decision D1–D3
+
+image:diagrams/workflow4_findings_review.png[Workflow 4: Findings Review & Approval]
+
+'''''
+
+=== 23.5 UI Development Strategy
+
+____
+*Dual-track development:* AuditIQ follows both UI-driven and API-driven development practices. The workflows above define the user journeys; the API contracts in Section 10 define the backend interfaces. Screen designs (Phase 2 of this section) will be developed from these workflows.
+____
+
+*Phase 1 — Workflow Diagrams (this section):* - End-to-end audit lifecycle - Document extraction + AFC routing - Schema mapping review with two-layer confidence - Findings review with AI governance controls
+
+*Phase 2 — Interactive Screen Wireframes (planned):* - Audit dashboard (create, manage, monitor audits) - Document upload + extraction review screen (AFC confidence badges, field-level review) - Schema mapping review screen (suggestion cards, confidence routing, synonym management) - Findings review + approval screen (effective challenge, AI labels, provenance panel) - Exam bundle export screen (manifest preview, format options)
+
+*Design Principles:* - Confidence is visible everywhere — color-coded badges (green ≥0.85, yellow 0.50-0.85, red <0.50) - AI provenance is always one click away — every AI-generated element links to its provenance record - Effective challenge is enforced by design — reviewer cannot approve without documenting their independent verification - Audit trail is ambient — every action generates an event; users see event count and last-event timestamp per artifact
+
+'''''
+
+END OF SECTIONS 13–23
+
+_End of Document_

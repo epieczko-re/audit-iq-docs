@@ -1,0 +1,33 @@
+# Output files
+output/
+*.html
+*.pdf
+*.docx
+*.xml
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/workspace.xml
+.idea/tasks.xml
+*.iws
+
+# Build artifacts
+.sass-cache/
+.asciidoctor/
+
+# Logs
+*.log
+*.pdf
+*.docx
+
+# Reference template (if contains proprietary content)
+# themes/riskexec-reference.docx

@@ -1,0 +1,64 @@
+== Section 13: Pricing and Packaging
+
+=== 13.1 Market Context: ACES Pricing Intelligence
+
+Based on survey and interview data from ~141 customers (Source: Internal ACES Pricing Study v0.1):
+
+[cols=",",options="header",]
+|===
+|Metric |Value
+|Average Contract Value (ACV) |$135,000 / year
+|Pricing Range |$3,300 – $27,500 / month
+|Median Deployment Size |Mid-to-large regional banks; credit unions
+|Primary Driver |Risk volume + regulatory jurisdiction complexity
+|===
+
+=== 13.2 RiskExec Baseline & AuditIQ Uplift Strategy
+
+*RiskExec current market baseline:*
+
+* ACV: ~$40,000/year for core risk analytics platform
+* Modules: Enterprise risk dashboard, regulatory reporting, model governance
+* Growth: Existing customer base; limited new module uptake
+
+*AuditIQ positioning & uplift target:*
+
+* Expected ACV uplift: *20–30% of RiskExec base* for customers adopting audit automation
+* Rationale: Reduces audit labor cost by ~40% per engagement; enables higher audit frequency
+* Target: $8,000–$12,000/year add-on to RiskExec contracts (or standalone for new audit-first prospects)
+
+=== 13.3 Pricing Model (PLACEHOLDER – Decisions Needed)
+
+*DECISION LOCKED (D6):* Pricing model framework TBD pending:
+1. *Tier structure:* Usage-based (audits/year), volume-based (loans audited), or seat-based?
+2. *Monetization of packs:* Do customers pay per pack? Per version? Tiered by complexity?
+3. *AI/intelligence premium:* Separate SKU for copilot, predictive validation, adaptive learning?
+4. *Bundle with RiskExec:* Bundled discount vs. standalone pricing?
+5. *Professional services:* Implementation, training, custom pack development—separate P&M or included?
+
+
+[cols="1,2",options="header"]
+|===
+|*Placeholder tiers (for discussion only—NOT final):* |Tier
+|Target Customer |Est. ACV
+|Key Features |–
+|– |*Starter*
+|Community banks, tier-2 credit unions |$6K–$12K/year
+|Core audit workflow, 100 audits/year, 5 standard packs |*Professional*
+|Regional banks, large credit unions |$18K–$35K/year
+|+ Custom packs, 500 audits/year, Copilot, Advanced scoring |*Enterprise*
+|Large banks, holding companies, RiskExec customers |$40K–$75K/year
+|===
+
+
+*Exclusions (do NOT include in pricing):* - Data licensing (HMDA, regulatory feeds) – separate procurement - Regulatory audit/compliance services – partner model - White-label packs – not in v0.2 scope
+
+=== 13.4 What Must Be Decided (Pre-Launch)
+
+* ☐ Final tier structure and feature gates
+* ☐ Pack licensing model (bundled vs. à la carte)
+* ☐ Professional services pricing (day rates, implementation packages)
+* ☐ Discount structure for existing RiskExec customers
+* ☐ Annual vs. usage-based contract terms
+* ☐ Trial/freemium eligibility and limits
+* ☐ Geographic/regulatory pricing adjustments (if any)

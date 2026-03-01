@@ -1,0 +1,153 @@
+== 7. Product Requirements
+
+=== 7.1 Functional Requirements (Organized by Epics)
+
+==== Epic 1: Data Ingestion / Connectors
+
+[width="100%",cols="10%,27%,43%,20%",options="header",]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-1.1 |System shall accept target datasets via CSV upload, API endpoint, and cross-module transfer from existing RiskExec modules (HMDA, CRA). |Given a valid HMDA LAR CSV with 5,000 records, when uploaded, then all records are ingested within 60 seconds with 0 data loss and validation results displayed. |P0
+|FR-1.2 |System shall perform automated completeness and format validation on ingested datasets. |Given a CSV missing required columns, when uploaded, then system rejects with specific error listing missing columns. Given a CSV with malformed date values, when uploaded, then system flags affected rows with line numbers and expected format. |P0
+|FR-1.3 |System shall accept source documents in PDF, TIFF, JPEG, and PNG formats. |Given a multi-page PDF, when uploaded, then document is stored, classified, and available in the document viewer within 10 seconds per page. |P0
+|FR-1.4 |System shall support bulk document upload with batch classification. |Given a ZIP containing 50 mixed-format documents, when uploaded, then all documents are extracted, classified by type (CD, LE, URLA, etc.), and linked to target records via loan number matching. |P1
+|FR-1.5 |System shall enforce maximum file size limits: 100MB per single file, 1GB per batch upload. |Given a file exceeding 100MB, when upload is attempted, then system rejects with clear size limit message before upload begins (client-side validation). |P0
+|===
+
+*Deterministic boundary:* All ingestion operations are deterministic. The same input file always produces the same validated output. No AI is involved in ingestion.
+
+==== Epic 2: Document Extraction (Docling/OCR)
+
+[width="100%",cols="10%,27%,43%,20%",options="header",]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-2.1 |System shall process source documents through an OCR/document understanding pipeline (Docling baseline) to extract text, tables, and key-value pairs. |Given a standard Closing Disclosure PDF, when processed, then system extracts all key fields (loan amount, interest rate, property address, borrower name) with ≥85% field-level accuracy. |P0
+|FR-2.2 |Each extracted value shall carry an extraction confidence score (0.0–1.0). |Given an extracted loan amount, when displayed to reviewer, then confidence score is visible with color indicator (green ≥0.85, yellow 0.50–0.84, red <0.50). |P0
+|FR-2.3 |OCR output shall be presented as assistive/advisory in Phase 1, not authoritative. |Given any OCR-extracted value, when displayed, then it is visually labeled as ``AI-extracted (advisory)'' and cannot auto-finalize a finding without human confirmation. |P0
+|FR-2.4 |System shall provide a high-fidelity document viewer with page navigation, zoom, text search, and field highlight overlay. |Given a 50-page PDF, when opened in viewer, then page loads within 3 seconds, zoom works from 50% to 400%, text search returns results with highlighting, and extracted fields are overlaid with bounding boxes. |P0
+|FR-2.5 |System shall fall back to cloud OCR service when Docling extraction confidence is below 0.50 for >30% of key fields on a document. |Given a low-quality scanned document where Docling extracts <50% of fields at acceptable confidence, when fallback triggers, then system re-processes with cloud OCR (AWS Textract or equivalent) and logs the fallback event. |P1
+|===
+
+*Deterministic boundary:* OCR extraction is deterministic for a given model version and input. The same document processed with the same model version always produces the same extraction. Model version is logged as provenance metadata.
+
+*DECISION LOCKED:* Docling as baseline extraction engine; cloud OCR as fallback. See Section 19.1.
+
+==== Epic 3: Schema Mapping + Mapping UI
+
+[width="100%",cols="10%,27%,43%,20%",options="header",]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-3.1 |System shall automatically suggest field-level mappings between target and source schemas using confidence-scored matching. |Given HMDA LAR schema and CD extracted fields, when mapping is requested, then system suggests mappings for ≥80% of reportable fields with confidence scores. |P0
+|FR-3.2 |Each suggested mapping shall carry a mapping confidence score (0.0–1.0). |Given suggested mappings, when displayed in mapping UI, then each shows confidence score with threshold indicators: ≥0.85 auto-accept, 0.50–0.84 human review, <0.50 reject. |P0
+|FR-3.3 |System shall provide a mapping review UI for human approval, rejection, and override. |Given a list of suggested mappings, when reviewer opens mapping UI, then they can accept/reject each mapping, manually create new mappings, and save the approved mapping set as a versioned artifact. |P0
+|FR-3.4 |Approved mappings shall be versioned and reusable across audit runs within the same audit pack. |Given an approved mapping set for HMDA pack v1.0, when a new audit run uses the same pack version, then the approved mappings are pre-loaded and do not require re-approval. |P0
+|===
+
+*Deterministic boundary:* Schema mapping suggestions are deterministic for a given matcher version and input schemas. The same inputs always produce the same suggestions.
+
+*DECISION LOCKED:* Simple confidence-scored matcher for v1; LogMap prototype as parallel track. See Section 19.2.
+
+==== Epic 4: Audit Execution + Comparison Engine
+
+[width="100%",cols="10%,27%,43%,20%",options="header",]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-4.1 |System shall compare target values to source values using pack-defined rules after normalization. |Given a target record with loan_amount=250000 and source CD showing $250,000.00, when comparison runs, then normalization removes formatting and comparison finds exact match. |P0
+|FR-4.2 |Comparison shall support: exact match, tolerance-based match (absolute and percentage), conditional logic, cross-field validation, and lookup validation. |Given a tolerance rule of ±$0.01 for loan_amount, when target=250000.00 and source=250000.01, then comparison reports MATCH within tolerance. |P0
+|FR-4.3 |Audit runs shall be reproducible: identical inputs + pack version + configuration = identical outputs. Non-deterministic components (AI suggestions) are clearly separated. |Given two identical audit runs with same inputs and pack version, when compared, then deterministic outputs (findings from rules) are byte-identical. AI-generated narratives may differ but are labeled as non-deterministic. |P0
+|FR-4.4 |System shall generate findings with: target value, source value, triggering rule, confidence score, severity score, and regulatory citation. |Given a finding for Action Taken mismatch, when displayed, then all six attributes are present, with regulatory citation linking to 12 CFR 1003 section. |P0
+|FR-4.5 |Comparison engine shall process ≥500 records/minute for automated pre-scan against structured source data. |Given 5,000 HMDA records with structured source data, when automated pre-scan runs, then completion time is ≤10 minutes. |P1
+|===
+
+*Deterministic boundary:* The comparison engine is fully deterministic. Given identical normalized inputs and pack rules, it always produces identical findings. AI-generated narratives, suggestions, and advisory outputs are explicitly non-deterministic and always labeled.
+
+==== Epic 5: Audit Pack Management
+
+[width="100%",cols="10%,27%,43%,20%",options="header",]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-5.1 |System shall support creating, versioning, publishing, and retiring audit packs. |Given an admin publishing HMDA pack v1.1, when published, then v1.0 remains available for existing audit runs, v1.1 is available for new runs, and the version change is logged. |P0
+|FR-5.2 |Phase 1 shall ship with a pre-built HMDA origination QC audit pack. |Given the HMDA pack, when used on sample HMDA data, then it validates all 110 reportable fields with appropriate rules and generates expected findings. |P0
+|FR-5.3 |Active audit runs pin to a specific pack version and do not auto-upgrade. |Given an active audit using HMDA pack v1.0, when v1.1 is published, then the active audit continues using v1.0 until explicitly migrated. |P0
+|FR-5.4 |Pack manifest shall conform to the Pack Manifest JSON Schema (Section 8.2). |Given a pack manifest JSON, when validated against the schema, then validation passes with no errors. |P0
+|FR-5.5 |Pack changes shall be validated in a test harness before publication. |Given a modified pack, when test harness runs against sample data, then expected findings are generated, unexpected findings are flagged, and validation report is produced. |P1
+|===
+
+==== Epic 6: Findings Management + Remediation Workflow
+
+[width="100%",cols="10%,27%,43%,20%",options="header",]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-6.1 |Findings shall follow lifecycle: IDENTIFIED → TRIAGED → REMEDIATION_ASSIGNED → CORRECTED → RETEST_PENDING → CLOSED (or DISMISSED at any stage with justification). |Given a finding in IDENTIFIED status, when reviewer triages it, then status advances to TRIAGED and an AuditEvent is recorded. Each transition requires a valid prior state. |P0
+|FR-6.2 |Each finding shall capture: root cause, corrective action, owner, due date, evidence references, and all status transitions. |Given a finding with corrective action assigned, when viewed, then all metadata fields are populated and the complete transition history is visible in the audit trail. |P0
+|FR-6.3 |Escalation workflow shall support configurable severity-based routing and time-based auto-escalation. |Given an escalation rule ``Critical findings not triaged within 24 hours auto-escalate to Manager,'' when a Critical finding sits untriaged for 24 hours, then system sends escalation notification and logs the event. |P1
+|FR-6.4 |Second review: configurable sampling percentage, random selection, assignment to designated second reviewer who cannot be the primary reviewer. |Given 20% second review configured, when primary review completes on 100 records, then system selects 20 records randomly and assigns them to the designated second reviewer (different from primary). |P0
+|===
+
+==== Epic 7: Evidence / Attachments + Document Control
+
+[width="100%",cols="10%,27%,43%,20%",options="header",]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-7.1 |System shall support attaching documents, screenshots, and notes to any finding, review, or corrective action. |Given a finding, when reviewer attaches a PDF and a note, then both are stored with chain-of-custody metadata (uploader, timestamp, SHA-256 hash). |P0
+|FR-7.2 |Evidence records are append-only. New versions of an evidence artifact create new records; originals are never modified or deleted. |Given an evidence file, when a ``replacement'' is uploaded, then the original remains unchanged, a new evidence record is created with a ``supersedes'' reference to the original, and both are visible in the audit trail. |P0
+|FR-7.3 |Evidence shall carry chain-of-custody metadata: uploader ID, upload timestamp, SHA-256 hash, associated finding/review IDs, and document classification. |Given any evidence file, when queried, then all chain-of-custody fields are populated and the hash can be independently verified. |P0
+|FR-7.4 |Evidence shall be searchable by metadata (finding ID, document type, date range) and full-text content. |Given a search for ``closing disclosure'' within a specific audit run, when executed, then all matching evidence files are returned with relevance ranking. |P1
+|===
+
+==== Epic 8: Reporting + Exports
+
+[width="100%",cols="10%,27%,43%,20%",options="header",]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-8.1 |System shall generate pack-specific audit reports using templates defined in the audit pack manifest. |Given the HMDA pack report template, when report generation is triggered, then a PDF report is produced with all template sections populated from audit data. |P0
+|FR-8.2 |AI-assisted narrative generation for audit summaries: mandatory human review and explicit approval before finalization. |Given a completed audit, when AI narrative is requested, then draft is produced labeled ``AI-generated draft — requires approval,'' and cannot be included in finalized reports until a Manager-role user clicks ``Approve.'' |P0
+|FR-8.3 |Export formats: PDF (formatted reports), CSV (data exports), XLSX (data exports with formatting), JSON (API). |Given a findings export request, when CSV is selected, then all findings with all metadata fields are exported in a clean CSV with headers. |P0
+|FR-8.4 |Exam-ready bundle: single exportable package per Section 21 specification. |Given a finalized audit, when exam bundle is exported, then the ZIP contains all files specified in Section 21 with valid manifest and hash verification. |P0
+|FR-8.5 |Manager and executive dashboards showing: review progress, aging, error rates by field/category, trends vs. prior periods, escalation frequency. |Given an active audit with 1,000 records, when manager opens dashboard, then all metrics load within 5 seconds with current data. |P1
+|===
+
+==== Epic 9: Admin / RBAC / Tenancy
+
+[width="100%",cols="10%,27%,43%,20%",options="header",]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-9.1 |RBAC with roles: Reviewer, Senior Reviewer, Manager, Audit Lead, Executive, IT Admin. Permission matrix defined in Section 10.11. |Given a Reviewer-role user, when they attempt to approve a report, then access is denied with ``Insufficient permissions'' message. |P0
+|FR-9.2 |Segregation of duties: reviewers cannot approve their own findings. |Given a reviewer who created a finding, when they attempt to close it, then system blocks with ``Segregation of duties violation'' message and logs the attempt. |P0
+|FR-9.3 |Multi-tenant isolation using row-level security (Phase 1). |Given Tenant A and Tenant B sharing the same database, when Tenant A queries findings, then only Tenant A’s data is returned. Cross-tenant data access is impossible at the database level. |P0
+|FR-9.4 |SSO integration (SAML 2.0 / OIDC). |Given a client with SAML 2.0 IdP, when configured, then users authenticate via SSO with no AuditIQ-specific password. |P0
+|FR-9.5 |Audit log access for IT administrators: searchable, filterable, exportable. |Given an IT Admin, when they access the audit log, then they can filter by user, action type, date range, and entity, and export results as CSV. |P1
+|===
+
+*DECISION LOCKED:* Row-level security for Phase 1 tenant isolation. See Section 19.5.
+
+=== 7.2 Non-Functional Requirements
+
+[width="100%",cols="20%,26%,16%,38%",options="header",]
+|===
+|Category |Requirement |Target |Measurement Method
+|Performance |Automated pre-scan throughput |≥500 records/minute (structured data) |Load test with 10K HMDA records
+|Performance |Document viewer load time |<3 seconds for 50-page PDF |P95 latency under 50 concurrent users
+|Performance |Dashboard refresh latency |<5 seconds for standard queries |P95 latency with 6 months of audit data
+|Performance |Report generation time |<60 seconds for standard audit report |Measured on 5,000-record audit
+|Reliability |System availability |99.5% uptime (business hours: M-F 6am-9pm ET) |Monthly uptime calculation
+|Reliability |Data durability |99.999% |Backed by cloud storage SLA
+|Reliability |Recovery Point Objective (RPO) |≤1 hour |Based on event log replication
+|Reliability |Recovery Time Objective (RTO) |≤4 hours |Based on infrastructure recovery
+|Security |Encryption at rest |AES-256 |Cloud KMS managed keys
+|Security |Encryption in transit |TLS 1.2+ |Certificate validation
+|Security |Authentication |SSO (SAML 2.0 / OIDC) |Integration test with IdP
+|Security |Session management |30-minute idle timeout, absolute 8-hour timeout |Configuration verification
+|Auditability |Audit trail coverage |100% of data mutations and access events |Audit trail completeness test
+|Auditability |Audit trail retention |≥7 years (configurable per tenant) |Configuration and storage verification
+|Auditability |Tamper evidence |Hash-chain on event store |Integrity verification tool
+|Explainability |AI output provenance |Every AI suggestion traceable to model version, input, and prompt |Provenance metadata check
+|Human-in-loop |AI finalization without human approval |Prohibited |RBAC enforcement test
+|Scalability |Concurrent users per tenant |≥50 |Load test simulation
+|Scalability |Maximum audit dataset size |≥100,000 records per audit run |Load test with 100K records
+|Scalability |Maximum tenants (Phase 1) |≥20 |Database isolation test
+|===
+
+=== 7.3 Acceptance Criteria Summary
+
+See individual epics above for detailed acceptance criteria per functional requirement. The companion document AuditIQ_MVP_Cutline_v0.2.md defines which requirements are must-have (P0), should-have (P1), and nice-to-have (P2) for MVP.

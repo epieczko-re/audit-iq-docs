@@ -1,0 +1,54 @@
+= AuditIQ: Product + Architecture + Delivery Plan
+:subtitle: RiskExec — Comprehensive Specification v0.2
+:doctype: book
+:author: Erik Pieczkowski
+:revnumber: 0.2
+:revdate: 2026-02-27
+
+include::document-control/index.adoc[]
+
+include::executive-summary/index.adoc[]
+
+include::problem-statement/index.adoc[]
+
+include::product-vision-and-strategic-positioning/index.adoc[]
+
+include::competitive-intelligence/index.adoc[]
+
+include::concept-of-operations/index.adoc[]
+
+include::key-architectural-concepts/index.adoc[]
+
+include::product-requirements/index.adoc[]
+
+include::audit-pack-specification/index.adoc[]
+
+include::architecture-overview/index.adoc[]
+
+include::component-level-design/index.adoc[]
+
+include::data-model/index.adoc[]
+
+include::scoring-framework/index.adoc[]
+
+include::pricing-and-packaging/index.adoc[]
+
+include::delivery-plan/index.adoc[]
+
+include::risks-constraints-and-mitigations/index.adoc[]
+
+include::future-roadmap/index.adoc[]
+
+include::decisions-and-open-questions/index.adoc[]
+
+include::appendices/index.adoc[]
+
+include::mvp-decisions-locked/index.adoc[]
+
+include::immutability-vs-correctability/index.adoc[]
+
+include::exam-ready-bundle-specification/index.adoc[]
+
+include::ai-governance-and-model-risk-controls/index.adoc[]
+
+include::ui-workflows-and-user-journeys/index.adoc[]

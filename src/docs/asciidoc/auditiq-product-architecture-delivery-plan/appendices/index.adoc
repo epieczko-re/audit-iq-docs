@@ -1,0 +1,355 @@
+== Section 18: Appendices
+
+=== Appendix A: Glossary (Expanded from v0.1)
+
+*Audit (noun):* A review of lending compliance for one or more loan records against a pack of rules and policies.
+
+*Audit Event:* Immutable timestamped record of a change to audit state (e.g., ``finding created'', ``manager approval'', ``report finalized''). See Appendix C.
+
+*Audit Pack (or Pack):* A declarative JSON specification defining rules, scoring weights, evidence requirements, and narratives for a compliance audit category (e.g., HMDA, CRA, ECOA). See Section 8.
+
+*Calibration:* Process of tuning confidence score thresholds to match historical reviewer decisions. See Section 12.4.
+
+*Confidence Score:* Numeric value (0.0–1.0) representing the AI system’s certainty in a data extraction, schema mapping, or finding. Composed of mapping confidence + extraction confidence + rule confidence.
+
+*Docling:* Open-source document parsing library that extracts text, tables, images from PDFs. Used for HMDA document extraction in Phase 1a.
+
+*Evidence:* A document, table cell, or data field that is linked to a finding as proof of compliance or violation.
+
+*Finding:* A structured record of a single compliance issue (or absence thereof) identified during an audit. Contains finding_id, target_record_id, rule_id, severity, confidence, narrative, approver.
+
+*Human-in-Loop:* Requirement for human (reviewer or manager) to explicitly approve or correct an AI-generated result before finalization.
+
+*Immutability:* Property that audit events, evidence files, and finalized findings cannot be deleted or retroactively modified. Corrections are recorded as new compensating events (Section 20).
+
+*LogMap:* Semantic web ontology matching library; AuditIQ evaluates it as a potential schema matcher replacement in Phase 2.
+
+*Manager:* Reviewer role with authority to escalate findings, adjust severity, and approve audit finalization.
+
+*Pack Manifest:* JSON file defining pack metadata, rule list, evidence requirements, and versioning. See Appendix B.
+
+*Reviewer:* Primary auditor role; responsible for extracting evidence, creating findings, and requesting overrides.
+
+*RLS (Row-Level Security):* PostgreSQL feature that restricts data access based on user tenant. AuditIQ relies on RLS for tenant isolation.
+
+*Sampling:* Random or stratified selection of records from a population to audit. Pack can define sampling methodology.
+
+*Schema Matcher:* Component that maps extracted HMDA field values to audit pack schema fields with confidence scores. See Section 6.
+
+*Snapshot:* Immutable record of audit state at a point in time (used for reproducibility & rollback to prior version without re-running extraction). See Section 20.
+
+*SOC 2:* Service Organization Control audit; certifies security, availability, and confidentiality controls. AuditIQ target compliance by Jun 30.
+
+*Tenant:* A customer organization in the multi-tenant AuditIQ system; data isolated by row-level security + encryption.
+
+*Audit Trail / Audit Log:* Complete record of all events (extractions, approvals, corrections) for an audit. Append-only; forms basis of regulatory compliance proof.
+
+'''''
+
+=== Appendix B: Full Pack Manifest JSON Schema
+
+*Reference:* See Section 8 (``Audit Pack Schema & Configuration'') for detailed pack specification.
+
+*Example Pack Manifest (HMDA Compliance Pack v2.1):*
+
+[source,json]
+----
+{
+  "manifest_version": "1.0",
+  "pack_id": "hmda-compliance-v2.1",
+  "pack_name": "HMDA Loan Disclosure & Record Completeness",
+  "pack_version": "2.1",
+  "organization": "AuditIQ",
+  "created_at": "2025-12-01T00:00:00Z",
+  "updated_at": "2026-02-15T00:00:00Z",
+  "description": "Validates HMDA loan record completeness and disclosure compliance per Regulation C.",
+  "regulatory_basis": ["Regulation C", "HMDA Rule 2024 Amendment"],
+  "target_record_type": "loan",
+  "evidence_requirements": [
+    "truth_in_lending_disclosure",
+    "loan_estimate",
+    "closing_disclosure",
+    "loan_origination_memo"
+  ],
+  "rules": [
+    {
+      "rule_id": "hmda_field_completeness",
+      "rule_name": "Required HMDA Fields Present",
+      "description": "Checks for presence of mandatory fields per HMDA spec.",
+      "target_field": "loan_amount",
+      "expected_value_type": "currency",
+      "severity": "critical",
+      "evidence_type": "loan_origination_system_record",
+      "expected_narrative": "Loan amount recorded as {loan_amount} in origination system."
+    }
+  ],
+  "schema_fields": [
+    {
+      "field_id": "loan_amount",
+      "field_name": "Loan Amount",
+      "data_type": "currency",
+      "required": true,
+      "regex_pattern": "^\\d+(\\.\\d{2})?$",
+      "confidence_threshold": 0.85
+    }
+  ],
+  "scoring_weights": {
+    "extraction_confidence_weight": 0.25,
+    "mapping_confidence_weight": 0.35,
+    "rule_confidence_weight": 0.40
+  },
+  "audit_summary_template": "audits/hmda-v2.1-summary.md",
+  "report_format": "pdf",
+  "sampling": {
+    "methodology": "stratified",
+    "strata_field": "loan_type",
+    "target_sample_size": 50,
+    "confidence_level": 0.95
+  },
+  "versioning": {
+    "semantic_version": "2.1.0",
+    "change_log": "Added validation for new 2024 HMDA disclosure requirements.",
+    "supersedes": "hmda-compliance-v2.0"
+  },
+  "immutability_rules": {
+    "evidence_files": "append_only",
+    "findings": "mutable_via_status_transitions",
+    "audit_events": "append_only_with_compensating_events"
+  }
+}
+----
+
+'''''
+
+=== Appendix C: Audit Event Schema
+
+*Reference:* See Section 10.9 (``Audit Trail & Event Log'') for detailed event design.
+
+*Example Audit Events (JSON):*
+
+[source,json]
+----
+{
+  "event_id": "evt_20260215_001",
+  "audit_id": "audit_2026_02_15_loanXYZ",
+  "event_type": "evidence_extracted",
+  "timestamp": "2026-02-15T10:30:00Z",
+  "actor_id": "user_reviewer_001",
+  "actor_role": "Reviewer",
+  "event_details": {
+    "document_id": "doc_loan_estimate_v1",
+    "extracted_value": "loan_amount: $250,000",
+    "extraction_method": "docling_ocr",
+    "confidence_score": 0.94
+  },
+  "immutability_marker": "sha256_hash_of_all_fields"
+}
+----
+
+[source,json]
+----
+{
+  "event_id": "evt_20260215_002",
+  "audit_id": "audit_2026_02_15_loanXYZ",
+  "event_type": "finding_created",
+  "timestamp": "2026-02-15T10:45:00Z",
+  "actor_id": "system_scoring_engine",
+  "actor_role": "System",
+  "event_details": {
+    "finding_id": "finding_hmda_001",
+    "rule_id": "hmda_field_completeness",
+    "severity": "critical",
+    "combined_confidence": 0.87,
+    "narrative": "Loan amount of $250,000 verified in loan estimate. Field is complete."
+  }
+}
+----
+
+[source,json]
+----
+{
+  "event_id": "evt_20260215_003",
+  "audit_id": "audit_2026_02_15_loanXYZ",
+  "event_type": "finding_approved",
+  "timestamp": "2026-02-15T11:00:00Z",
+  "actor_id": "user_manager_001",
+  "actor_role": "Manager",
+  "event_details": {
+    "finding_id": "finding_hmda_001",
+    "approval_status": "approved",
+    "reviewer_comment": "Verified against loan estimate; accurate."
+  }
+}
+----
+
+[source,json]
+----
+{
+  "event_id": "evt_20260215_004",
+  "audit_id": "audit_2026_02_15_loanXYZ",
+  "event_type": "finding_corrected",
+  "timestamp": "2026-02-15T13:00:00Z",
+  "actor_id": "user_manager_001",
+  "actor_role": "Manager",
+  "event_details": {
+    "finding_id": "finding_hmda_001",
+    "correction_type": "compensating_event",
+    "prior_event_id": "evt_20260215_003",
+    "new_status": "reopened",
+    "reason": "Additional review required for loan estimate version mismatch."
+  }
+}
+----
+
+'''''
+
+=== Appendix D: Report Template Outlines
+
+*Audit Summary Report (PDF template, Phase 1a MVP minimum):*
+
+....
+Cover Page:
+  - Organization name, audit period, auditor name, date
+
+Executive Summary:
+  - Audit scope (pack, record count, sampling methodology)
+  - Key findings count by severity (critical, major, minor)
+  - Compliance assessment (Pass / Fail / Pass w/ Observations)
+  - Recommended corrective actions (summary)
+
+Detailed Findings:
+  - Table: Finding ID | Rule | Severity | Confidence | Evidence | Narrative | Approver
+
+Audit Trail Summary:
+  - Table: Event ID | Event Type | Timestamp | Actor | Details
+
+Attachments:
+  - Evidence index (source documents, extraction confidence)
+  - Pack version & configuration
+  - Sampling methodology documentation
+....
+
+*Extended Reports (Phase 2+):* - Trend analysis (findings over time by category) - Drill-down reports (filter by severity, rule, business line) - Comparative audits (current vs. prior audit, same pack version) - Regulatory submission format (FDIC, OCC specific)
+
+'''''
+
+=== Appendix E: References (Source Documents)
+
+*Carry forward from v0.1:* 1. AuditIQ_Comprehensive_Spec_v0.1.md – Original specification 2. HMDA_Rule_2024_Amendment – Federal Register citation & full text 3. CRA_Examination_Procedures – Federal Reserve publication 4. ECOA_Fair_Lending_Handbook – FRB, OCC publication 5. SOC_2_2022_Trust_Service_Criteria – AICPA framework
+
+*New references for v0.2:* 6. Docling Documentation – PDF/document extraction library (https://github.com/ds4sd/docling) 7. GraphQL Best Practices – Apollo & community resources 8. PostgreSQL RLS Documentation – Row-level security implementation guide 9. OpenAI API Reference – Completion & embedding models 10. PCI DSS v3.2.1 – Payment Card Industry security framework 11. NIST AI Risk Management Framework – AI governance guidance (https://nvlm.nist.gov/) 12. Immutable Audit Trail Patterns – Journal of Information Security & Privacy 13. Internal ACES Pricing Study – Proprietary pricing intelligence (~141 customers)
+
+'''''
+
+=== Appendix F: CEO Memo (Carry Forward from v0.1)
+
+*TO:* AuditIQ Steering Committee *FROM:* CEO *DATE:* February 2026 *RE:* Q2 2026 MVP Launch Commitment
+
+We are committed to launching AuditIQ MVP by June 30, 2026. The specification in this document reflects our product vision and delivery plan.
+
+*Key Commitments:*
+1. *Go/No-Go decision:* June 15, 2026 (hard deadline)
+2. *MVP Scope:* Sections 1–12 represent MVP feature set; Sections 14–22 provide roadmap and governance framework
+3. *Team:* 9–10 FTE allocated; external security & compliance support contracted
+4. *Customer Readiness:* 3–5 beta customers onboarded by June 1
+
+*Success Criteria:* - Docling extraction >85% accuracy (Phase 0 gate) - Schema matcher >80% precision (Phase 1b gate) - Zero critical security issues (Phase 1c gate) - 3+ beta customers sign off on core workflows
+
+We will communicate progress weekly to the board and escalate blockers immediately.
+
+'''''
+
+=== Appendix G: Mermaid Diagram Sources (All Diagrams in Document)
+
+*Diagram 1: Audit Workflow State Machine (Section 2.2)*
+
+[source,mermaid]
+----
+stateDiagram-v2
+  [*] --> Created
+  Created --> DocumentsUploaded: Upload loan file + HMDA doc
+  DocumentsUploaded --> Extracted: Docling extraction complete
+  Extracted --> ReviewerInProgress: Reviewer starts review
+  ReviewerInProgress --> FindingsGenerated: Findings + scores created
+  FindingsGenerated --> ManagerReview: Manager reviews escalations
+  ManagerReview --> ManagerApproval: All critical findings approved
+  ManagerApproval --> Finalized: Audit finalized + report generated
+  Finalized --> [*]
+  ReviewerInProgress --> ReviewerInProgress: Corrections, overrides
+  ManagerReview --> FindingsGenerated: Manager requests re-review
+----
+
+*Diagram 2: Pack Engine Architecture (Section 8.1)*
+
+[source,mermaid]
+----
+graph LR
+  A[Audit Instance] -->|Instantiate| B[Pack Engine]
+  B -->|Load Rules| C[Rule Registry]
+  B -->|Load Schema| D[Schema Registry]
+  C -->|Eval Rule| E[Scoring Engine]
+  D -->|Map Field| F[Schema Matcher]
+  F -->|Confidence| E
+  E -->|Finding| G[Finding Creator]
+  G -->|Append| H[Audit Trail]
+  H -->|Immutable| I[Evidence Store]
+----
+
+*Diagram 3: AI & Human-in-Loop (Section 11.1)*
+
+[source,mermaid]
+----
+graph TD
+  A[Extracted Data] -->|LLM Call| B{Confidence > 0.70?}
+  B -->|Yes| C[Auto-Narrative]
+  B -->|No| D[Manual Narrative]
+  C -->|Confidence| E[Finding]
+  D -->|Manual| E
+  E -->|Severity=Critical?| F{Manager Review}
+  F -->|Approved| G[Finalized]
+  F -->|Rejected| H[Revision]
+  H -->|Resubmit| F
+----
+
+*Diagram 4: Multi-Tenant Data Isolation (Section 5.2)*
+
+[source,mermaid]
+----
+graph TD
+  A[API Request] -->|Tenant ID| B[Auth Middleware]
+  B -->|Validate Session| C[RLS Policy Check]
+  C -->|Allowed?| D{Access Control}
+  D -->|Yes| E[Return Tenant Data Only]
+  D -->|No| F[403 Forbidden]
+  E -->|Append Event| G[Audit Log]
+  G -->|Immutable| H[Event Store]
+----
+
+*Diagram 5: Document Processing Pipeline (Section 3.2)*
+
+[source,mermaid]
+----
+graph LR
+  A[Upload PDF] -->|Scan| B{Malware Check}
+  B -->|Clean| C[Docling Extract]
+  B -->|Infected| D[Quarantine]
+  C -->|Text + Tables| E[Schema Mapper]
+  E -->|Confidence| F[Extracted Record]
+  F -->|Event| G[Audit Trail]
+  C -->|OCR Failed?| H[Cloud OCR Fallback]
+  H -->|Re-extract| E
+----
+
+*Diagram 6: Immutability & Versioning (Section 20.2)*
+
+[source,mermaid]
+----
+graph TD
+  A[Finding v1] -->|Approve| B[Event: Approved]
+  B -->|Immutable| C[Audit Trail]
+  A -->|Error Found| D[Event: Corrected]
+  D -->|Compensating Event| C
+  D -->|Status Reset| E[Finding v2]
+  E -->|New Approval| F[Event: Re-approved]
+  F -->|Event Chain| C
+----

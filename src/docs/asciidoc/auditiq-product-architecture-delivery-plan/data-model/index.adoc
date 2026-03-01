@@ -1,0 +1,334 @@
+== 11. Data Model
+
+=== 11.1 Entity-Relationship Diagram (Conceptual)
+
+....
+audit_runs (one) ---> (many) findings
+audit_runs (one) ---> (many) evidence
+audit_runs (one) ---> (many) field_mappings
+audit_runs (one) ---> (many) users_assigned
+
+findings (one) ---> (many) status_transitions
+findings (one) ---> (many) evidence (via foreign_key)
+findings (one) ---> (many) remediation_actions
+
+evidence (one) ---> (many) audit_trail.events
+
+field_mappings (one) ---> (many) mapping_versions
+....
+
+=== 11.2 MISMO Alignment Strategy
+
+*Design Principle:* AuditIQ’s canonical data model adopts MISMO (Mortgage Industry Standards Maintenance Organization) Reference Model naming conventions and field definitions for all loan-level attributes. This alignment reduces translation friction when ingesting data from LOS, servicing, and origination systems — most of which already export MISMO-formatted data — and increases credibility with examiners who recognize MISMO field names.
+
+*Scope of MISMO Adoption:*
+
+* *Canonical loan data fields:* All loan-level attributes stored in `staging_datasets` and referenced in `findings` use MISMO Reference Model v3.x naming where a corresponding MISMO data point exists. Examples: `LoanIdentifier`, `BorrowerMailingAddress`, `PropertyValuationAmount`, `ActionTaken` (HMDA), `RateSpreadPercent`.
+* *Document classification:* Evidence documents are classified using the MISMO Document Custodian taxonomy (e.g., `BorrowerAuthorization`, `CreditReport`, `AppraisalReport`) for consistent naming across packs and evidence uploads.
+* *HMDA Reporting Dataset:* Phase 1 HMDA packs map directly to the MISMO HMDA Reporting Dataset, which provides a well-defined field set for LAR data. This covers all fields required for HMDA compliance auditing.
+* *Audit Pack field references:* Pack `field_mappings` definitions reference MISMO canonical names as the target schema. Source fields (from customer uploads) are mapped _to_ MISMO names by the schema mapping engine.
+
+*What is NOT MISMO-aligned:*
+
+* *Audit operational tables:* `audit_runs`, `findings`, `field_mappings`, `evidence`, and `audit_trail.events` use AuditIQ-native schemas. These are operational/workflow constructs with no MISMO equivalent.
+* *Pack configuration schema:* Audit Packs remain proprietary JSON (Section 8). Packs _reference_ MISMO field names in their rules, but the pack format itself is not a MISMO construct.
+* *AI/ML metadata:* Confidence scores, provenance metadata, and model evaluation data are AuditIQ-specific.
+
+*Implementation Approach — Flattened Subset:*
+
+MISMO’s full XML schema is deeply nested and verbose (thousands of data points). AuditIQ adopts a *flattened subset* relevant to each audit domain:
+
+* *Phase 1 (HMDA):* ~80 MISMO data points from the HMDA Reporting Dataset, flattened into a single-level JSON structure stored in `staging_datasets.payload`. Field names match MISMO exactly (e.g., `ActionTakenType`, `LienStatusType`, `LoanPurposeType`).
+* *Phase 2+ (additional regulations):* Each new Audit Pack defines its MISMO subset in the pack manifest under `canonical_schema.mismo_fields[]`. The schema mapping engine validates that all referenced MISMO fields exist in the MISMO Reference Model dictionary.
+* *Unmapped fields:* Fields that have no MISMO equivalent (custom institution fields, derived metrics) use a `custom:` namespace prefix (e.g., `custom:InternalRiskScore`) to clearly distinguish them from MISMO-standard fields.
+
+*MISMO Reference Model Dictionary:*
+
+AuditIQ maintains a lookup table of adopted MISMO fields:
+
+[source,sql]
+----
+CREATE TABLE reference.mismo_dictionary (
+  mismo_field_id VARCHAR(255) PRIMARY KEY, -- e.g., 'ActionTakenType'
+  mismo_xpath VARCHAR(1024), -- Full MISMO XML path for traceability
+  data_type VARCHAR(50), -- 'string', 'decimal', 'date', 'integer', 'enum'
+  enum_values TEXT[], -- For enumerated types, valid values
+  regulation_domain VARCHAR(100)[], -- e.g., '{hmda}', '{trid, hmda}'
+  description TEXT,
+  mismo_version VARCHAR(20) DEFAULT '3.6', -- MISMO Reference Model version
+  added_in_auditiq_version VARCHAR(20),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_mismo_domain ON reference.mismo_dictionary USING GIN (regulation_domain);
+----
+
+This dictionary is populated during pack deployment and used by the schema mapping engine to validate field references and generate mapping suggestions.
+
+=== 11.3 Core Tables
+
+==== audit_runs
+
+[source,sql]
+----
+CREATE TABLE audits.audit_runs (
+  audit_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL, -- Multi-tenancy
+  pack_id VARCHAR(255) NOT NULL, -- e.g., 'hmda-origination'
+  pack_version VARCHAR(20) NOT NULL, -- e.g., '1.0.0'
+  audit_name VARCHAR(512),
+  audit_scope VARCHAR(100), -- 'origination', 'servicing', etc.
+  created_by UUID NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  status VARCHAR(50) DEFAULT 'created', -- Enum: created, validating, ready, in_progress, review_complete, reporting, finalized
+
+  -- Input data
+  target_dataset_id UUID NOT NULL, -- Foreign key to staging_datasets
+  target_record_count INT,
+
+  -- Execution tracking
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP,
+  execution_mode VARCHAR(50), -- 'manual', 'ocr_assisted', 'automated'
+
+  -- Configuration
+  second_review_percentage DECIMAL(5,2) DEFAULT 0.0,
+  confidence_threshold DECIMAL(3,2) DEFAULT 0.5,
+
+  -- Audit trail link
+  audit_context_id VARCHAR(255), -- Foreign key to audit_trail.contexts
+
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (created_by) REFERENCES users(user_id),
+  FOREIGN KEY (target_dataset_id) REFERENCES audits.staging_datasets(dataset_id)
+);
+CREATE INDEX idx_audit_tenant ON audits.audit_runs(tenant_id);
+CREATE INDEX idx_audit_pack ON audits.audit_runs(pack_id, pack_version);
+----
+
+==== findings
+
+[source,sql]
+----
+CREATE TABLE audits.findings (
+  finding_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id UUID NOT NULL,
+  record_id VARCHAR(255) NOT NULL, -- Target record ID from uploaded dataset
+  field_id VARCHAR(255) NOT NULL, -- Field in target schema
+
+  -- Comparison details
+  rule_id VARCHAR(255), -- Pack rule that triggered this finding
+  target_value TEXT,
+  source_value TEXT,
+  match_result VARCHAR(50), -- 'match', 'mismatch', 'unable_to_determine'
+
+  -- Confidence & severity
+  mapping_confidence DECIMAL(3,2), -- 0.0–1.0
+  extraction_confidence DECIMAL(3,2), -- 0.0–1.0
+  rule_confidence DECIMAL(3,2), -- 0.0–1.0
+  combined_confidence DECIMAL(3,2), -- min(mapping, extraction, rule)
+  severity VARCHAR(50), -- 'critical', 'high', 'medium', 'low', 'informational'
+
+  -- Lifecycle
+  status VARCHAR(50) DEFAULT 'identified', -- State machine
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by UUID,
+
+  -- Triage
+  triaged_at TIMESTAMP,
+  triaged_by UUID,
+  root_cause VARCHAR(255),
+
+  -- Remediation
+  remediation_owner UUID,
+  due_date DATE,
+  corrective_action TEXT,
+  corrected_at TIMESTAMP,
+
+  -- Retest
+  retested_at TIMESTAMP,
+  retested_by UUID,
+  retest_result VARCHAR(50), -- 'passed', 'failed'
+
+  -- Closure
+  closed_at TIMESTAMP,
+  closed_by UUID,
+  resolution VARCHAR(255),
+
+  -- Regulation
+  regulation_citation VARCHAR(255), -- e.g., '12 CFR 1003.2'
+
+  -- Audit trail link
+  audit_event_id UUID, -- Foreign key to audit_trail.events
+
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (created_by) REFERENCES users(user_id),
+  FOREIGN KEY (triaged_by) REFERENCES users(user_id),
+  FOREIGN KEY (remediation_owner) REFERENCES users(user_id),
+  FOREIGN KEY (retested_by) REFERENCES users(user_id),
+  FOREIGN KEY (closed_by) REFERENCES users(user_id)
+);
+CREATE INDEX idx_findings_audit ON audits.findings(audit_id);
+CREATE INDEX idx_findings_status ON audits.findings(status);
+CREATE INDEX idx_findings_severity ON audits.findings(severity);
+CREATE INDEX idx_findings_confidence ON audits.findings(combined_confidence);
+----
+
+==== field_mappings
+
+[source,sql]
+----
+CREATE TABLE audits.field_mappings (
+  mapping_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id UUID NOT NULL,
+  target_field_id VARCHAR(255) NOT NULL,
+  source_field_id VARCHAR(255),
+
+  -- Confidence & matching details
+  confidence DECIMAL(3,2), -- 0.0–1.0
+  matching_reason TEXT,
+
+  -- Approval
+  status VARCHAR(50), -- 'suggested', 'approved', 'rejected'
+  approved_by UUID,
+  approved_at TIMESTAMP,
+  override_reason TEXT, -- If user overrode auto-suggestion
+
+  -- Versioning
+  version_hash VARCHAR(64), -- For reproducibility
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (approved_by) REFERENCES users(user_id)
+);
+CREATE INDEX idx_mappings_audit ON audits.field_mappings(audit_id);
+----
+
+==== evidence
+
+[source,sql]
+----
+CREATE TABLE audits.evidence (
+  evidence_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id UUID NOT NULL,
+  finding_id UUID, -- Optional: if attached to a finding
+
+  -- File metadata
+  filename VARCHAR(512) NOT NULL,
+  file_size_bytes BIGINT,
+  mime_type VARCHAR(100),
+  sha256_hash VARCHAR(64) NOT NULL UNIQUE,
+
+  -- Chain-of-custody
+  uploaded_by UUID NOT NULL,
+  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  document_classification VARCHAR(100),
+  source_system VARCHAR(100),
+
+  -- Version control
+  superseded_by UUID, -- If this evidence was replaced
+  supersedes UUID, -- If this supersedes an older version
+
+  -- Storage
+  s3_path VARCHAR(512) NOT NULL,
+  full_text_indexed BOOLEAN DEFAULT FALSE,
+
+  -- Audit trail link
+  audit_event_id UUID NOT NULL, -- Foreign key to audit_trail.events
+
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (finding_id) REFERENCES audits.findings(finding_id),
+  FOREIGN KEY (uploaded_by) REFERENCES users(user_id),
+  FOREIGN KEY (superseded_by) REFERENCES audits.evidence(evidence_id),
+  FOREIGN KEY (supersedes) REFERENCES audits.evidence(evidence_id)
+);
+CREATE INDEX idx_evidence_audit ON audits.evidence(audit_id);
+CREATE INDEX idx_evidence_finding ON audits.evidence(finding_id);
+CREATE INDEX idx_evidence_hash ON audits.evidence(sha256_hash);
+----
+
+==== audit_trail.events (Immutable Log)
+
+[source,sql]
+----
+CREATE TABLE audit_trail.events (
+  event_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  sequence_number BIGSERIAL NOT NULL,
+  audit_id UUID NOT NULL,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  entity_type VARCHAR(50) NOT NULL,
+  entity_id VARCHAR(255),
+  event_type VARCHAR(100) NOT NULL,
+
+  actor_id UUID NOT NULL,
+  actor_role VARCHAR(50),
+
+  payload JSONB NOT NULL, -- Event-specific data
+
+  -- Hash chain for tamper detection
+  previous_event_hash VARCHAR(64),
+  event_hash VARCHAR(64) NOT NULL UNIQUE,
+
+  source_system VARCHAR(100),
+  api_version VARCHAR(20),
+  is_immutable BOOLEAN DEFAULT TRUE,
+
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (actor_id) REFERENCES users(user_id)
+);
+CREATE INDEX idx_events_audit ON audit_trail.events(audit_id, timestamp);
+CREATE INDEX idx_events_entity ON audit_trail.events(entity_id);
+CREATE INDEX idx_events_actor ON audit_trail.events(actor_id);
+----
+
+=== 11.4 Data Types and Constraints
+
+* *UUIDs:* All primary keys are UUIDs for distributed systems compatibility
+* *Timestamps:* Stored in UTC, always timestamptz in PostgreSQL
+* *Confidence scores:* DECIMAL(3,2) — allows 0.00 to 1.00 with 2 decimal precision
+* *Text fields:* Use TEXT for findings/evidence; VARCHAR(n) for enums and short strings
+* *JSON payloads:* JSONB in PostgreSQL for efficient querying and indexing
+* *Hashes:* VARCHAR(64) for SHA-256 (hex-encoded)
+* *Tenant isolation:* Every table includes tenant_id; row-level security policies enforce isolation at DB level (TODO: Implement RLS policies)
+
+=== 11.5 Indexing Strategy
+
+*High-impact queries:*
+
+[arabic]
+. Find all findings for an audit: `findings(audit_id, status)`
+. Find critical/aging findings: `findings(severity, created_at)`
+. Search evidence by metadata: `evidence(audit_id, document_classification)`
+. Audit trail searches: `events(audit_id, timestamp)` and `events(actor_id)`
+. Dashboard metrics: `findings(audit_id, status, severity)` with aggregation
+
+*Indexes created (per DDL above):* - `findings(audit_id, status)` - `findings(severity)` - `findings(combined_confidence)` - `evidence(audit_id, finding_id)` - `events(audit_id, timestamp)` - `events(entity_id)` and `events(actor_id)`
+
+*TODO:* Query plan analysis and potential partitioning strategy for 100K+ records.
+
+=== 11.6 Versioning & Schema Evolution
+
+*Approach:* Schema versioning via semantic versioning on tables; migrations tracked in schema_migrations table.
+
+[source,sql]
+----
+CREATE TABLE schema_migrations (
+  migration_id UUID PRIMARY KEY,
+  migration_version VARCHAR(20), -- e.g., '1.1.0'
+  description VARCHAR(512),
+  executed_at TIMESTAMP,
+  execution_time_ms INT,
+  status VARCHAR(50), -- 'success', 'failed', 'rolled_back'
+  sql_script TEXT,
+  UNIQUE(migration_version)
+);
+----
+
+*Policy:* - New audit runs always use latest pack version and schema - Active audits remain pinned to their pack version; no auto-upgrade - Schema changes are backward-compatible within MINOR versions - MAJOR schema changes require audit run completion or explicit migration
+
+=== 11.6 Analytics Storage (Separate Read-Only Replica)
+
+*Rationale:* Aggregation queries (dashboards, trend reports) impact operational DB. A read-only replica is cheaper and doesn’t contend with transactional workload.
+
+*Approach:* Stream findings, status transitions, and metrics to a separate analytics database (Aurora or Redshift) via Change Data Capture or nightly batch export.
+
+*Analytics tables (TODO — Phase 2):* - `findings_snapshot`: Denormalized findings with all key attributes for fast queries - `daily_metrics`: Pre-aggregated counts by status, severity, date - `user_performance`: Metrics per reviewer (findings created, resolved, error rate) - `audit_timeline`: Timeline of key milestones per audit run

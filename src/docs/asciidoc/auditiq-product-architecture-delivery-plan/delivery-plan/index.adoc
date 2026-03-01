@@ -1,0 +1,170 @@
+== Section 14: Delivery Plan and Work Breakdown Structure (WBS)
+
+=== 14.1 High-Level Phased Delivery (Q2–Q4 2026)
+
+....
+Phase 0: Foundation & Infrastructure (Mar 1–Mar 31, 2026)
+├─ Repositories, CI/CD, Kubernetes cluster, monitoring
+├─ Docling + OCR integration POC
+├─ GraphQL API scaffold
+└─ Authentication & RBAC framework
+
+Phase 1a: Core Audit Workflow (Apr 1–Apr 30, 2026)
+├─ Document upload & ingestion pipeline
+├─ Evidence tagging & linking
+├─ Manual extraction & review UI
+└─ Basic reporting (audit summary, findings list)
+
+Phase 1b: Intelligence & Auto-Scoring (May 1–May 31, 2026)
+├─ Schema matcher + confidence scoring
+├─ Rules engine integration
+├─ AI-generated narratives (LLM calls)
+├─ Manager escalation & approval workflow
+└─ Confidence calibration framework (minimal)
+
+Phase 1c: Launch Preparation & QA (Jun 1–Jun 30, 2026)
+├─ Beta customer onboarding (3–5 customers)
+├─ Security audit & compliance review
+├─ Documentation & training materials
+├─ Performance tuning & load testing
+└─ **HARD GO/NO-GO DECISION: June 15**
+
+Phase 2: Expansion & Intelligence (Q3 2026, Jul–Sep)
+├─ Adaptive learning (feedback loops, confidence calibration)
+├─ Predictive validation rules
+├─ Conversational copilot (chat interface)
+├─ Advanced reporting (drill-down, trends)
+└─ Multi-pack audit workflows
+
+Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
+├─ Pack marketplace (community + vendor packs)
+├─ Policy management spin-off module
+├─ Audit data warehouse & business intelligence
+├─ Integration with third-party tools (data aggregators, workflow systems)
+└─ Vertical expansion (beyond lending: insurance, credit unions, fund management)
+....
+
+=== 14.2 Expanded WBS: Phase 1a–1c (MVP) with Estimates
+
+==== Phase 0: Foundation & Infrastructure (Mar 2026, 4 weeks)
+
+[width="100%",cols="31%,35%,17%,17%",options="header",]
+|===
+|Work Item |Story Points |Owner |Notes
+|*Backend infra* | |Full-stack lead |
+|Repository setup, GitHub Actions, RBAC |5 |Full-stack |Incl. secrets mgmt, monitoring hooks
+|Kubernetes cluster (EKS or GCP) + Helm |8 |DevOps (0.5 FTE) |Multi-env (dev, staging, prod)
+|GraphQL API scaffold + auth middleware |8 |Full-stack |JWT + tenant isolation plumbing
+|PostgreSQL + Redis setup, migrations |5 |Full-stack |Backup, HA, connection pooling
+|*AI/ML infrastructure* | |Data/ML lead |
+|LLM API integration (OpenAI, SageMaker) + rate limiting |5 |AI/ML |Incl. cost tracking, fallback logic
+|Docling + local PDF processing setup |8 |Data/ML |Benchmark OCR fallback; latency <2s target
+|*Monitoring & observability* | |DevOps |
+|Prometheus, Grafana, structured logging (ELK) |8 |DevOps |Dashboards for API latency, extraction success rate
+|*Total Phase 0* |*50 points* |(Velocity ~12 pts/week = 4.2 weeks) |_Baseline: On track_
+|===
+
+==== Phase 1a: Core Audit Workflow (Apr 2026, 4 weeks)
+
+[width="100%",cols="32%,40%,20%,8%",options="header",]
+|===
+|Work Item |Story Points |Owner |Dependencies
+|*Document upload & ingestion* | | |
+|File upload UI + malware scan |8 |UX + Full-stack |Auth & storage
+|S3 storage + encryption + quarantine |5 |Full-stack |DevOps infra
+|Async document processing queue (celery/workers) |8 |Full-stack |Messaging, monitoring
+|Docling extraction + OCR fallback |13 |Data/ML + Full-stack |Docling setup, error handling
+|*Evidence & audit state management* | | |
+|Evidence entity + tagging schema |5 |Data/ML + Full-stack |Schema review
+|Evidence link creation UI (drag-drop, search) |13 |UX + Full-stack |Document tree view
+|Audit pack instantiation + record selection |8 |Full-stack |Pack engine from v0.1
+|Manual extraction form + UI states |13 |UX + Full-stack |Schema mapper placeholder
+|*Workflow orchestration* | | |
+|Audit state machine (created → extracted → reviewed → finalized) |8 |Full-stack |Event log, versioning
+|Reviewer assignment + notifications |5 |Full-stack |Email / in-app alerts
+|*Reporting (MVP minimal)* | | |
+|Audit summary report template |8 |UX + Full-stack |HTML/PDF export
+|Findings list & evidence index |5 |Full-stack |Data aggregation
+|*Total Phase 1a* |*99 points* |(Velocity ~25 pts/week = 4 weeks) |_On track if foundation complete_
+|===
+
+==== Phase 1b: Intelligence & Auto-Scoring (May 2026, 4 weeks)
+
+[width="100%",cols="32%,40%,20%,8%",options="header",]
+|===
+|Work Item |Story Points |Owner |Dependencies
+|*Schema & mapping* | | |
+|Schema matcher v1 (confidence-scored) |13 |Data/ML |Docling output, test corpus
+|Mapping UI + override workflow |8 |UX + Full-stack |API contract
+|LogMap prototype (background task) |5 |Data/ML |Research / exploratory
+|*Scoring & findings* | | |
+|Rules engine integration (scoring logic) |13 |Full-stack + Data/ML |Pack definition, test packs
+|Finding creation + severity assignment |8 |Full-stack |State machine, audit events
+|Confidence scoring API + human-in-loop triggers |13 |Full-stack |Scoring framework (Section 12.6)
+|*AI narratives* | | |
+|LLM prompt templates for narrative generation |5 |AI engineer |Model selection, cost estimates
+|AI narrative generation + caching |13 |Full-stack + AI |Rate limiting, user approval flow
+|*Manager workflow* | | |
+|Manager escalation UI + approval gates |13 |UX + Full-stack |Finding states, audit events
+|Justification capture & audit trail |5 |Full-stack |Event schema
+|*Confidence monitoring* | | |
+|Dashboard: confidence vs. human agreement (Phase 2 preview) |8 |Full-stack + Data/ML |Telemetry, minimal alerts
+|*Total Phase 1b* |*104 points* |(Velocity ~26 pts/week = 4 weeks) |_Critical path: Schema matcher quality_
+|===
+
+==== Phase 1c: Launch Prep & QA (Jun 2026, 4 weeks)
+
+[width="100%",cols="32%,40%,20%,8%",options="header",]
+|===
+|Work Item |Story Points |Owner |Dependencies
+|*Beta onboarding* | | |
+|Customer setup (licensing, pack provisioning) |8 |Ops + Sales Engineer |Pricing model finalized
+|Training & documentation |8 |Product + UX |All features complete
+|*Security & compliance* | | |
+|Penetration testing + vulnerability scan |13 |Security partner |Incl. OWASP Top 10
+|Data residency & encryption audit |8 |Compliance SME (0.5 FTE) |All data stores
+|SOC 2 readiness review |5 |Compliance SME |Logging, access controls
+|*Performance & stability* | | |
+|Load testing (1000 concurrent audits/day target) |13 |QA + DevOps |Benchmarking tools, baselines
+|Extraction latency optimization (<2s/page target) |8 |Data/ML + Full-stack |Profiling, caching tuning
+|*QA & bug fixes* | | |
+|Integration testing (end-to-end workflows) |13 |QA |Test automation framework
+|UAT with beta customers |8 |QA + Product |Feedback loop, bug triage
+|*Documentation* | | |
+|API documentation & SDK examples |5 |Full-stack |Auto-generated or manual
+|User guides & FAQ |5 |UX + Product |Video walkthroughs optional
+|*Launch readiness* | | |
+|Go/no-go checklist & board review |3 |Product Lead |Incl. escalation authority
+|*Total Phase 1c* |*97 points* |(Velocity ~24 pts/week = 4 weeks) |_Buffer for customer feedback_
+|===
+
+=== 14.3 Critical Path & Dependencies
+
+*Critical Path (longest dependency chain):* 1. Phase 0: Docling integration + LLM setup (Week 1–2) 2. Phase 1a: Document processing pipeline (Week 2–4) 3. Phase 1b: Schema matcher quality + LLM narratives (Week 5–8) 4. Phase 1c: Performance tuning & security review (Week 9–12)
+
+*Parallel workstreams:* - UX prototyping (Phase 0) → UI implementation (Phase 1a–b) - Data/ML model training (Phase 0–1a) → Integration testing (Phase 1b–c) - Compliance review (Phase 1c) → Documentation (Phase 1c)
+
+*Go/No-Go Gates:*
+
+* *Phase 0 exit gate (Mar 31):* Docling extracts >95% accuracy on test corpus; LLM API latency <1s
+* *Phase 1a exit gate (Apr 30):* Document ingestion processes 100 test audits end-to-end; Reviewer UI usable in UAT
+* *Phase 1b exit gate (May 31):* Scoring engine produces findings with >85% precision on test packs; AI narratives reviewed <2 min each
+* *Phase 1c GO/NO-GO decision (Jun 15):* Beta customer sign-off on at least 3 critical workflows; zero critical security issues
+
+=== 14.4 Resourcing Plan (MVP Team)
+
+[width="99%",cols="24%,39%,17%,10%,10%",options="header",]
+|===
+|Role |Headcount |FTE |Responsibilities |Ramp-Up
+|*Full-stack Engineer* |3–4 |3.5 |API, state machine, workflow UI, DB schema, integration testing |Week 1
+|*Data/ML Engineer* |1–2 |1.5 |Docling integration, schema matcher, feature engineering, evaluation |Week 2
+|*AI Engineer* |1 |1.0 |LLM integration, prompt templates, cost monitoring, drift detection |Week 1
+|*UX/Product Designer* |1 |1.0 |Information architecture, wireframes, UI implementation, user research |Week 1 (prep)
+|*QA/Test Engineer* |1 |1.0 |Test automation, UAT coordination, performance testing, regression suite |Week 3
+|*Compliance SME* |0.5 |0.5 |Audit trail design, regulatory mapping, SOC 2 prep, PII handling |Week 4 (phase 1b)
+|*DevOps/SRE* |0.5 |0.5 |Infra setup, monitoring, CI/CD, incident response |Week 1
+|*Product Lead / PM* |1 |1.0 |Roadmap, prioritization, stakeholder comms, go/no-go decisions |Ongoing
+|*Total* |*9–10 FTE* |*9.5 FTE* | |
+|===
+
+*Procurement for external support:* - Security partner: Penetration testing (Phase 1c, ~$15K–$25K) - Docling support (if needed): Technical consultation ($5K–$10K) - Customer success consultant: Beta onboarding & training (Phase 1c, $2K–$5K)

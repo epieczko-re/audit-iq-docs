@@ -1,0 +1,213 @@
+== 6. Key Architectural Concepts
+
+=== 6.1 Audit Packs: The ``Brain'' Plugin Model
+
+An audit pack encapsulates everything needed to audit a specific regulatory domain. It is a versioned, declarative configuration artifact — not executable code. The platform interprets the pack to drive ingestion validation, schema mapping, comparison rules, scoring, and report generation. This makes AuditIQ extensible: adding a new regulation means creating a new pack, not modifying platform code.
+
+*Phase 1:* One pack — HMDA Origination QC. Pre-built by RiskExec. *Phase 2:* CRA, SBL (Section 1071). Pre-built by RiskExec. *Future:* Client-customizable packs, potentially a third-party pack marketplace.
+
+=== 6.2 Three-Layer Confidence Scoring
+
+AuditIQ applies confidence scoring at three independent layers:
+
+[arabic]
+. *Mapping confidence:* How confident is the system that target field X corresponds to source field Y? (Based on field name similarity, data type compatibility, value distribution, historical acceptance.)
+. *Extraction confidence:* How confident is the OCR/extraction pipeline that the extracted value from a source document is correct? (Based on OCR quality, layout complexity, document tier.)
+. *Rule application confidence:* How confident is the system that a validation rule correctly applies to this data context? (Based on precondition satisfaction, data quality, rule specificity.)
+
+These three scores are orthogonal. A finding can have high mapping confidence but low extraction confidence (the field match is clear, but the OCR struggled with the document). The combined confidence score — computed as the minimum of the three applicable scores — determines the human review requirement.
+
+*Combined confidence formula:*
+
+....
+combined_confidence = min(mapping_confidence, extraction_confidence, rule_confidence)
+....
+
+When a layer is not applicable (e.g., no OCR involved in a record-to-record audit), that layer is set to 1.0 (full confidence) and does not reduce the combined score.
+
+=== 6.3 Findings Severity vs. Confidence (Orthogonal Dimensions)
+
+Severity measures the regulatory importance of a finding (how bad is it?). Confidence measures how sure the system is that the finding is real (how certain is it?). These are independent:
+
+[width="100%",cols="25%,25%,30%,20%",options="header",]
+|===
+|Scenario |Severity |Confidence |Action
+|Action Taken code clearly wrong |Critical |High |Immediate remediation; no additional verification needed
+|Loan Amount might not match (OCR uncertain) |High |Low |Route to manual review; do not auto-generate finding
+|Whitespace formatting difference |Low |High |Log as informational; no action required
+|Property address potentially wrong but document blurry |Medium |Low |Flag for manual verification with original document
+|===
+
+=== 6.4 Immutable Audit Trail with Regulator-Safe Semantics
+
+Every state change in the system is recorded as an immutable event. Events are append-only and hash-chained for tamper evidence. The system differentiates between truly immutable artifacts (evidence, events) and correctible artifacts (findings, mappings) where corrections are modeled as new events that supersede prior state. See Section 20 for the full immutability/correctability specification.
+
+=== 6.5 Architecture Diagrams
+
+==== Diagram 1: Audit Run State Machine
+
+[source,mermaid]
+----
+---
+title: Audit Run State Machine
+---
+stateDiagram-v2
+    [*] --> Created : Admin creates audit run
+    Created --> Ingesting : Upload target dataset
+    Ingesting --> Validating : Dataset received
+    Validating --> Ready : Validation passed
+    Validating --> ValidationFailed : Validation errors
+    ValidationFailed --> Ingesting : Re-upload corrected data
+    Ready --> InProgress : Start audit
+    InProgress --> PreScanRunning : Launch automated pre-scan
+    PreScanRunning --> ReviewReady : Pre-scan complete
+    InProgress --> ReviewReady : Skip pre-scan (manual mode)
+    ReviewReady --> UnderReview : Reviewers assigned
+    UnderReview --> SecondReview : Primary review complete + sampling
+    UnderReview --> ReportGeneration : Primary review complete (no second review)
+    SecondReview --> ReportGeneration : Second review complete
+    ReportGeneration --> PendingApproval : Reports generated
+    PendingApproval --> Finalized : Manager approves
+    PendingApproval --> UnderReview : Manager returns for rework
+    Finalized --> [*]
+----
+
+==== Diagram 2: Data Flow — OCR-Assisted Audit
+
+[source,mermaid]
+----
+---
+title: Data Flow — OCR-Assisted Audit
+---
+graph LR
+    subgraph Inputs
+        CSV[Target Dataset\nCSV/API]
+        DOCS[Source Documents\nPDF/Image]
+    end
+
+    subgraph Ingestion
+        VAL[Schema Validation]
+        OCR[Document Processing\nDocling Pipeline]
+    end
+
+    subgraph Processing
+        MAP[Schema Mapping\nConfidence Scoring]
+        NORM[Normalization\nEngine]
+        COMP[Comparison &\nRules Engine]
+    end
+
+    subgraph Outputs
+        FIND[Findings Register\nwith Confidence Scores]
+        REPORT[Reports &\nDashboards]
+        BUNDLE[Exam-Ready\nBundle]
+    end
+
+    CSV --> VAL
+    DOCS --> OCR
+    VAL --> MAP
+    OCR --> MAP
+    MAP --> NORM
+    NORM --> COMP
+    COMP --> FIND
+    FIND --> REPORT
+    FIND --> BUNDLE
+----
+
+==== Diagram 3: Component Architecture
+
+[source,mermaid]
+----
+---
+title: AuditIQ Component Architecture
+---
+graph TB
+    subgraph ClientLayer[Client Layer]
+        UI[Web Application\nReact/Angular]
+        API_GW[API Gateway]
+    end
+
+    subgraph CorePlatform[Core Platform Services]
+        AUTH[Auth & RBAC\nService]
+        AUDIT[Audit Orchestration\nService]
+        PACK[Audit Pack\nManager]
+        WORKFLOW[Workflow Engine\nState Machine]
+    end
+
+    subgraph DataPipeline[Data Pipeline]
+        INGEST[Ingestion\nService]
+        DOCPROC[Document Processing\nDocling Pipeline]
+        MAPPER[Schema Mapping\nService]
+        NORM[Normalization\nEngine]
+        COMPARE[Comparison &\nRules Engine]
+    end
+
+    subgraph IntelligenceLayer[Intelligence Layer]
+        AI_RULES[AI Rule\nGeneration]
+        AI_REPORT[AI Reporting\nAssistant]
+        SCORING[Confidence &\nSeverity Scoring]
+        CITATIONS[Regulatory\nCitation Engine]
+    end
+
+    subgraph DataLayer[Data & Storage]
+        DB[(Primary Database\nPostgreSQL)]
+        DOCS[(Document Store\nS3/Blob)]
+        SEARCH[(Search Index\nElasticsearch)]
+        EVENTS[(Event Store\nAudit Trail)]
+    end
+
+    UI --> API_GW
+    API_GW --> AUTH
+    API_GW --> AUDIT
+    AUDIT --> PACK
+    AUDIT --> WORKFLOW
+    AUDIT --> INGEST
+    INGEST --> DOCPROC
+    INGEST --> MAPPER
+    MAPPER --> NORM
+    NORM --> COMPARE
+    COMPARE --> SCORING
+    PACK --> AI_RULES
+    AUDIT --> AI_REPORT
+    AI_REPORT --> CITATIONS
+
+    AUDIT --> DB
+    DOCPROC --> DOCS
+    COMPARE --> DB
+    WORKFLOW --> EVENTS
+    DB --> SEARCH
+----
+
+==== Diagram 4: Audit Event Sequence (Finding Lifecycle)
+
+[source,mermaid]
+----
+---
+title: Finding Lifecycle Event Sequence
+---
+sequenceDiagram
+    participant Engine as Comparison Engine
+    participant Store as Event Store
+    participant DB as State DB
+    participant Reviewer
+    participant Manager
+
+    Engine->>Store: FindingCreated {id, record, field, severity, confidence}
+    Engine->>DB: INSERT finding (status=IDENTIFIED)
+
+    Reviewer->>Store: FindingTriaged {id, reviewer, root_cause}
+    Reviewer->>DB: UPDATE finding (status=TRIAGED)
+
+    Reviewer->>Store: RemediationAssigned {id, owner, due_date}
+    Reviewer->>DB: UPDATE finding (status=REMEDIATION_ASSIGNED)
+
+    Note over Reviewer: Owner corrects the issue
+
+    Reviewer->>Store: FindingCorrected {id, corrective_action, evidence_refs}
+    Reviewer->>DB: UPDATE finding (status=CORRECTED)
+
+    Manager->>Store: FindingRetested {id, retest_result, retester}
+    Manager->>DB: UPDATE finding (status=RETEST_PASSED or RETEST_FAILED)
+
+    Manager->>Store: FindingClosed {id, resolution, approver}
+    Manager->>DB: UPDATE finding (status=CLOSED)
+----

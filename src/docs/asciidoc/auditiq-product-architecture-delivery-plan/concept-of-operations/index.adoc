@@ -1,0 +1,34 @@
+== 5. Concept of Operations (ConOps)
+
+=== 5.1 Audit Workflow: Manual Mode
+
+[arabic]
+. *Setup:* Admin creates an audit run, selects the audit pack (e.g., HMDA), uploads or links the target dataset.
+. *Ingestion:* System validates the target dataset schema against the pack definition, flags validation errors.
+. *Document linking:* Reviewer or batch process associates source documents (PDFs, images) with target records.
+. *Review:* Reviewer opens a record in the side-by-side viewer: target data fields on the left, source document on the right. Reviewer compares each field, marks as confirmed/discrepancy/unable to determine.
+. *Finding creation:* When a discrepancy is identified, reviewer creates a finding with: correct source value, root cause selection, severity (auto-suggested by pack rules, overridable), and comment.
+. *Remediation:* Findings route to responsible parties. Corrective actions are tracked with due dates and evidence attachments.
+. *Second review:* Configurable sampling of completed reviews for quality assurance.
+. *Reporting:* Manager reviews dashboards, generates audit summary report, exports exam-ready bundle.
+
+=== 5.2 Audit Workflow: OCR-Assisted Mode (Phase 1+)
+
+Steps 1–3 as above, then:
+
+[arabic, start=4]
+. *OCR extraction:* Document processing pipeline extracts text, tables, and key-value pairs from source documents. Each extracted value carries an extraction confidence score.
+. *Automated pre-scan:* Comparison engine applies pack rules to match target values against extracted source values. Generates preliminary findings with combined confidence scores (extraction × rule application).
+. *Human review:* Reviewer sees pre-populated comparison results. High-confidence matches are pre-confirmed (reviewer can override). Low/medium-confidence items are flagged for manual verification. Reviewer focuses time on genuinely uncertain cases.
+. Steps 6–8 as manual mode.
+
+=== 5.3 Audit Workflow: Automated Pre-Scan (``Target-to-Source'' / ``Record-to-Record'')
+
+For structured data audits (e.g., HMDA LAR against LOS database extract), the full audit can be automated:
+
+[arabic]
+. Both target and source datasets are uploaded as structured data (CSV, API).
+. Schema mapping applies (auto-suggested, human-approved).
+. Comparison engine runs all pack rules automatically.
+. Output: full findings register with confidence scores.
+. Human review is required for: all Critical/High findings, all findings below confidence threshold, all AI-generated narratives.

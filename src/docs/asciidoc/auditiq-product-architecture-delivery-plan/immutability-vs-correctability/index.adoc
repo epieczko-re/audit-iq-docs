@@ -1,0 +1,157 @@
+== Section 20: Immutability vs. Correctability (Regulator-Safe Semantics)
+
+=== 20.1 The Problem: Audit Trail Integrity vs. Operational Reality
+
+*Regulator expectation:* Audit trail is immutable and append-only. No deletions, no retroactive changes. Entire audit history is reconstructible from the log.
+
+*Operational reality:* Mistakes happen. A finding might be marked ``critical'' but later determined to be a false positive. A mapping might be wrong and need correction. Reviewers expect ``undo'' or ``edit'' capabilities.
+
+*The v0.1 Conflict:* How can we have a truly immutable audit trail while allowing corrections and preventing reviewer frustration?
+
+*Section 20 Resolution:* Define per-artifact-type semantics that satisfy both constraints.
+
+=== 20.2 Per-Artifact Immutability Rules
+
+[width="100%",cols="25%,25%,25%,25%",options="header",]
+|===
+|Artifact Type |Immutability Rule |Correction Mechanism |Example
+|*Evidence files* |Append-only; never deleted or modified |New evidence version linked (immutability preserved) |PDF uploaded v1 → mistake found → upload v2 PDF (v1 still in trail)
+|*Audit events* |Append-only; never deleted or modified |Compensating event emitted (corrects state without deletion) |Event A: ``Finding marked critical'' → discovered error → Event B: ``Finding status reset to `in-review'''
+|*Findings* |Mutable via status transitions; each transition is an immutable event |Status changes (created → under_review → approved → closed) recorded as events |Finding in state ``approved'' → Manager reopens → new event ``reopened'' → status now ``in-review''
+|*Pack versions* |Immutable once published |New version published; old version preserved in registry |Pack v1.0 deployed → enhancement → Pack v1.1 published (v1.0 still available)
+|*Mappings (field→schema)* |Versioned; all versions preserved in mapping registry |Active version pointer is mutable (can point to different version); history preserved |Mapping v1 (low confidence) → review determines v2 needed → version pointer switches to v2 (v1 still in history)
+|*Reports* |Immutable once finalized |New report version supersedes old; supersession link in metadata |Report v1 finalized → error found → Report v2 generated with ``supersedes: report_v1'' link
+|*Reviewer comments* |Append-only; edits create new versions |Comment v1 marked ``superseded_by: comment_v2'' with link to revised version |Comment v1: ``critical finding'' → mistake → Comment v2: ``actually minor; see revision'' with link
+|===
+
+=== 20.3 Definition: ``Undo'' as State Pointer Reset (Not Deletion)
+
+*Classical ``undo'':* Delete or revert an action (e.g., Ctrl+Z). *AuditIQ ``undo'':* Create a compensating event that resets state pointer to a prior snapshot, WITHOUT deleting the original action.
+
+*Example workflow:*
+
+....
+Event 1 (t=10:00): Finding A created with status="created"
+Event 2 (t=10:05): Finding A scored; status="pending_review"; confidence=0.65
+Event 3 (t=10:30): Manager approves; status="approved"
+
+(30 minutes later, mistake discovered)
+
+Event 4 (t=11:00): Manager reopens; creates compensating event:
+  {
+    "event_type": "finding_status_reset",
+    "finding_id": "A",
+    "prior_state": "approved",
+    "new_state": "in_review",
+    "reason": "Regulator question on rule logic; requires re-evaluation",
+    "snapshot_reference": "snapshot_T2" (points to state after Event 2)
+  }
+
+Result: Finding A is now "in_review" again. Events 1–4 all exist in audit trail.
+Auditor can reconstruct: "This finding was approved at 10:30, then reopened at 11:00 because of re-evaluation."
+No history is lost.
+....
+
+=== 20.4 Snapshot Management for Efficiency
+
+*Problem:* Replaying 1000s of events to reconstruct state is slow. *Solution:* Periodic snapshots of audit state at key transitions.
+
+[source,json]
+----
+{
+  "snapshot_id": "snapshot_T3",
+  "audit_id": "audit_2026_02_15_loanXYZ",
+  "timestamp": "2026-02-15T10:30:00Z",
+  "triggered_by_event": "evt_003_finding_approved",
+  "state": {
+    "audit_status": "in_progress",
+    "findings": [
+      {
+        "finding_id": "A",
+        "status": "approved",
+        "severity": "critical",
+        "confidence": 0.87
+      }
+    ],
+    "events_included": ["evt_001", "evt_002", "evt_003"],
+    "snapshot_hash": "sha256_xyzabc123"
+  }
+}
+----
+
+*Snapshot policy:* - Create snapshot after each major state transition (finding created, approved, escalated) - Compress snapshots (gzip); store in S3 with versioning - TTL: Keep all snapshots for 7 years (regulator requirement); archive older than 3 years to cheaper storage
+
+=== 20.5 Immutability Guarantees via Cryptographic Hashing
+
+____
+*Design updated per Audit Trail Defensibility Report.* Naive hash chaining is necessary but not sufficient — an attacker with database write access can rewrite the chain and recompute all subsequent hashes. This design adds RFC 8785 canonical serialization, global monotonic sequencing, and cryptographic anchoring.
+____
+
+*Each audit event includes the following tamper-evidence fields (see Section 10.8 for full schema):*
+
+[source,json]
+----
+{
+  "event_id": "evt_004",
+  "tenant_id": "tenant_ABC",
+  "sequence_id": 4,
+  "audit_id": "audit_XYZ",
+  "timestamp": "2026-02-15T11:00:00Z",
+  "event_details": { "..." : "..." },
+
+  "previous_event_hash": "sha256_of_rfc8785_canonicalized_evt_003",
+  "event_hash": "sha256_of_rfc8785_canonicalized_this_event",
+
+  "is_anchor": false,
+  "anchor_hash": null
+}
+----
+
+*Cryptographic integrity layers:*
+
+[arabic]
+. *RFC 8785 canonical JSON serialization (MANDATORY):* All events are serialized using RFC 8785 before hashing. This ensures identical logical content always produces identical hashes, regardless of JSON key ordering, whitespace, or number formatting. Without canonical serialization, logically identical events produce different hashes — a critical failure mode rated High likelihood / High impact.
+. *SHA-256 hash chain:* Each event’s `event_hash` is the SHA-256 of its RFC 8785-canonicalized content (excluding hash fields). Each event references `previous_event_hash` from its predecessor (by `sequence_id`). Chain break = tamper or data loss.
+. *Global monotonic sequence IDs:* Per-tenant monotonic `sequence_id` enforced by database UNIQUE constraint. Gaps indicate event loss; duplicates indicate insertion attack; out-of-order = reordering attack. All detectable by verification tool.
+. *Cryptographic anchor points (every N events):* Every 100 events (configurable), an anchor event writes its `event_hash` to *WORM storage* (AWS S3 Object Lock or equivalent). WORM-stored anchors cannot be overwritten during retention period, preventing silent chain rewriting even by database administrators.
+. *Digital signatures (Phase 2 — Enterprise-grade tier):* KMS-signed checkpoint events for non-repudiation. Supports litigation under FRE Rule 902(13)/(14) (self-authentication of electronic records via hash values).
+
+*Snapshot integrity:* - When snapshots are materialized, compute `snapshot_hash = SHA-256(RFC8785.canonicalize(snapshot_state))` - Store `snapshot_hash` as an event in the audit trail - Periodic re-materialization: replay events from last snapshot → compare against stored `snapshot_hash` → mismatch = drift alert
+
+*Benefits:* - Hash chain ensures no event can be retroactively modified without detection - RFC 8785 ensures hash reproducibility across systems, languages, and time - Monotonic sequencing detects gaps, insertions, and reordering - WORM anchors prevent silent chain rewriting even by privileged insiders - Design satisfies NIST SP 800-53 AU-9 (WORM + cryptographic protection), AU-10 (non-repudiation via signatures in Phase 2), AU-11 (retention) - FRE 902(13)/(14) compatibility enables litigation self-authentication
+
+=== 20.6 Correctability Without Violating Immutability
+
+*Pattern: Compensating events + status transitions*
+
+[width="100%",cols="34%,33%,33%",options="header",]
+|===
+|Scenario |Correction Mechanism |Immutability Preserved?
+|*Mapping confidence too low; reviewer overrides* |Event: ``mapping_override'' with justification text. New mapping event appended. Old mapping remains in trail. |✓ Yes
+|*Finding severity wrong; manager re-scores* |Event: ``finding_severity_reset'' with reason. Finding status may remain ``approved'' or transition to ``re-review''. |✓ Yes
+|*Report finalized but narrative has typo* |Event: ``report_superseded'' with link to corrected Report v2. Old report remains in trail. |✓ Yes
+|*Evidence file uploaded wrong version* |Event: ``evidence_replaced'' with link to new file version. Old file remains in archive. |✓ Yes
+|*Audit finalized; then regulator finds issue* |Event: ``audit_reopened'' with reason. Compensating event resets status. New findings/corrections appended. |✓ Yes
+|===
+
+*Key principle:* Corrections are *additive* (new events + versions), not *destructive* (deletions). Audit trail grows; it never shrinks.
+
+=== 20.7 Regulatory Compliance & Litigation Defensibility
+
+*How this design meets regulator expectations (mapped to specific controls):*
+
+[width="100%",cols="34%,33%,33%",options="header",]
+|===
+|Requirement |Control Standard |AuditIQ Implementation
+|*Immutability* |NIST AU-9: Protection of audit information |RFC 8785 hash chain + WORM-stored anchors; no DELETE permission on audit_trail schema
+|*Completeness* |FFIEC IT Examination Handbook: Log controls |All decisions, corrections, and AI actions logged; global monotonic sequence detects gaps
+|*Auditability* |NIST AU-10: Non-repudiation |Compensating events with human-readable justification; actor_id + timestamp on every event
+|*Tamper resistance* |NIST AU-9 Enhancement (1): WORM media |Cryptographic anchors written to WORM storage every N events; cannot be overwritten during retention
+|*Retention* |NIST AU-11: Audit record retention |7-year minimum retention (configurable); events never purged during retention window
+|*Isolation* |FFIEC: Read-only media, isolated storage |Audit trail in dedicated schema; regulator access via read-only replica; no admin write access
+|*Litigation support* |FRE Rule 902(13)/(14) |Hash-based self-authentication of electronic records; Phase 2 adds KMS-signed checkpoints
+|===
+
+*Regulator interview talking points:* - ``Our immutable event log uses RFC 8785 canonical JSON serialization and SHA-256 hash chaining. No event can be deleted or modified retroactively — any change breaks the cryptographic chain and is immediately detectable.'' - ``Corrections are recorded as compensating events, not deletions. The entire decision trail is visible and reconstructible.'' - ``We write cryptographic anchor hashes to WORM storage every 100 events. Even a database administrator cannot silently rewrite the audit trail.'' - ``Reports can be versioned; old reports are preserved. You can see what was finalized, what changed, and why.'' - ``Our design aligns with NIST SP 800-53 Rev 5 controls AU-9, AU-10, and AU-11, and FFIEC IT Examination Handbook requirements for log controls and isolated storage.''
+
+*Cross-references:* - Section 10.8: Full event schema, hash computation, anchor implementation, operational integrity controls - Section 19.4 (Decision D3): Design tier rationale, failure modes, three-tier architecture - Audit Trail Defensibility Report: Detailed threat model, risk heat map, and recommended design changes

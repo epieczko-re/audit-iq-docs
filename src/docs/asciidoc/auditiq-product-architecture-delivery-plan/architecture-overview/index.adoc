@@ -1,0 +1,63 @@
+== 9. Architecture Overview
+
+=== 9.1 Architectural Principles
+
+[arabic]
+. *Separation of concerns:* Ingestion → Processing → AI → Storage → Reporting.
+. *Immutable audit trail:* Every state change is recorded as an event; events are append-only and hash-chained.
+. *Declarative configuration:* Packs are JSON, not code. The platform interprets them.
+. *Confidence scoring:* Every output carries a quantified confidence score (extraction, mapping, rule application).
+. *Human-in-loop by default:* AI outputs are advisory and non-finalized until explicitly approved by a human with the right role.
+. *Multi-tenancy:* Row-level security at the database level. No cross-tenant data leakage.
+. *Reproducibility:* Identical inputs + pack version + configuration = identical deterministic outputs.
+
+=== 9.2 Component Architecture (Deep Dive)
+
+*Logical layers:*
+
+==== Client Layer
+
+* Web UI (React/Angular)
+* API Gateway (authentication, rate limiting, request routing)
+
+==== Core Platform Services
+
+* *Auth & RBAC Service:* SSO, session management, permission checks
+* *Audit Orchestration Service:* Manages audit lifecycle, state machine, pack loading
+* *Audit Pack Manager:* Pack versioning, distribution, validation harness
+* *Workflow Engine:* State machine enforcement, event publishing
+
+==== Data Pipeline Services
+
+* *Ingestion Service:* CSV/API validation, document receipt, format conversion
+* *Document Processing Service:* Docling-based OCR, cloud OCR fallback, text extraction
+* *Schema Mapping Service:* Field matching, confidence scoring, mapping UI data
+* *Normalization Engine:* Value standardization, type coercion, formatting
+* *Comparison & Rules Engine:* Pack rule execution, finding generation
+
+==== Intelligence Layer
+
+* *AI Rule Generation (TBD Phase 2):* Auto-generate new rules from discovered patterns
+* *AI Reporting Assistant:* Draft audit narratives, executive summaries
+* *Confidence & Severity Scoring:* Apply pack scoring rules, compute combined confidence
+* *Regulatory Citation Engine:* Link findings to specific regulation sections
+
+==== Data & Storage Layer
+
+* *Primary Database (PostgreSQL):* Findings, mappings, configurations, user data
+* *Document Store (S3/Blob):* Source documents, evidence, audit reports
+* *Search Index (Elasticsearch):* Full-text search on findings, evidence, audit trail
+* *Event Store (Append-only log):* Audit trail, immutable event history, hash-chained
+
+=== 9.3 Deployment Architecture
+
+*Phase 1 Deployment:* - Single-region cloud deployment (AWS or Azure) - Multi-AZ within region for high availability - RDS PostgreSQL (Multi-AZ, automated backups, read replicas) - S3 for document storage (versioning enabled, cross-region replication optional) - Elasticsearch cluster (3 nodes, auto-sharding) - Event store (PostgreSQL append-only table with triggers)
+
+*Scaling considerations:*
+
+* Stateless microservices: Ingestion, Mapping, Comparison can scale horizontally
+* Stateful services (Workflow, Orchestration): Single instance per tenant (Phase 1)
+* Database: RDS read replicas for query-heavy dashboards
+* Document storage: S3 auto-scales; no configuration needed
+
+*TODO:* Publish Terraform/CloudFormation templates for infrastructure-as-code deployment.

@@ -1,0 +1,322 @@
+== Section 21: Exam-Ready Bundle Specification
+
+=== 21.1 Purpose
+
+*Exam-ready bundle* = A complete, portable artifact of an audit suitable for export to examiners, regulators, or auditors. Includes all evidence, findings, trail, and metadata. Format: ZIP (structured directories) + optional merged PDF.
+
+=== 21.2 Bundle Contents & Manifest
+
+*Manifest file (bundle_manifest.json):*
+
+[source,json]
+----
+{
+  "bundle_version": "1.0",
+  "bundle_id": "bundle_20260215_loanXYZ_hmda_v2p1",
+  "audit_id": "audit_20260215_loanXYZ",
+  "pack_id": "hmda-compliance-v2.1",
+  "pack_version": "2.1",
+  "organization_name": "Example Bank",
+  "audit_period": "2025-01-01 to 2025-12-31",
+  "created_at": "2026-02-15T14:30:00Z",
+  "created_by_user": "user_manager_001",
+  "bundle_format": "zip",
+  "contents": [
+    {
+      "file_name": "audit_summary_report.pdf",
+      "file_type": "audit_summary",
+      "file_size_bytes": 245678,
+      "sha256": "sha256_hash_of_file",
+      "description": "Executive summary of audit findings and compliance assessment"
+    },
+    {
+      "file_name": "findings_register.csv",
+      "file_type": "findings_data",
+      "file_size_bytes": 45321,
+      "sha256": "sha256_hash_of_file",
+      "description": "Detailed findings table (CSV): ID, rule, severity, confidence, narrative, approver"
+    },
+    {
+      "file_name": "findings_register.pdf",
+      "file_type": "findings_data",
+      "file_size_bytes": 156789,
+      "sha256": "sha256_hash_of_file",
+      "description": "Findings register in PDF format (print-friendly)"
+    },
+    {
+      "file_name": "corrective_action_log.csv",
+      "file_type": "corrective_action",
+      "file_size_bytes": 23456,
+      "sha256": "sha256_hash_of_file",
+      "description": "Corrective actions for findings; evidence references"
+    },
+    {
+      "file_name": "audit_trail_excerpt.json",
+      "file_type": "audit_events",
+      "file_size_bytes": 567890,
+      "sha256": "sha256_hash_of_file",
+      "description": "Filtered audit trail (events only; PII redacted)"
+    },
+    {
+      "file_name": "source_document_index.json",
+      "file_type": "evidence_index",
+      "file_size_bytes": 34567,
+      "sha256": "sha256_hash_of_file",
+      "description": "Index of source documents with extraction metadata"
+    },
+    {
+      "file_name": "pack_configuration.json",
+      "file_type": "pack_config",
+      "file_size_bytes": 123456,
+      "sha256": "sha256_hash_of_file",
+      "description": "Pack manifest and rule definitions used for audit"
+    },
+    {
+      "file_name": "sampling_methodology.md",
+      "file_type": "methodology",
+      "file_size_bytes": 12345,
+      "sha256": "sha256_hash_of_file",
+      "description": "Documentation of sampling strategy (stratified, population count, confidence level)"
+    },
+    {
+      "file_name": "reproducibility_attestation.json",
+      "file_type": "reproducibility",
+      "file_size_bytes": 5678,
+      "sha256": "sha256_hash_of_file",
+      "description": "Pack version + run configuration + input hashes for reproducibility"
+    }
+  ],
+  "bundle_hash": "sha256_of_entire_bundle",
+  "encryption": {
+    "encrypted": false,
+    "encryption_method": null
+  }
+}
+----
+
+=== 21.3 Detailed File Specifications
+
+==== A. Audit Summary Report (PDF)
+
+*Template structure:*
+
+....
+[Cover Page]
+- Organization name, audit period, pack name, date
+- Auditor name & signature block
+
+[Executive Summary]
+- Scope (record count, sampling methodology)
+- Overall compliance assessment (Pass / Fail / Pass w/ Observations)
+- Key findings summary by severity
+  * Critical: N findings
+  * Major: N findings
+  * Minor: N findings
+- Recommended corrective actions (summary)
+
+[Detailed Findings]
+- Table: Finding ID | Rule | Severity | Confidence | Evidence Link | Narrative | Approver
+
+[Audit Trail Summary]
+- Key events (creation, approvals, re-reviews)
+- Timestamp, actor, action
+
+[Attestation]
+- "This audit was performed using AuditIQ Audit Pack [version]."
+- "Audit trail, evidence, and scoring methodology documented in bundle."
+- Digital signature or manager approval stamp
+....
+
+==== B. Findings Register (CSV + PDF)
+
+*CSV columns:*
+
+....
+finding_id,rule_id,rule_name,target_record_id,severity,confidence_extraction,confidence_mapping,confidence_rule,combined_confidence,evidence_ids,narrative,approver_id,approval_date,status
+....
+
+*PDF:* Same data, formatted as professional table.
+
+==== C. Corrective Action Log (CSV)
+
+*Columns:*
+
+....
+finding_id,corrective_action_description,responsible_party,target_completion_date,evidence_reference_id,status
+....
+
+*Example:*
+
+....
+finding_001,"Implement missing disclosure language per Reg Z",mgmt_team_lead,2026-03-31,evidence_reg_z_template,open
+....
+
+==== D. Audit Trail Excerpt (JSON)
+
+*Filtered and anonymized events; sensitive data redacted:*
+
+[source,json]
+----
+{
+  "audit_id": "audit_20260215_loanXYZ",
+  "events_included": 47,
+  "events": [
+    {
+      "event_id": "evt_001",
+      "event_type": "evidence_extracted",
+      "timestamp": "2026-02-15T10:00:00Z",
+      "actor_role": "System",
+      "event_details": {
+        "document_id": "doc_loan_estimate",
+        "extracted_fields": 12,
+        "extraction_success_rate": 0.95
+      }
+    },
+    ... (additional events)
+  ]
+}
+----
+
+==== E. Source Document Index (JSON)
+
+*Reference metadata for all source documents:*
+
+[source,json]
+----
+{
+  "documents": [
+    {
+      "document_id": "doc_loan_estimate_v1",
+      "document_name": "Loan Estimate - 2025-12-01",
+      "document_type": "loan_estimate",
+      "upload_timestamp": "2026-02-15T09:30:00Z",
+      "file_size_bytes": 2456789,
+      "file_hash_sha256": "sha256_xyz",
+      "extraction_method": "docling_ocr",
+      "extraction_confidence": 0.94,
+      "page_count": 3,
+      "extracted_fields": ["loan_amount", "interest_rate", "disclosure_date", ...],
+      "evidence_linked": ["evidence_001", "evidence_003"],
+      "storage_url": "s3://bucket/audit_20260215/doc_loan_estimate_v1"
+    }
+  ]
+}
+----
+
+==== F. Pack Configuration Snapshot (JSON)
+
+*Full pack manifest + rule definitions (reference Section 8):*
+
+[source,json]
+----
+{
+  "pack_id": "hmda-compliance-v2.1",
+  "pack_version": "2.1",
+  "rules": [
+    {
+      "rule_id": "hmda_field_completeness",
+      "rule_name": "Required HMDA Fields Present",
+      ...
+    }
+  ],
+  "schema_fields": [ ... ],
+  "scoring_weights": { ... }
+}
+----
+
+==== G. Sampling Methodology (Markdown)
+
+*Human-readable documentation:*
+
+[source,markdown]
+----
+# Audit Sampling Methodology
+
+## Population & Sample Design
+- Population: 10,000 commercial loans originated in 2025
+- Stratification: By loan type (term, revolving, HELOC)
+- Sample size: 50 loans (0.5% of population)
+- Confidence level: 95%
+- Margin of error: ±5%
+
+## Selection Method
+Random stratified sampling using [method].
+
+## Representativeness
+Sample strata distribution matches population distribution:
+- Term loans: 60% (30 in sample)
+- Revolving: 30% (15 in sample)
+- HELOC: 10% (5 in sample)
+
+## Results
+Zero critical findings; 2 minor findings (4% error rate).
+----
+
+==== H. Reproducibility Attestation (JSON)
+
+*Proof that audit can be re-run with identical inputs:*
+
+[source,json]
+----
+{
+  "reproducibility_claim": "This audit can be reproduced by re-running the same pack version on the same input documents.",
+  "pack_version": "hmda-compliance-v2.1",
+  "pack_version_hash": "sha256_pack_config",
+  "input_document_hashes": [
+    {
+      "document_id": "doc_loan_estimate",
+      "sha256": "sha256_doc_content"
+    }
+  ],
+  "configuration": {
+    "scoring_weights": { ... },
+    "confidence_thresholds": { ... }
+  },
+  "attestation_date": "2026-02-15T14:30:00Z",
+  "attestation_by": "user_manager_001"
+}
+----
+
+=== 21.4 Export Formats
+
+*ZIP Bundle Structure:*
+
+....
+bundle_20260215_loanXYZ_hmda_v2p1.zip
+├── bundle_manifest.json
+├── audit_summary_report.pdf
+├── findings_register.csv
+├── findings_register.pdf
+├── corrective_action_log.csv
+├── audit_trail_excerpt.json
+├── source_document_index.json
+├── pack_configuration.json
+├── sampling_methodology.md
+└── reproducibility_attestation.json
+....
+
+*Optional: Merged PDF* - Single PDF combining audit summary + findings + attestation - Use case: Email-friendly; print-friendly - Metadata embedded in PDF (searchable)
+
+*Encryption (future):* - AES-256 encryption of ZIP contents (Phase 2) - Customer-managed or platform-managed keys (TBD)
+
+=== 21.5 Evidence Referencing Protocol
+
+*Standard format for evidence references throughout bundle:*
+
+[source,json]
+----
+{
+  "evidence_reference": {
+    "evidence_id": "evidence_001",
+    "evidence_type": "document_extract",
+    "source_document_id": "doc_loan_estimate",
+    "source_page": 1,
+    "extracted_value": "loan_amount: $250,000",
+    "confidence": 0.94,
+    "timestamp_extracted": "2026-02-15T10:00:00Z",
+    "storage_url": "s3://bucket/audit_20260215/evidence_001.json",
+    "content_hash_sha256": "sha256_evidence_content",
+    "linked_to_finding_ids": ["finding_001", "finding_003"]
+  }
+}
+----

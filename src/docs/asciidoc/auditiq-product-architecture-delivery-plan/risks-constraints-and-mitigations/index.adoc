@@ -1,0 +1,69 @@
+== Section 15: Risks, Constraints, and Mitigations
+
+=== 15.1 Risk Register (Top 20+)
+
+*Risk Scoring:* Likelihood (1–5) × Impact (1–5) = Risk Score (1–25)
+
+[width="100%",cols="10%,10%,5%,5%,12%,15%,18%,12%,13%",options="header",]
+|===
+|ID |Risk |L |I |Score |Trigger |Mitigation |Owner |Status
+|*R1* |Docling extraction accuracy <80% on HMDA documents |3 |5 |*15* |Phase 0 testing reveals <80% accuracy |(a) Retrain OCR on HMDA sample corpus; (b) Fallback to cloud OCR (AWS/GCP) |Data/ML Lead |Active
+|*R2* |Schema matcher confidence score poorly calibrated; reviewers override >40% |4 |4 |*16* |Phase 1b UAT shows high override rate |(a) Expand training data; (b) Adjust confidence thresholds; (c) Switch matcher algorithm |Data/ML Lead |Active
+|*R3* |LLM API latency causes audit workflow to timeout (>3s) |2 |4 |*8* |Load testing reveals latency spikes |(a) Implement prompt caching (e.g., Redis); (b) Use cheaper/faster model for narratives; (c) Async processing |Full-stack Lead |Active
+|*R4* |LLM hallucinations in findings narratives mislead reviewers |4 |5 |*20* |Beta customer reports inaccurate narrative in finding |(a) Require explicit human approval before finalizing any AI narrative; (b) Citation check pipeline; (c) Confidence threshold (min 0.70); (d) Red-team testing |AI Engineer |Active
+|*R5* |RiskExec integration blocked by legacy API changes or downtime |3 |4 |*12* |RiskExec team deprioritizes integration; API unavailable >4 hours/month |(a) Implement caching layer for RiskExec data; (b) Fallback to manual pack upload; (c) Early engagement with RiskExec team |Full-stack Lead |Active
+|*R6* |Regulatory change post-MVP requires urgent pack revisions (e.g., new HMDA field) |2 |4 |*8* |Regulators issue new guidance mid-year |(a) Policy management module roadmap (Q4); (b) Pack versioning allows rapid rollout; (c) Customer comms plan |Compliance SME |Active
+|*R7* |Q2 timeline slip due to Docling/OCR integration delays |4 |4 |*16* |Phase 0 exits late (Apr 5 vs. Mar 31) |(a) Start Docling setup in Feb (now); (b) Parallel track: manual extraction UI ready by week 2; (c) Reduce scope to core workflow only |Product Lead |Mitigation
+|*R8* |Customer data leakage via LLM calls (PII exposure to cloud API) |2 |5 |*10* |Third-party audit reveals unredacted SSN in LLM prompt |(a) Implement PII redaction before all LLM calls; (b) Data residency agreement with LLM provider; (c) Audit trail logs all PII redaction events; (d) Beta customer consent on data handling |Compliance SME |Active
+|*R9* |Key engineer departure mid-Phase 1 (full-stack or Data/ML) |2 |4 |*8* |Team member exits during Apr/May |(a) Cross-training on schema matcher & API design; (b) Documented technical spike summaries; (c) Pair programming for critical paths |PM Lead |Accepted
+|*R10* |Immutability constraint prevents correcting legitimate mistakes post-finalization |3 |3 |*9* |Reviewer requests finding edit after approval; regulator expects audit trail continuity |(a) Implement compensating events (Section 20); (b) Status transitions create new audit events (not deletions); (c) Policy: corrections via new audit version |Full-stack Lead |Mitigation
+|*R11* |Pack manifest schema becomes unmaintainable as complexity grows |2 |3 |*6* |Phase 2: 50+ custom packs result in merge conflicts & schema fragmentation |(a) Schema versioning & registry (Phase 2); (b) Validation framework with strong typing (TypeScript); (c) Pack linting tools |Data/ML Lead |Planned
+|*R12* |Reviewer burnout: too many auto-generated findings to review (>1000/audit) |3 |3 |*9* |Beta customer reports 2000 findings/audit; reviewer approval time >4 hours |(a) Tighten confidence thresholds & severity rules; (b) Risk-based prioritization (Section 12.5, Phase 2); (c) Sampling strategies; (d) Customer education on rule tuning |UX Lead |Active
+|*R13* |Audit trail grows unboundedly; storage costs spiral (>$10K/month by Q4) |2 |3 |*6* |Estimate 50K audits × 500K events/audit = 25B events; S3 cost ~$50K/month |(a) Event archival & tiering strategy (Phase 2); (b) Compressed snapshots; (c) Event purging for non-critical events per compliance window |DevOps Lead |Planned
+|*R14* |SOC 2 compliance review identifies logging/access control gaps (90-day remediation) |2 |4 |*8* |Phase 1c security audit reveals missing audit logs for sensitive operations |(a) Logging framework in Phase 0; (b) SOC 2 checklist review by Week 8; (c) Buffer compliance work into Phase 1c |Compliance SME |Active
+|*R15* |HMDA sample corpus inadequate; extraction training takes longer than planned |3 |3 |*9* |Licensing or data access delays push sample availability to May |(a) Early procurement (now); (b) Fallback to representative synthetic data; (c) Docling training agnostic to dataset size |Data/ML Lead |Active
+|*R16* |Tenant isolation row-level security bugs expose customer data to other tenants |1 |5 |*5* |Penetration test finds IDOR vulnerability in findings API |(a) RLS implemented at DB layer (Section 5); (b) Comprehensive API authorization tests; (c) Security partner review pre-launch; (d) Incident response playbook |Full-stack Lead |Active
+|*R17* |LLM cost overruns due to verbose prompts or unexpected usage spike |3 |2 |*6* |LLM costs hit $5K/month by Jun (2x budget) |(a) Prompt optimization & token counting; (b) Caching strategy; (c) Usage monitoring & alerts; (d) Cheaper model alternatives |AI Engineer |Active
+|*R18* |Beta customer expectations misaligned; drives scope creep (e.g., ``wants mobile app'') |3 |3 |*9* |Beta customer requests feature not in MVP; threatens sign-off |(a) Clear scope agreement in onboarding contract; (b) Roadmap communication; (c) Feedback log & prioritization process; (d) Escalation to Product Lead |PM Lead |Active
+|*R19* |Confidence score threshold calibration inadequate; false negatives in Phase 2 |2 |4 |*8* |Post-launch: auditors report missing findings they expected; customer complaint |(a) Phase 1b: baseline threshold tuning on test packs; (b) Phase 2: formal calibration study; (c) Ongoing monitoring & retraining |Data/ML Lead |Planned
+|*R20* |Regulatory audit triggers compliance review; packs must pass regulator sign-off |2 |3 |*6* |Regulator requests formal validation of pack rules before external audit use |(a) Early regulator engagement (Q1); (b) Pack versioning allows audit history; (c) Compliance roadmap & documentation |Compliance SME |Planned
+|*R21* |Pack versioning conflicts when multiple teams edit concurrently |2 |2 |*4* |Two teams push conflicting pack versions; merge strategy unclear |(a) Git-based pack versioning; (b) Semantic versioning (major.minor.patch); (c) Merge conflict resolution playbook; (d) Review gates |Data/ML Lead |Planned
+|*R22* |Customer reports audit reproducibility issues; findings differ between runs |2 |4 |*8* |Same input, different scorecard output; regulator questions audit integrity |(a) Input hashing for reproducibility (Section 21); (b) Versioned pack + config snapshots; (c) Testing on multiple data snapshots; (d) Reproducibility attestation |Full-stack Lead |Active
+|*R23* |GPL licensing contamination via `docling-surya` (SuryaOCR) infects commercial SaaS distribution |3 |5 |*15* |Legal review flags GPL dependency in production OCR path; customer due diligence discovers copyleft |(a) Use `docling-tesseract` (Apache 2.0) as default OCR backend; (b) Architecture isolates OCR as swappable backend; (c) Legal review of all transitive dependencies pre-launch; (d) Maintain `requirements-ocr.txt` lockfile |Compliance SME |Active
+|*R24* |Non-canonical JSON serialization breaks hash chain verification; audit trail fails tamper detection |4 |5 |*20* |Integrity check fails due to key-order divergence across language runtimes or library upgrades |(a) Mandate RFC 8785 (JCS) for all hashed payloads (Section 10.8.2); (b) Round-trip verification test on every write; (c) Pin serialization library versions; (d) Cross-language golden-file test suite |Full-stack Lead |Active
+|*R25* |Confidence score miscalibration renders auto-accept tier unsafe; false positives reach production |3 |5 |*15* |Post-deployment: auto-accepted mappings found incorrect >5% of the time; regulator questions |(a) Two-layer confidence design with calibrated scores (Section 10.3.2); (b) Conservative initial thresholds (≥0.95 auto-accept); (c) Weekly calibration monitoring dashboard; (d) Kill switch: disable auto-accept tier if precision <95% |Data/ML Lead |Active
+|*R26* |Automation bias: reviewers rubber-stamp AI outputs without effective challenge |4 |5 |*20* |Audit examination reveals reviewer approved AI-generated findings without independent verification |(a) Mandatory effective challenge documentation (Section 22.3); (b) Randomized ``challenge prompts'' requiring reviewer to explain disagreement rationale; (c) Track override rates per reviewer; (d) Training program on AI-assisted review responsibilities |Compliance SME |Active
+|*R27* |CD-only document coverage gap under-communicated; stakeholders expect full HMDA coverage at launch |3 |4 |*12* |Sales demo implies full field extraction; customer discovers 1003/appraisal/title fields require manual entry |(a) Explicit coverage matrix in product documentation (Section 10.3); (b) Sales training on Phase 1 scope (CD → ~10-20% field auto-coverage); (c) UI displays document-source coverage badges per field; (d) Phase 2 roadmap for multi-document extraction |PM Lead |Active
+|*R28* |Third-party AI provider denies exam access; regulator blocks AI-assisted audit use |2 |5 |*10* |Regulatory examination requests model documentation; AI vendor refuses under trade-secret protection |(a) Contractual exam access clause mandatory for all AI vendors (Section 22.8); (b) Alternative vendor pre-qualified; (c) Architecture supports model swap without data migration; (d) Maintain vendor-independent model validation documentation |Compliance SME |Active
+|===
+
+____
+*v0.2 Addition — Report-Sourced Risks:* R23 sourced from Docling Technical Validation Report (GPL licensing). R24 sourced from Audit Trail Defensibility Report (canonical JSON). R25 sourced from Schema Mapping Strategy Report (confidence calibration). R26 sourced from AI Regulatory Acceptance Report (automation bias). R27 sourced from Schema Mapping Strategy Report (coverage gap). R28 sourced from AI Regulatory Acceptance Report (exam access).
+____
+
+=== 15.2 Constraints
+
+*Technical Constraints:*
+
+* *RiskExec integration dependency:* AuditIQ cannot launch without stable RiskExec API connectivity. Legacy API may not support all required fields (e.g., HMDA loan purpose, loan age). Mitigation: Mock/fallback data pipeline; early API contract review.
+* *Extraction accuracy floor:* Docling + OCR must achieve >85% extraction accuracy on HMDA documents to avoid overwhelming manual review. Below 80% makes product unusable. Mitigation: Curated training corpus; cloud OCR fallback.
+* *State machine complexity:* Audit workflow state transitions must be acyclic and immutable post-finalization to maintain regulator trust. No rollback or branching allowed. Mitigation: Append-only event log (Section 20); compensating events for corrections.
+
+*Regulatory Constraints:*
+
+* *AI explainability requirement:* Every AI-generated finding or narrative must be explainable by human-readable rules or citations. ``Black box'' model outputs violate examiner expectations. Mitigation: Rules-based + LLM hybrid (Section 1.2); citation verification.
+* *Immutable audit trail:* All audit events, findings, and approvals must be append-only and tamper-proof. Regulators expect to reconstruct entire audit history. Mitigation: Cryptographic event log with RFC 8785 canonical JSON; immutability rules per artifact (Section 20); WORM anchor storage (Section 10.8.4).
+* *Tenant isolation:* Multi-tenant data architecture must meet PCI-DSS or equivalent controls. Row-level security insufficient; additional encryption & access logs required. Mitigation: DB-level RLS + encrypted PII; audit trail per tenant.
+* *Data residency:* Customer data (especially HMDA) may not leave jurisdiction (e.g., EU data must stay in EU). LLM calls may violate residency. Mitigation: Data redaction before LLM calls; residency agreement with API provider.
+* *AI governance — SR 11-7 / OCC 2011-12 alignment (v0.2):* Any model or AI component used in audit workflow must comply with model risk management expectations: effective challenge, independent validation, ongoing monitoring. Mitigation: AI Governance Framework (Section 22); conditional acceptability standard (Section 22.1.1); go-to-market positioning as ``AI-assisted documentation'' not ``AI-powered decisions.''
+* *Third-party AI provider exam access (v0.2):* Regulators may require examination access to third-party AI providers under Interagency Third-Party Risk Management Guidance. Contractual exam access clause is mandatory. Mitigation: Vendor requirements (Section 22.8); alternative vendor pre-qualification.
+
+*Timeline Constraints:*
+
+* *Q2 2026 hard deadline:* Product must launch by June 30 to align with bank audit cycles (FY-end) and board commitments. No extension possible without strategic replanning. Mitigation: MVP scope locked; feature triage; buffer time in Phase 1c.
+* *Regulatory approval window:* If regulator sign-off required for pack deployment, approval process typically takes 60–90 days. Must initiate before Apr 1 to launch by Jun 30. Mitigation: Early engagement; provisional approval pathway.
+
+*Data Constraints:*
+
+* *HMDA sample corpus availability:* Docling training requires real HMDA documents from lenders. Licensing or privacy concerns may delay access. Mitigation: Synthetic data generation; early procurement; fallback to generic PDF training.
+* *Test data volume:* Performance testing requires 1000+ concurrent audit runs. Generating realistic test data is labor-intensive. Mitigation: Fixture library; parameterized test generation; third-party data provider.
