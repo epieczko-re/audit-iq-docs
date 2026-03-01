@@ -13,4 +13,4 @@ AuditIQ is a new module for the RiskExec platform that transforms how financial 
 
 *Phase 1 MVP scope:* HMDA origination audit. Manual and OCR-assisted review modes. Findings management with remediation tracking. Manager dashboards. AI-assisted reporting. Exam-ready export bundle. Target: June 30, 2026.
 
-*Revenue opportunity:* $3–4M incremental annual revenue within two years at 20–30% ACV uplift per adopting client. Top-tier opportunity competes with ACES’s $135K+ ACVs. (Source: 5 Audit-IQ - RiskExec New Product Brief.pdf)
+*Revenue opportunity:* $3–4M incremental ARR within 24 months at base-case 40 customers and $90K average ACV. Pricing model (Section 13) mirrors ACES’s proven per-pack subscription tiers at 15–20% below ACES rates, with AI governance controls included. ACES’s 141 customers average $135K ACV (banks: $167K; top logos: $481K–$934K); AuditIQ targets the same ACV range with superior value. (Sources: 5 Audit-IQ - RiskExec New Product Brief.pdf, Internal ACES Pricing Study)
