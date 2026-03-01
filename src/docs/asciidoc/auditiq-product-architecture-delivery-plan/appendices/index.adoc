@@ -266,6 +266,7 @@ We will communicate progress weekly to the board and escalate blockers immediate
 [source,mermaid]
 ----
 stateDiagram-v2
+  direction TB
   [*] --> Created
   Created --> DocumentsUploaded: Upload loan file + HMDA doc
   DocumentsUploaded --> Extracted: Docling extraction complete
@@ -277,6 +278,13 @@ stateDiagram-v2
   Finalized --> [*]
   ReviewerInProgress --> ReviewerInProgress: Corrections, overrides
   ManagerReview --> FindingsGenerated: Manager requests re-review
+
+  classDef blueState fill:#4A6FA5,color:#fff,stroke:#2B4570
+  classDef greenState fill:#2E8B57,color:#fff,stroke:#1B5E3B
+
+  class Created,DocumentsUploaded,Extracted,ReviewerInProgress blueState
+  class FindingsGenerated,ManagerReview,ManagerApproval blueState
+  class Finalized greenState
 ----
 
 *Diagram 2: Pack Engine Architecture (Section 8.1)*
@@ -293,6 +301,16 @@ graph LR
   E -->|Finding| G[Finding Creator]
   G -->|Append| H[Audit Trail]
   H -->|Immutable| I[Evidence Store]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style G fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style I fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
 
 *Diagram 3: AI & Human-in-Loop (Section 22)*
@@ -309,6 +327,15 @@ graph TD
   F -->|Approved| G[Finalized]
   F -->|Rejected| H[Revision]
   H -->|Resubmit| F
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#4A6FA5,color:#fff,stroke:#2B4570
 ----
 
 *Diagram 4: Multi-Tenant Data Isolation (Section 9 / 19.6)*
@@ -323,6 +350,15 @@ graph TD
   D -->|No| F[403 Forbidden]
   E -->|Append Event| G[Audit Log]
   G -->|Immutable| H[Event Store]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#C0392B,color:#fff,stroke:#922B21
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
 
 *Diagram 5: Document Processing Pipeline (Section 10.2)*
@@ -338,6 +374,15 @@ graph LR
   F -->|Event| G[Audit Trail]
   C -->|OCR Failed?| H[Cloud OCR Fallback]
   H -->|Re-extract| E
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#C0392B,color:#fff,stroke:#922B21
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#4A6FA5,color:#fff,stroke:#2B4570
 ----
 
 *Diagram 6: Immutability & Versioning (Section 20.2)*
@@ -352,4 +397,11 @@ graph TD
   D -->|Status Reset| E[Finding v2]
   E -->|New Approval| F[Event: Re-approved]
   F -->|Event Chain| C
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#4A6FA5,color:#fff,stroke:#2B4570
 ----

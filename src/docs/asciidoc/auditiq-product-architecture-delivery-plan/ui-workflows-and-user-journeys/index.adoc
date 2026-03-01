@@ -5,13 +5,14 @@ ____
 
 *Color Legend:*
 
-* *Blue* = User actions (auditor/reviewer interactions)
-* *Purple* = System actions (deterministic processing)
-* *Teal* = AI actions (LLM or ML-assisted)
-* *Orange* = Decision points (routing logic)
-* *Yellow* = Audit trail / governance controls
-* *Green* = Success / confirmed states
-* *Red* = Manual entry / end states
+* *Steel Blue* (#4A6FA5) = Process nodes (user actions, system actions, AI actions)
+* *Orange* (#FF7E2D) = Decision points (routing logic)
+* *Green* (#2E8B57) = Success / confirmed / terminal states (audit trail, evidence store)
+* *Red* (#C0392B) = Error / manual entry / rejection states
+* *Gold* (#DAA520) = Audit trail / governance controls
+
+NOTE: Simplified versions of these diagrams appear in Appendix G.
+Detailed workflow versions below add intermediate steps and governance detail.
 ____
 
 === 23.1 Workflow 1: Audit Lifecycle (End-to-End)
@@ -51,15 +52,17 @@ flowchart TD
     J -->|ZIP + PDF| K((Done))
     H -->|Corrections needed| G
 
-    style A fill:#4A90D9,color:#fff
-    style C fill:#4A90D9,color:#fff
-    style H fill:#4A90D9,color:#fff
-    style D fill:#7B68EE,color:#fff
-    style F fill:#7B68EE,color:#fff
-    style E fill:#20B2AA,color:#fff
-    style G fill:#20B2AA,color:#fff
-    style I fill:#FF8C00,color:#fff
-    style J fill:#2E8B57,color:#fff
+    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style G fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style H fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style I fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style K fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
 
 '''''
@@ -110,14 +113,18 @@ flowchart TD
     C -->|Page-grade POOR/FAIR| L[Cloud OCR Fallback]
     L --> E
 
-    style A fill:#4A90D9,color:#fff
-    style C fill:#7B68EE,color:#fff
-    style D fill:#7B68EE,color:#fff
-    style E fill:#7B68EE,color:#fff
-    style F fill:#FF8C00,color:#fff
-    style G fill:#2E8B57,color:#fff
-    style H fill:#FFD700,color:#000
-    style I fill:#DC143C,color:#fff
+    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style F fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style H fill:#DAA520,color:#fff,stroke:#B8860B
+    style I fill:#C0392B,color:#fff,stroke:#922B21
+    style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style K fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style L fill:#4A6FA5,color:#fff,stroke:#2B4570
 ----
 
 '''''
@@ -179,13 +186,19 @@ flowchart TD
     J --> L[Feed to Rules Engine]
     I -->|Override recorded| M[Synonym Dictionary Update]
 
-    style A fill:#7B68EE,color:#fff
-    style B fill:#20B2AA,color:#fff
-    style D fill:#20B2AA,color:#fff
-    style E fill:#FF8C00,color:#fff
-    style F fill:#2E8B57,color:#fff
-    style G fill:#FFD700,color:#000
-    style H fill:#DC143C,color:#fff
+    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style E fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style F fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style G fill:#DAA520,color:#fff,stroke:#B8860B
+    style H fill:#C0392B,color:#fff,stroke:#922B21
+    style I fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style K fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style L fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style M fill:#DAA520,color:#fff,stroke:#B8860B
 ----
 
 '''''
@@ -242,13 +255,20 @@ flowchart TD
     L -->|effective_challenge_notes, disposition, output_diff| M[Audit Event Created]
     M --> N[Finding on Scorecard]
 
-    style A fill:#7B68EE,color:#fff
-    style B fill:#20B2AA,color:#fff
-    style D fill:#FFD700,color:#000
-    style G fill:#4A90D9,color:#fff
-    style H fill:#FF8C00,color:#fff
-    style I fill:#2E8B57,color:#fff
-    style M fill:#FFD700,color:#000
+    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style D fill:#DAA520,color:#fff,stroke:#B8860B
+    style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style G fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style H fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style I fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style J fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style K fill:#C0392B,color:#fff,stroke:#922B21
+    style L fill:#DAA520,color:#fff,stroke:#B8860B
+    style M fill:#DAA520,color:#fff,stroke:#B8860B
+    style N fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
 
 '''''
@@ -263,7 +283,7 @@ ____
 
 *Phase 2 — Interactive Screen Wireframes (planned):* - Audit dashboard (create, manage, monitor audits) - Document upload + extraction review screen (AFC confidence badges, field-level review) - Schema mapping review screen (suggestion cards, confidence routing, synonym management) - Findings review + approval screen (effective challenge, AI labels, provenance panel) - Exam bundle export screen (manifest preview, format options)
 
-*Design Principles:* - Confidence is visible everywhere — color-coded badges (green ≥0.85, yellow 0.50-0.85, red <0.50) - AI provenance is always one click away — every AI-generated element links to its provenance record - Effective challenge is enforced by design — reviewer cannot approve without documenting their independent verification - Audit trail is ambient — every action generates an event; users see event count and last-event timestamp per artifact
+*Design Principles:* - Confidence is visible everywhere — color-coded badges (green ≥0.85, gold 0.50–0.85, red <0.50) - AI provenance is always one click away — every AI-generated element links to its provenance record - Effective challenge is enforced by design — reviewer cannot approve without documenting their independent verification - Audit trail is ambient — every action generates an event; users see event count and last-event timestamp per artifact
 
 '''''
 
