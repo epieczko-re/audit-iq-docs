@@ -7,7 +7,7 @@
 [width="100%",cols="10%,27%,43%,20%",options="header",]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
-|FR-1.1 |System shall accept target datasets via CSV upload, API endpoint, and cross-module transfer from existing RiskExec modules (HMDA, CRA). |Given a valid HMDA LAR CSV with 5,000 records, when uploaded, then all records are ingested within 60 seconds with 0 data loss and validation results displayed. |P0
+|FR-1.1 |System shall accept target datasets via CSV upload, API endpoint, and cross-module transfer from existing RiskExec modules (HMDA, CRA). |Acceptance Criteria (FR-1.1 — Ingestion performance):  - Test dataset: 5,000-record HMDA LAR synthetic dataset (representative value distributions and edge cases; see Appendix X). - Test environment (canonical): 8 vCPU, 32GB RAM, 200GB NVMe storage; managed Postgres with provisioned IOPS=3000; 100 Mbps network, Dockerized service instances. - Given a valid HMDA LAR CSV with 5,000 records uploaded via the CSV endpoint in the canonical test environment, the system must:   * Ingest and validate all records with P95 end-to-end completion time ≤ 60s.   * Report ≤ 0.1% records rejected for transient processing errors; permanently invalid rows reported with line numbers and standard error codes.   * Guarantee 0% silent data corruption: valid records stored exactly as received with per-record SHA-256 checksums logged and verifiable.   * Provide validation summary in the UI and as a JSON/CSV download. |P0
 |FR-1.2 |System shall perform automated completeness and format validation on ingested datasets. |Given a CSV missing required columns, when uploaded, then system rejects with specific error listing missing columns. Given a CSV with malformed date values, when uploaded, then system flags affected rows with line numbers and expected format. |P0
 |FR-1.3 |System shall accept source documents in PDF, TIFF, JPEG, and PNG formats. |Given a multi-page PDF, when uploaded, then document is stored, classified, and available in the document viewer within 10 seconds per page. |P0
 |FR-1.4 |System shall support bulk document upload with batch classification. |Given a ZIP containing 50 mixed-format documents, when uploaded, then all documents are extracted, classified by type (CD, LE, URLA, etc.), and linked to target records via loan number matching. |P1
@@ -21,8 +21,8 @@
 [width="100%",cols="10%,27%,43%,20%",options="header",]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
-|FR-2.1 |System shall process source documents through an OCR/document understanding pipeline (Docling baseline) to extract text, tables, and key-value pairs. |Given a standard Closing Disclosure PDF, when processed, then system extracts all key fields (loan amount, interest rate, property address, borrower name) with ≥85% field-level accuracy. |P0
-|FR-2.2 |Each extracted value shall carry an extraction confidence score (0.0–1.0). |Given an extracted loan amount, when displayed to reviewer, then confidence score is visible with color indicator (green ≥0.85, yellow 0.50–0.84, red <0.50). |P0
+|FR-2.1 |System shall process source documents through the Docling-Graph pipeline (Docling + Docling-Graph) to extract text, tables, and key-value pairs as versioned Pydantic objects and a directed knowledge graph (KG). Extraction may use VLM (Docling) or LLM (self-hosted Mistral via LiteLLM) backends. |Given a standard Closing Disclosure PDF, when processed by the Docling-Graph pipeline, then system extracts all key fields (loan amount, interest rate, property address, borrower name) as validated Pydantic objects with ≥85% field-level F1 (normalized) on the Phase 1 evaluation corpus; graph exports available in CSV/Cypher format for downstream processing. |P0
+|FR-2.2 |Each extracted value shall carry an extraction confidence score (AFC 0.0–1.0) that includes graph-derived corroboration signals from the Docling-Graph knowledge graph. |Given an extracted loan amount, when displayed to reviewer, then AFC score is visible with color indicator (green ≥0.85, yellow 0.50–0.84, red <0.50) and includes an explicit `graph_corrob_score` subcomponent showing cross-document graph corroboration strength. |P0
 |FR-2.3 |OCR output shall be presented as assistive/advisory in Phase 1, not authoritative. |Given any OCR-extracted value, when displayed, then it is visually labeled as ``AI-extracted (advisory)'' and cannot auto-finalize a finding without human confirmation. |P0
 |FR-2.4 |System shall provide a high-fidelity document viewer with page navigation, zoom, text search, and field highlight overlay. |Given a 50-page PDF, when opened in viewer, then page loads within 3 seconds, zoom works from 50% to 400%, text search returns results with highlighting, and extracted fields are overlaid with bounding boxes. |P0
 |FR-2.5 |System shall fall back to cloud OCR service when Docling extraction confidence is below 0.50 for >30% of key fields on a document. |Given a low-quality scanned document where Docling extracts <50% of fields at acceptable confidence, when fallback triggers, then system re-processes with cloud OCR (AWS Textract or equivalent) and logs the fallback event. |P1
@@ -30,7 +30,7 @@
 
 *Deterministic boundary:* OCR extraction is deterministic for a given model version and input. The same document processed with the same model version always produces the same extraction. Model version is logged as provenance metadata.
 
-*DECISION LOCKED:* Docling as baseline extraction engine; cloud OCR as fallback. See Section 19.1.
+*DECISION LOCKED:* Docling-Graph pipeline as baseline extraction engine (MIT-licensed); self-hosted Mistral via LiteLLM as LLM extraction backend; cloud OCR as page-level fallback. See Section 19.2.
 
 ==== Epic 3: Schema Mapping + Mapping UI
 

@@ -52,3 +52,11 @@ include::exam-ready-bundle-specification/index.adoc[]
 include::ai-governance-and-model-risk-controls/index.adoc[]
 
 include::ui-workflows-and-user-journeys/index.adoc[]
+
+include::model-registry/index.adoc[]
+
+include::model-deployment/index.adoc[]
+
+include::docling-graph-integration/index.adoc[]
+
+include::glossary/index.adoc[]

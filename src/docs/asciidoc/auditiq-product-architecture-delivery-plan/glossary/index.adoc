@@ -1,0 +1,202 @@
+[appendix]
+== Canonical Glossary of Confidence Scores, Thresholds, and Severity Definitions
+
+____
+*Purpose.* This glossary is the *single source of truth* for every confidence metric, routing threshold, and severity level used in AuditIQ. All other sections reference these definitions; if a value in another section conflicts with this glossary, this glossary governs. When thresholds are tuned, update *this file first*, then propagate.
+____
+
+=== G.1 Confidence Metrics
+
+[width="100%",cols="18%,12%,40%,30%",options="header"]
+|===
+|Metric |Range |Definition |Canonical Source
+
+|*AFC* (AuditIQ Field Confidence)
+|0.0–1.0
+|Per-field composite score measuring extraction reliability. *AFC v2* (with Docling-Graph): computed from 6 weighted signals: `docling_page_grade` (0.12), `ocr_segment_confidence` (0.23), `pattern_validity` (0.20), `layout_anchor_consistency` (0.18), `cross_doc_redundancy` (0.12), `graph_corrob_score` (0.15). AFC v1 (5-signal, without `graph_corrob_score`) remains valid during Phase 0 POC.
+|Section 10.2.1
+
+|*extraction_confidence*
+|0.0–1.0
+|Alias for the AFC score when used as input to combined confidence. Represents how confident the system is in the extracted value from a source document.
+|Section 12.1 (Layer 2)
+
+|*mapping_confidence* (`conf_mapping`)
+|0.0–1.0
+|Measures how confident the system is that target field X corresponds to source field Y. Layer 1 raw score from the hybrid heuristic matcher: `name_similarity` (0.30), `synonym_match` (0.25), `type_compatibility` (0.20), `document_section` (0.15), `historical_acceptance` (0.10).
+|Section 10.3.2, Section 12.1 (Layer 1)
+
+|*rule_confidence* (`conf_rule`)
+|0.0–1.0
+|Measures how confidently a validation rule applies to a specific data context. Base confidence from pack rule definition, reduced by 0.7× if precondition not satisfied, 0.5× if normalization failed.
+|Section 12.1 (Layer 3)
+
+|*combined_confidence*
+|0.0–1.0
+|`min(mapping_confidence, extraction_confidence, rule_confidence)`. The floor-based composite that drives finding-level routing. If extraction is not applicable, `extraction_confidence` defaults to 1.0.
+|Section 12.1
+
+|*calibrated_score* (Layer 2 mapping)
+|0.0–1.0
+|Calibrated decision score combining `conf_mapping`, `conf_extraction`, and `conf_rule` via temperature scaling (Phase 1) or isotonic regression (Phase 2). Used for schema mapping routing only. ECE must be ≤ 0.05.
+|Section 10.3.2
+|===
+
+=== G.2 Routing Thresholds
+
+==== AFC Routing (Document Extraction — Section 10.2)
+
+[width="100%",cols="25%,25%,50%",options="header"]
+|===
+|Band |Threshold |Action
+
+|*High (Auto-confirm)*
+|AFC ≥ 0.85
+|No human review required. Field value accepted automatically.
+
+|*Medium (Human review)*
+|0.50 ≤ AFC < 0.85
+|Field highlighted in UI. Reviewer validates or overrides extracted value.
+
+|*Low (Manual entry)*
+|AFC < 0.50
+|Extraction failure. Routed to manual entry queue; reviewer must type value.
+|===
+
+==== Schema Mapping Routing (Calibrated Score — Section 10.3)
+
+[width="100%",cols="25%,25%,50%",options="header"]
+|===
+|Band |Threshold |Action
+
+|*Auto-accept*
+|calibrated ≥ 0.95
+|Mapping locked without review (~10s visual confirmation). NOTE: Conservative initial threshold per Decision D2 (Section 19.3); may be lowered to ≥ 0.90 after calibration on ≥ 500 mappings.
+
+|*Human review*
+|0.70 ≤ calibrated < 0.95
+|Reviewer evaluates suggestion + alternatives (~45s per field).
+
+|*Manual mapping*
+|calibrated < 0.70
+|No suggestion shown. Reviewer selects from field list.
+|===
+
+==== Combined Confidence Routing (Findings — Section 12.1)
+
+[width="100%",cols="25%,25%,50%",options="header"]
+|===
+|Band |Threshold |Action
+
+|*High (Auto-confirm)*
+|combined_confidence ≥ 0.85
+|Does not require human review. Auto-confirm if desired.
+
+|*Medium (Human review)*
+|0.50 ≤ combined_confidence < 0.85
+|Recommend human verification; display in UI for secondary review.
+
+|*Low (Reject)*
+|combined_confidence < 0.50
+|Reject finding; flag for manual re-review if critical issue.
+|===
+
+==== Cloud OCR Fallback Trigger (Section 10.2)
+
+[width="100%",cols="30%,70%",options="header"]
+|===
+|Condition |Action
+
+|Docling page grade = POOR or FAIR
+|Trigger cloud OCR fallback for that page.
+
+|> 30% of key fields have AFC < 0.50 (even on GOOD/EXCELLENT pages)
+|Trigger cloud OCR fallback for that page.
+|===
+
+=== G.3 Severity Definitions
+
+*Severity measures regulatory importance. It is orthogonal to confidence.*
+
+[width="100%",cols="13%,17%,16%,27%,27%",options="header"]
+|===
+|Level |Definition |Examples |Action Required |Review Timeline
+
+|*Critical*
+|Regulatory violation with potential enforcement action; data misrepresentation; prohibited conduct
+|Action Taken code wrong, pricing discrimination pattern, missing disclosure
+|Immediate remediation, escalation to Compliance Officer
+|Within 1 day
+
+|*High*
+|Potentially reportable discrepancy; regulatory attention likely if unresolved
+|Loan Amount mismatch > 2%, co-applicant name inconsistent
+|Prompt investigation; remediation within 3 days
+|Within 3 days
+
+|*Medium*
+|Compliance or data quality issue; non-trivial to fix; not immediately reportable
+|Property address formatting inconsistent, fee description unclear
+|Standard remediation workflow
+|Within 7 days
+
+|*Low*
+|Minor data quality issue; cosmetic; no regulatory impact
+|Whitespace extra, trailing zeros
+|Log and monitor; no urgent action required
+|Within 14 days
+
+|*Informational*
+|Data point of interest; no action required
+|Historical note, data type conversion artifact
+|Log only; no action
+|Informational only
+|===
+
+Severity is assigned by: (1) pack rule definition (default), (2) optionally overridden by Reviewer with justification, (3) may be escalated by Manager if pattern detected. Severity is immutable once finding is triaged unless explicitly re-scored by Manager with audit trail event.
+
+=== G.4 Calibration & Go/Kill Criteria
+
+[width="100%",cols="30%,35%,35%",options="header"]
+|===
+|Metric |Threshold |Context
+
+|*Calibration error alert*
+|> 5% of high-confidence findings where human disagreed
+|Triggers threshold adjustment (Section 12.4)
+
+|*Expected Calibration Error (ECE)*
+|≤ 0.05
+|Required for Phase 2 deployment (Section 10.3.2)
+
+|*Phase 0 AFC distribution target*
+|≥ 60% of fields above 0.85 on 50-document sample
+|POC acceptance gate (Section 10.2)
+
+|*Phase 1a Go/Kill (AFC)*
+|Go: ≥ 85% precision on key HMDA fields at AFC ≥ 0.85. Kill: < 70% precision or fallback rate > 40%.
+|Section 10.2
+
+|*Phase 1b Go/Kill (Mapping)*
+|Go: ≥ 95% precision at conf_mapping ≥ 0.90 on CD-supported fields; override rate ≤ 25%. Kill: > 40% override rate or scores uncalibratable.
+|Decision D2 (Section 19.3)
+|===
+
+=== G.5 UI Confidence Badge Colors
+
+[width="100%",cols="20%,20%,60%",options="header"]
+|===
+|Color |Threshold |Usage
+
+|*Green*
+|≥ 0.85
+|High confidence — auto-confirm eligible
+
+|*Orange*
+|0.50–0.84
+|Medium confidence — human review recommended
+
+|*Red*
+|< 0.50
+|Low confidence — manual entry / reject
+|===

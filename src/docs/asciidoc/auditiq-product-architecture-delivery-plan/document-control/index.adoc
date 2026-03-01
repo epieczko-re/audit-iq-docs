@@ -39,6 +39,8 @@ This document serves three audiences simultaneously:
 * *Product / leadership:* Read Sections 1–6 for context and competitive positioning. Review Section 13 (Pricing placeholder), Section 14 (Delivery Plan), Section 19 (MVP Decisions), and the MVP Cutline (AuditIQ_MVP_Cutline_v0.2.md) for investment decisions.
 * *Compliance / regulatory stakeholders:* Focus on Sections 12 (Scoring), 20 (Immutability), 21 (Exam Bundle), and 22 (AI Governance) for regulatory defensibility.
 
+*Canonical Glossary:* All confidence metrics (AFC, mapping_confidence, extraction_confidence, rule_confidence, combined_confidence), routing thresholds, severity definitions, and calibration criteria are defined in a *single source of truth*: the *Canonical Glossary* (Appendix — Glossary). If a threshold value elsewhere in this document conflicts with the Glossary, the Glossary governs.
+
 *Conventions used in this document:*
 
 * *TODO* = work item that must be completed before implementation starts

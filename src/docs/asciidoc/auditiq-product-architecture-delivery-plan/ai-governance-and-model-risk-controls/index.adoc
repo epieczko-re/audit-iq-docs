@@ -96,6 +96,8 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 
 *Requirement:* If an AI-generated narrative or score appears in an audit, humans must be able to trace it back to the model, version, prompt, retrieval corpus, and input. This is a regulatory requirement under SR 11-7 (documentation) and NIST GenAI Profile (content provenance).
 
+*Model Registry:* The `model_name`, `model_version`, `prompt_template_id`, and `retrieval_corpus_id` fields below are anchored to the *Model Registry* (Section 24). Only models with `status = 'approved'` in the registry may be called in production. See Section 24 for the registry schema, API contract, lifecycle state machine, and validation requirements.
+
 *Required Logging Fields (per AI Regulatory Acceptance Report — ALL fields mandatory for every AI API call):*
 
 [width="100%",cols="25%,25%,25%,25%",options="header",]
@@ -115,6 +117,13 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 |12 |`output_hash` + `diff_history` |string |SHA-256 of AI output; track human edits via diff
 |13 |`human_reviewer_id` + `timestamp` + `disposition` + `effective_challenge_notes` |object |Complete human review record
 |14 |`data_handling_flags` |object |PII redaction applied, data residency, no-training clause
+|15 |`graph_node_ids` |string[] |Docling-Graph node IDs for entities referenced by this AI output
+|16 |`pydantic_template_id` + `version` |string |Docling-Graph Pydantic template used for extraction (e.g., `closing_disclosure_v1`)
+|17 |`graph_export_version` |string |Version of graph export format used
+|18 |`graph_db_export_location` |string |S3 path or URI for exported graph artifact
+|19 |`llm_inference_runtime` |string |Runtime used for LLM calls (e.g., ``vLLM'', ``Ollama'', ``LiteLLM'')
+|20 |`llm_runtime_cluster_id` |string |Identifier for the inference cluster/host
+|21 |`llm_inference_config` |object |Batch size, max sequence length, GPU profile
 |===
 
 *Implementation: AI Provenance Metadata*
@@ -147,6 +156,18 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
       "pii_redaction_applied": true,
       "data_residency": "us-east-1",
       "no_training_clause": true
+    },
+    "graph_node_ids": ["node_cd_12345", "node_le_67890"],
+    "pydantic_template_id": "closing_disclosure_v1",
+    "pydantic_template_version": "v1.0",
+    "graph_export_version": "v1.0",
+    "graph_db_export_location": "s3://audit-exports/graphs/audit_XYZ.zip",
+    "llm_inference_runtime": "vLLM",
+    "llm_runtime_cluster_id": "llm-cluster-01",
+    "llm_inference_config": {
+      "batch_size": 8,
+      "max_seq_len": 2048,
+      "gpu_profile": "A100-80GB"
     }
   },
 
@@ -286,4 +307,4 @@ Per Interagency Guidance on Third-Party Relationships (OCC 2023-17 / FDIC FIL-29
 |*Right to audit* |AuditIQ (or its regulator) may audit provider’s AI controls |Contract clause
 |===
 
-*Cross-references:* - Section 22.1: Regulatory context, conditional acceptability standard, risk scenarios, disclaimers, red lines - Section 22.2: PII redaction and data residency controls - Section 22.3: Required logging fields and provenance metadata - Section 22.4: Hallucination detection and QA gates - Section 22.5: Drift monitoring and retraining triggers - Section 22.6: UI labeling and transparency requirements - AI Regulatory Acceptance Report: Full regulatory analysis, risk exposure assessment, and recommended controls
+*Cross-references:* - Section 22.1: Regulatory context, conditional acceptability standard, risk scenarios, disclaimers, red lines - Section 22.2: PII redaction and data residency controls - Section 22.3: Required logging fields and provenance metadata - Section 22.4: Hallucination detection and QA gates - Section 22.5: Drift monitoring and retraining triggers - Section 22.6: UI labeling and transparency requirements - *Section 24 (Model Registry):* Schema, API contract, lifecycle governance, and validation requirements for all AI model artifacts referenced by provenance fields - AI Regulatory Acceptance Report: Full regulatory analysis, risk exposure assessment, and recommended controls
