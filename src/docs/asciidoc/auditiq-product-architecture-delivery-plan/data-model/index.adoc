@@ -1,6 +1,6 @@
-== 11. Data Model
+== Data Model
 
-=== 11.1 Entity-Relationship Diagram (Conceptual)
+=== Entity-Relationship Diagram (Conceptual)
 
 ....
 audit_runs (one) ---> (many) findings
@@ -17,7 +17,7 @@ evidence (one) ---> (many) audit_trail.events
 field_mappings (one) ---> (many) mapping_versions
 ....
 
-=== 11.2 MISMO Alignment Strategy
+=== MISMO Alignment Strategy
 
 *Design Principle:* AuditIQ’s canonical data model adopts MISMO (Mortgage Industry Standards Maintenance Organization) Reference Model naming conventions and field definitions for all loan-level attributes. This alignment reduces translation friction when ingesting data from LOS, servicing, and origination systems — most of which already export MISMO-formatted data — and increases credibility with examiners who recognize MISMO field names.
 
@@ -64,7 +64,7 @@ CREATE INDEX idx_mismo_domain ON reference.mismo_dictionary USING GIN (regulatio
 
 This dictionary is populated during pack deployment and used by the schema mapping engine to validate field references and generate mapping suggestions.
 
-=== 11.3 Core Tables
+=== Core Tables
 
 ==== audit_runs
 
@@ -295,7 +295,7 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 -- REVOKE TRUNCATE ON audit_trail.events FROM app_role;
 ----
 
-=== 11.4 Data Types and Constraints
+=== Data Types and Constraints
 
 * *UUIDs:* All primary keys are UUIDs for distributed systems compatibility
 * *Timestamps:* Stored in UTC, always timestamptz in PostgreSQL
@@ -305,7 +305,7 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 * *Hashes:* VARCHAR(64) for SHA-256 (hex-encoded)
 * *Tenant isolation:* Every table includes tenant_id; row-level security policies enforce isolation at DB level (TODO: Implement RLS policies)
 
-=== 11.5 Indexing Strategy
+=== Indexing Strategy
 
 *High-impact queries:*
 
@@ -316,11 +316,18 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 . Audit trail searches: `events(audit_id, timestamp)` and `events(actor_id)`
 . Dashboard metrics: `findings(audit_id, status, severity)` with aggregation
 
-*Indexes created (per DDL above):* - `findings(audit_id, status)` - `findings(severity)` - `findings(combined_confidence)` - `evidence(audit_id, finding_id)` - `events(audit_id, timestamp)` - `events(entity_id)` and `events(actor_id)`
+*Indexes created (per DDL above):*
+
+* `findings(audit_id, status)`
+* `findings(severity)`
+* `findings(combined_confidence)`
+* `evidence(audit_id, finding_id)`
+* `events(audit_id, timestamp)`
+* `events(entity_id)` and `events(actor_id)`
 
 *TODO:* Query plan analysis and potential partitioning strategy for 100K+ records.
 
-=== 11.6 Versioning & Schema Evolution
+=== Versioning & Schema Evolution
 
 *Approach:* Schema versioning via semantic versioning on tables; migrations tracked in schema_migrations table.
 
@@ -338,12 +345,22 @@ CREATE TABLE schema_migrations (
 );
 ----
 
-*Policy:* - New audit runs always use latest pack version and schema - Active audits remain pinned to their pack version; no auto-upgrade - Schema changes are backward-compatible within MINOR versions - MAJOR schema changes require audit run completion or explicit migration
+*Policy:*
 
-=== 11.7 Analytics Storage (Separate Read-Only Replica)
+* New audit runs always use latest pack version and schema
+* Active audits remain pinned to their pack version; no auto-upgrade
+* Schema changes are backward-compatible within MINOR versions
+* MAJOR schema changes require audit run completion or explicit migration
+
+=== Analytics Storage (Separate Read-Only Replica)
 
 *Rationale:* Aggregation queries (dashboards, trend reports) impact operational DB. A read-only replica is cheaper and doesn’t contend with transactional workload.
 
 *Approach:* Stream findings, status transitions, and metrics to a separate analytics database (Aurora or Redshift) via Change Data Capture or nightly batch export.
 
-*Analytics tables (TODO — Phase 2):* - `findings_snapshot`: Denormalized findings with all key attributes for fast queries - `daily_metrics`: Pre-aggregated counts by status, severity, date - `user_performance`: Metrics per reviewer (findings created, resolved, error rate) - `audit_timeline`: Timeline of key milestones per audit run
+*Analytics tables (TODO — Phase 2):*
+
+* `findings_snapshot`: Denormalized findings with all key attributes for fast queries
+* `daily_metrics`: Pre-aggregated counts by status, severity, date
+* `user_performance`: Metrics per reviewer (findings created, resolved, error rate)
+* `audit_timeline`: Timeline of key milestones per audit run

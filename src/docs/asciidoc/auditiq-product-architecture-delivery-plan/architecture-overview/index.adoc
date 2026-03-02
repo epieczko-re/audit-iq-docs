@@ -1,6 +1,6 @@
-== 9. Architecture Overview
+== Architecture Overview
 
-=== 9.1 Architectural Principles
+=== Architectural Principles
 
 [arabic]
 . *Separation of concerns:* Ingestion → Processing → AI → Storage → Reporting.
@@ -11,7 +11,7 @@
 . *Multi-tenancy:* Row-level security at the database level. No cross-tenant data leakage.
 . *Reproducibility:* Identical inputs + pack version + configuration = identical deterministic outputs.
 
-=== 9.2 Component Architecture (Deep Dive)
+=== Component Architecture (Deep Dive)
 
 *Logical layers:*
 
@@ -49,9 +49,16 @@
 * *Search Index (Elasticsearch):* Full-text search on findings, evidence, audit trail
 * *Event Store (Append-only log):* Audit trail, immutable event history, hash-chained
 
-=== 9.3 Deployment Architecture
+=== Deployment Architecture
 
-*Phase 1 Deployment:* - Single-region cloud deployment (AWS or Azure) - Multi-AZ within region for high availability - RDS PostgreSQL (Multi-AZ, automated backups, read replicas) - S3 for document storage (versioning enabled, cross-region replication optional) - Elasticsearch cluster (3 nodes, auto-sharding) - Event store (PostgreSQL append-only table with triggers)
+*Phase 1 Deployment:*
+
+* Single-region cloud deployment (AWS or Azure)
+* Multi-AZ within region for high availability
+* RDS PostgreSQL (Multi-AZ, automated backups, read replicas)
+* S3 for document storage (versioning enabled, cross-region replication optional)
+* Elasticsearch cluster (3 nodes, auto-sharding)
+* Event store (PostgreSQL append-only table with triggers)
 
 *Scaling considerations:*
 

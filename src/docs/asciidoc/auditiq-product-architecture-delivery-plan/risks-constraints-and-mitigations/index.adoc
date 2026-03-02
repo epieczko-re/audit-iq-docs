@@ -1,10 +1,10 @@
-== 15. Risks, Constraints, and Mitigations
+== Risks, Constraints, and Mitigations
 
-=== 15.1 Risk Register (Top 20+)
+=== Risk Register (Top 20+)
 
 *Risk Scoring:* Likelihood (1–5) × Impact (1–5) = Risk Score (1–25)
 
-[width="100%",cols="10%,10%,5%,5%,12%,15%,18%,12%,13%",options="header",]
+[cols="10%,10%,5%,5%,12%,15%,18%,12%,13%",options="header"]
 |===
 |ID |Risk |L |I |Score |Trigger |Mitigation |Owner |Status
 |*R1* |Docling extraction accuracy <80% on HMDA documents |3 |5 |*15* |Phase 0 testing reveals <80% accuracy |(a) Retrain OCR on HMDA sample corpus; (b) Fallback to cloud OCR (AWS/GCP) |Data/ML Lead |Active
@@ -41,7 +41,7 @@ ____
 *v0.2 Addition — Report-Sourced Risks:* R23 sourced from Docling Technical Validation Report (GPL licensing). R24 sourced from Audit Trail Defensibility Report (canonical JSON). R25 sourced from Schema Mapping Strategy Report (confidence calibration). R26 sourced from AI Regulatory Acceptance Report (automation bias). R27 sourced from Schema Mapping Strategy Report (coverage gap). R28 sourced from AI Regulatory Acceptance Report (exam access).
 ____
 
-=== 15.2 Constraints
+=== Constraints
 
 *Technical Constraints:*
 

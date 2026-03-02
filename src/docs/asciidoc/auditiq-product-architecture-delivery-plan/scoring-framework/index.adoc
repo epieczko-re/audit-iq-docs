@@ -1,6 +1,6 @@
-== 12. Scoring Framework
+== Scoring Framework
 
-=== 12.1 Confidence Scoring (Three Layers)
+=== Confidence Scoring (Three Layers)
 
 *Layer 1: Mapping Confidence*
 
@@ -45,13 +45,13 @@ combined_confidence = min(
 * *0.50–0.84:* Medium confidence. Recommend human verification; display in UI for secondary review.
 * *<0.50:* Low confidence. Reject finding; flag for manual re-review if critical issue.
 
-=== 12.2 Severity Scoring (Pack-Defined)
+=== Severity Scoring (Pack-Defined)
 
 *Severity defines regulatory importance, not system confidence. Orthogonal to confidence.*
 
 *Severity levels (per HMDA pack):*
 
-[width="100%",cols="13%,17%,16%,27%,27%",options="header",]
+[cols="13%,17%,16%,27%,27%",options="header"]
 |===
 |Level |Definition |Examples |Action Required |Review Timeline
 |*Critical* |Regulatory violation with potential enforcement action; data misrepresentation; prohibited conduct |Action Taken code wrong, pricing discrimination pattern, missing disclosure |Immediate remediation, escalation to Compliance Officer |Within 1 day
@@ -65,11 +65,11 @@ combined_confidence = min(
 
 *Severity is immutable once finding is triaged* (unless explicitly re-scored by Manager with audit trail event).
 
-=== 12.3 Human-in-Loop Triggers
+=== Human-in-Loop Triggers
 
 *Conditions that require mandatory human approval before finalization:*
 
-[width="100%",cols="23%,25%,34%,18%",options="header",]
+[cols="23%,25%,34%,18%",options="header"]
 |===
 |Trigger |Condition |Required Role |Action
 |*Critical finding* |Any finding with severity=`critical' |Manager or Audit Lead |Must review and sign off before audit finalization
@@ -82,7 +82,7 @@ combined_confidence = min(
 
 *Implementation:* API gateway middleware checks conditions before state transitions. If condition triggers, state change is blocked with error message and audit event is logged.
 
-=== 12.4 Confidence Calibration & Monitoring
+=== Confidence Calibration & Monitoring
 
 *Calibration rationale:* Confidence scores from Docling, schema matcher, and rules engine are learned/heuristic-based. They must be calibrated against ground truth (human decisions) to remain accurate.
 
@@ -103,7 +103,7 @@ combined_confidence = min(
 * Alert: If calibration error exceeds 5% threshold
 * Trends: How confidence scores evolve as packs mature
 
-=== 12.5 Risk-Based Prioritization
+=== Risk-Based Prioritization
 
 *Not in MVP, but framework for Phase 2:*
 
@@ -119,7 +119,7 @@ risk_score = (
 
 *Use case:* Manager can filter findings by risk_score descending to focus on highest-impact issues first.
 
-=== 12.6 Scoring Framework API Contract
+=== Scoring Framework API Contract
 
 [source,typescript]
 ----

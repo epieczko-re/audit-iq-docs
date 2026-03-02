@@ -1,4 +1,4 @@
-== 23. UI Workflows and User Journeys
+== UI Workflows and User Journeys
 
 ____
 *v0.2 Addition.* This section defines the primary user workflows through the AuditIQ system. Each workflow is represented as a flowchart diagram showing user actions, system actions, AI actions, decision points, and audit trail integration. These workflows serve as the foundation for screen design and front-end sprint planning.
@@ -18,7 +18,7 @@ NOTE: Simplified versions of these diagrams (unstyled) appear in Appendix G.
 The detailed workflow versions below add intermediate steps, side annotations, and governance detail.
 ____
 
-=== 23.1 Workflow 1: Audit Lifecycle (End-to-End)
+=== Workflow 1: Audit Lifecycle (End-to-End)
 
 This is the primary happy-path workflow from login to exam-ready bundle export. It represents the complete user journey through a single audit.
 
@@ -83,9 +83,9 @@ flowchart TD
     style N fill:#FF7E2D,color:#fff,stroke:#CC5500
 ----
 
-'''''
+'''
 
-=== 23.2 Workflow 2: Document Upload & Extraction (Docling + AFC)
+=== Workflow 2: Document Upload & Extraction (Docling + AFC)
 
 This workflow details the document processing pipeline from upload through field-level confidence routing.
 
@@ -158,9 +158,9 @@ flowchart TD
     style N fill:#4A6FA5,color:#fff,stroke:#2B4570
 ----
 
-'''''
+'''
 
-=== 23.3 Workflow 3: Schema Mapping Review (Two-Layer Confidence)
+=== Workflow 3: Schema Mapping Review (Two-Layer Confidence)
 
 This workflow details how extracted fields are mapped to the HMDA/MISMO target schema with AI assistance and human oversight.
 
@@ -247,9 +247,9 @@ flowchart TD
     style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
 
-'''''
+'''
 
-=== 23.4 Workflow 4: Findings Review & Approval (AI Governance Controls)
+=== Workflow 4: Findings Review & Approval (AI Governance Controls)
 
 This workflow details the human oversight process for AI-generated findings, enforcing the AI governance red lines from Section 22.
 
@@ -276,9 +276,17 @@ This workflow details the human oversight process for AI-generated findings, enf
 . *Audit event created* — `human_approval` event with full provenance chain
 . *Finding finalized* → appears on scorecard
 
-*RED LINES (Section 22.1.4):* - No AI output enters the official audit record without explicit human approval - AI output must never be represented as definitive conclusions - Reviewer is responsible for accuracy of any approved finding
+*RED LINES (Section 22.1.4):*
 
-*Required Disclaimers (Section 22.1.3):* - ``This content was drafted by an AI assistant and requires human verification before use'' - ``AI-generated content may contain inaccuracies — reviewer is responsible for verifying accuracy'' - ``This finding has been reviewed and approved by [reviewer name] on [date]''
+* No AI output enters the official audit record without explicit human approval
+* AI output must never be represented as definitive conclusions
+* Reviewer is responsible for accuracy of any approved finding
+
+*Required Disclaimers (Section 22.1.3):*
+
+* ``This content was drafted by an AI assistant and requires human verification before use''
+* ``AI-generated content may contain inaccuracies — reviewer is responsible for verifying accuracy''
+* ``This finding has been reviewed and approved by [reviewer name] on [date]''
 
 *Design Reference:* Section 10.6 (Findings Management), Section 10.9 (Reporting), Section 22, Decision D1–D3
 
@@ -326,22 +334,33 @@ flowchart TD
     style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
 
-'''''
+'''
 
-=== 23.5 UI Development Strategy
+=== UI Development Strategy
 
 ____
 *Dual-track development:* AuditIQ follows both UI-driven and API-driven development practices. The workflows above define the user journeys; the API contracts in Section 10 define the backend interfaces. Screen designs (Phase 2 of this section) will be developed from these workflows.
 ____
 
-*Phase 1 — Workflow Diagrams (this section):* - End-to-end audit lifecycle - Document extraction + AFC routing - Schema mapping review with two-layer confidence - Findings review with AI governance controls
+*Phase 1 — Workflow Diagrams (this section):*
 
-*Phase 2 — Interactive Screen Wireframes (planned):* - Audit dashboard (create, manage, monitor audits) - Document upload + extraction review screen (AFC confidence badges, field-level review) - Schema mapping review screen (suggestion cards, confidence routing, synonym management) - Findings review + approval screen (effective challenge, AI labels, provenance panel) - Exam bundle export screen (manifest preview, format options)
+* End-to-end audit lifecycle
+* Document extraction + AFC routing
+* Schema mapping review with two-layer confidence
+* Findings review with AI governance controls
 
-*Design Principles:* - Confidence is visible everywhere — color-coded badges (green ≥0.85, orange 0.50–0.85, red <0.50) - AI provenance is always one click away — every AI-generated element links to its provenance record - Effective challenge is enforced by design — reviewer cannot approve without documenting their independent verification - Audit trail is ambient — every action generates an event; users see event count and last-event timestamp per artifact
+*Phase 2 — Interactive Screen Wireframes (planned):*
 
-'''''
+* Audit dashboard (create, manage, monitor audits)
+* Document upload + extraction review screen (AFC confidence badges, field-level review)
+* Schema mapping review screen (suggestion cards, confidence routing, synonym management)
+* Findings review + approval screen (effective challenge, AI labels, provenance panel)
+* Exam bundle export screen (manifest preview, format options)
 
-END OF SECTIONS 13–23
+*Design Principles:*
 
-_End of Document_
+* Confidence is visible everywhere — color-coded badges (green ≥0.85, orange 0.50–0.85, red <0.50)
+* AI provenance is always one click away — every AI-generated element links to its provenance record
+* Effective challenge is enforced by design — reviewer cannot approve without documenting their independent verification
+* Audit trail is ambient — every action generates an event; users see event count and last-event timestamp per artifact
+

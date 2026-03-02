@@ -1,10 +1,10 @@
-== 7. Product Requirements
+== Product Requirements
 
-=== 7.1 Functional Requirements (Organized by Epics)
+=== Functional Requirements (Organized by Epics)
 
 ==== Epic 1: Data Ingestion / Connectors
 
-[width="100%",cols="10%,27%,43%,20%",options="header",]
+[cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-1.1 |System shall accept target datasets via CSV upload, API endpoint, and cross-module transfer from existing RiskExec modules (HMDA, CRA). |Acceptance Criteria (FR-1.1 — Ingestion performance):  - Test dataset: 5,000-record HMDA LAR synthetic dataset (representative value distributions and edge cases; see Appendix X). - Test environment (canonical): 8 vCPU, 32GB RAM, 200GB NVMe storage; managed Postgres with provisioned IOPS=3000; 100 Mbps network, Dockerized service instances. - Given a valid HMDA LAR CSV with 5,000 records uploaded via the CSV endpoint in the canonical test environment, the system must:   * Ingest and validate all records with P95 end-to-end completion time ≤ 60s.   * Report ≤ 0.1% records rejected for transient processing errors; permanently invalid rows reported with line numbers and standard error codes.   * Guarantee 0% silent data corruption: valid records stored exactly as received with per-record SHA-256 checksums logged and verifiable.   * Provide validation summary in the UI and as a JSON/CSV download. |P0
@@ -18,7 +18,7 @@
 
 ==== Epic 2: Document Extraction (Docling/OCR)
 
-[width="100%",cols="10%,27%,43%,20%",options="header",]
+[cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-2.1 |System shall process source documents through the Docling-Graph pipeline (Docling + Docling-Graph) to extract text, tables, and key-value pairs as versioned Pydantic objects and a directed knowledge graph (KG). Extraction may use VLM (Docling) or LLM (self-hosted Mistral via LiteLLM) backends. |Given a standard Closing Disclosure PDF, when processed by the Docling-Graph pipeline, then system extracts all key fields (loan amount, interest rate, property address, borrower name) as validated Pydantic objects with ≥85% field-level F1 (normalized) on the Phase 1 evaluation corpus; graph exports available in CSV/Cypher format for downstream processing. |P0
@@ -34,7 +34,7 @@
 
 ==== Epic 3: Schema Mapping + Mapping UI
 
-[width="100%",cols="10%,27%,43%,20%",options="header",]
+[cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-3.1 |System shall automatically suggest field-level mappings between target and source schemas using confidence-scored matching. |Given HMDA LAR schema and CD extracted fields, when mapping is requested, then system suggests mappings for ≥80% of reportable fields with confidence scores. |P0
@@ -49,7 +49,7 @@
 
 ==== Epic 4: Audit Execution + Comparison Engine
 
-[width="100%",cols="10%,27%,43%,20%",options="header",]
+[cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-4.1 |System shall compare target values to source values using pack-defined rules after normalization. |Given a target record with loan_amount=250000 and source CD showing $250,000.00, when comparison runs, then normalization removes formatting and comparison finds exact match. |P0
@@ -63,7 +63,7 @@
 
 ==== Epic 5: Audit Pack Management
 
-[width="100%",cols="10%,27%,43%,20%",options="header",]
+[cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-5.1 |System shall support creating, versioning, publishing, and retiring audit packs. |Given an admin publishing HMDA pack v1.1, when published, then v1.0 remains available for existing audit runs, v1.1 is available for new runs, and the version change is logged. |P0
@@ -75,7 +75,7 @@
 
 ==== Epic 6: Findings Management + Remediation Workflow
 
-[width="100%",cols="10%,27%,43%,20%",options="header",]
+[cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-6.1 |Findings shall follow lifecycle: IDENTIFIED → TRIAGED → REMEDIATION_ASSIGNED → CORRECTED → RETEST_PENDING → CLOSED (or DISMISSED at any stage with justification). |Given a finding in IDENTIFIED status, when reviewer triages it, then status advances to TRIAGED and an AuditEvent is recorded. Each transition requires a valid prior state. |P0
@@ -86,7 +86,7 @@
 
 ==== Epic 7: Evidence / Attachments + Document Control
 
-[width="100%",cols="10%,27%,43%,20%",options="header",]
+[cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-7.1 |System shall support attaching documents, screenshots, and notes to any finding, review, or corrective action. |Given a finding, when reviewer attaches a PDF and a note, then both are stored with chain-of-custody metadata (uploader, timestamp, SHA-256 hash). |P0
@@ -97,7 +97,7 @@
 
 ==== Epic 8: Reporting + Exports
 
-[width="100%",cols="10%,27%,43%,20%",options="header",]
+[cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-8.1 |System shall generate pack-specific audit reports using templates defined in the audit pack manifest. |Given the HMDA pack report template, when report generation is triggered, then a PDF report is produced with all template sections populated from audit data. |P0
@@ -109,7 +109,7 @@
 
 ==== Epic 9: Admin / RBAC / Tenancy
 
-[width="100%",cols="10%,27%,43%,20%",options="header",]
+[cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-9.1 |RBAC with roles: Reviewer, Senior Reviewer, Manager, Audit Lead, Executive, IT Admin. Permission matrix defined in Section 10.11. |Given a Reviewer-role user, when they attempt to approve a report, then access is denied with ``Insufficient permissions'' message. |P0
@@ -121,9 +121,9 @@
 
 *DECISION LOCKED:* Row-level security for Phase 1 tenant isolation. See Section 19.5.
 
-=== 7.2 Non-Functional Requirements
+=== Non-Functional Requirements
 
-[width="100%",cols="20%,26%,16%,38%",options="header",]
+[cols="20%,26%,16%,38%",options="header"]
 |===
 |Category |Requirement |Target |Measurement Method
 |Performance |Automated pre-scan throughput |≥500 records/minute (structured data) |Load test with 10K HMDA records
@@ -148,6 +148,6 @@
 |Scalability |Maximum tenants (Phase 1) |≥20 |Database isolation test
 |===
 
-=== 7.3 Acceptance Criteria Summary
+=== Acceptance Criteria Summary
 
 See individual epics above for detailed acceptance criteria per functional requirement. The companion document AuditIQ_MVP_Cutline_v0.2.md defines which requirements are must-have (P0), should-have (P1), and nice-to-have (P2) for MVP.

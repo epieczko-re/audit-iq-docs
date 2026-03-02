@@ -1,14 +1,22 @@
-== 8. Audit Pack Specification
+== Audit Pack Specification
 
-=== 8.1 Overview
+=== Overview
 
 An audit pack is a versioned, declarative configuration artifact that encapsulates everything needed to audit a specific regulatory domain or business process. The platform interprets the pack—it does not execute code embedded in the pack. This ensures safety, reproducibility, and extensibility.
 
-*Pack components:* - Manifest (metadata, versioning, authorship) - Target schema (which fields are audit-reportable) - Source schema(s) (document types and expected layouts) - Comparison rules (how to validate target vs. source) - Scoring rules (severity, confidence thresholds) - Report templates (how to format findings into reports) - Test cases (reference data for validation harness)
+*Pack components:*
+
+* Manifest (metadata, versioning, authorship)
+* Target schema (which fields are audit-reportable)
+* Source schema(s) (document types and expected layouts)
+* Comparison rules (how to validate target vs. source)
+* Scoring rules (severity, confidence thresholds)
+* Report templates (how to format findings into reports)
+* Test cases (reference data for validation harness)
 
 *DECISION LOCKED:* Declarative JSON v1 — no executable logic. See Section 19.3.
 
-=== 8.2 Pack Manifest JSON Schema
+=== Pack Manifest JSON Schema
 
 [source,json]
 ----
@@ -325,7 +333,7 @@ An audit pack is a versioned, declarative configuration artifact that encapsulat
 }
 ----
 
-=== 8.3 Pack Versioning and Distribution
+=== Pack Versioning and Distribution
 
 *Version format:* Semantic Versioning (MAJOR.MINOR.PATCH) - MAJOR: Breaking changes to schemas or rule logic (requires migration) - MINOR: New rules or schemas added (backward-compatible) - PATCH: Bug fixes, typo corrections (no functional changes)
 
@@ -340,15 +348,25 @@ An audit pack is a versioned, declarative configuration artifact that encapsulat
 * *Phase 1:* RiskExec ships HMDA pack v1.0 in the platform binary.
 * *Phase 2+:* Packs distributed via pack marketplace API with version pinning and rollback capability.
 
-=== 8.4 Pack Testing and Validation Harness
+=== Pack Testing and Validation Harness
 
-*Harness requirements:* - Load a pack manifest and test cases. - Execute each test case against the pack rules. - Compare actual findings to expected findings. - Report pass/fail, coverage metrics, and rule execution time.
+*Harness requirements:*
 
-*Test harness success criteria (before publication):* - All test cases pass. - Code coverage ≥90% of pack rules executed. - No test case execution exceeds 5 seconds. - All AI suggestions (if any) are labeled and traced to model/version.
+* Load a pack manifest and test cases.
+* Execute each test case against the pack rules.
+* Compare actual findings to expected findings.
+* Report pass/fail, coverage metrics, and rule execution time.
+
+*Test harness success criteria (before publication):*
+
+* All test cases pass.
+* Code coverage ≥90% of pack rules executed.
+* No test case execution exceeds 5 seconds.
+* All AI suggestions (if any) are labeled and traced to model/version.
 
 *TODO:* Build test harness CLI tool for pack authors to validate locally before submission.
 
-=== 8.5 Pack Interface Contract (System-to-Pack)
+=== Pack Interface Contract (System-to-Pack)
 
 The platform interacts with packs via the following immutable contract:
 

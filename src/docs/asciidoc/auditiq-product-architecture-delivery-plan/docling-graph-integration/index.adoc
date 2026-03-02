@@ -1,10 +1,10 @@
-== 26. Docling-Graph Integration with Schema Mapping
+== Docling-Graph Integration with Schema Mapping
 
 ____
 *v0.2 Addition.* This section documents how the Schema Mapping Service (Section 10.3) consumes Docling-Graph's Pydantic objects and directed knowledge graph, and how Audit Packs must reference Pydantic templates. The graph-aware mapping approach improves determinism and reduces heuristic noise by operating on typed, validated entities and explicit relationships rather than raw OCR text.
 ____
 
-=== 26.1 Purpose
+=== Purpose
 
 With Docling-Graph adopted as the baseline extraction pipeline (Section 10.2.0), the Schema Mapping Service can consume structured graph outputs rather than flat extracted fields. This enables:
 
@@ -13,7 +13,7 @@ With Docling-Graph adopted as the baseline extraction pipeline (Section 10.2.0),
 * *Cross-document corroboration:* Graph edges between entities (e.g., CD ↔ Loan Application ↔ Appraisal) enable the `graph_corrob_score` AFC signal and boost `mapping_confidence`
 * *Provenance:* Every mapping traces to specific graph node IDs, not raw text offsets — more stable across re-extractions
 
-=== 26.2 Pydantic Template Design
+=== Pydantic Template Design
 
 Each document type requires a versioned Pydantic template that defines the extraction schema and graph node identity fields.
 
@@ -60,7 +60,7 @@ class ClosingDisclosure(BaseModel):
 
 *Phase 1 templates required:*
 
-[width="100%",cols="25%,25%,25%,25%",options="header"]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Document Type |Template Name |Graph ID Field |Key HMDA Fields
 
@@ -85,7 +85,7 @@ class ClosingDisclosure(BaseModel):
 |~5–10 property-related fields
 |===
 
-=== 26.3 Graph Consumption by Schema Mapping Service
+=== Graph Consumption by Schema Mapping Service
 
 *Step 1: Extract entities as graph nodes*
 
@@ -142,7 +142,7 @@ The Schema Mapping Service evaluates candidate graph nodes using:
 . *Entity type filtering:* Only consider nodes whose `entity_type` matches the expected document type for this field
 . *Graph corroboration score:* Compute `graph_corrob_score` for AFC v2 based on the number and strength of corroborating edges
 
-=== 26.4 Pack Manifest Changes
+=== Pack Manifest Changes
 
 Audit Pack manifests must be extended to reference Pydantic templates:
 
@@ -177,7 +177,7 @@ Audit Pack manifests must be extended to reference Pydantic templates:
 
 *Migration path:* Existing packs without `extraction_config.docling_graph_enabled` default to legacy extraction (Docling only, AFC v1). Packs opt into Docling-Graph by setting this flag and providing template references.
 
-=== 26.5 Cross-References
+=== Cross-References
 
 * *Section 10.2.0:* Docling-Graph pipeline design and integration guidance
 * *Section 10.2.1:* AFC v2 formula including `graph_corrob_score`
