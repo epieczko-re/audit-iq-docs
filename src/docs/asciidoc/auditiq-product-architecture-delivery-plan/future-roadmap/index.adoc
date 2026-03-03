@@ -1,10 +1,10 @@
-== 16. Future Roadmap and Platform Leverage
+== Future Roadmap and Platform Leverage
 
-=== 16.1 Carry-Forward from v0.1: Platform Expansion Vision
+=== Carry-Forward from v0.1: Platform Expansion Vision
 
 *AuditIQ is positioned as the foundational audit automation layer.* Future modules leverage the pack engine, immutable audit trail, and scoring framework:
 
-=== 16.2 Phase 2: Expansion (Q3 2026, Jul–Sep)
+=== Phase 2: Expansion (Q3 2026, Jul–Sep)
 
 *Conversational Copilot*
 
@@ -29,7 +29,7 @@
 
 *Multi-Pack Audit Workflows* - Chain multiple packs in single audit (e.g., ``HMDA + CRA + Pricing packs'') - Findings merge, confidence scoring aggregates across packs - Dependency tracking (e.g., ``HMDA finding prerequisites CRA data'')
 
-=== 16.3 Phase 3 & Beyond: Platform Ecosystem (Q4 2026+)
+=== Phase 3 & Beyond: Platform Ecosystem (Q4 2026+)
 
 *Pack Marketplace*
 
@@ -57,7 +57,7 @@
 
 *Vertical Expansion Beyond Lending* - Insurance audits: Policy compliance, claims validation - Credit unions: Regulatory exam preparation - Fund management: Compliance audits, valuation verification - Vertical teams (Q4+) develop packs; core platform scales
 
-=== 16.4 Strategic Rationale
+=== Strategic Rationale
 
 *Network effects:* Pack marketplace + community contributions accelerate audit coverage and reduce pack development cost for platform.
 

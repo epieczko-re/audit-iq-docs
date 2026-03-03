@@ -1,17 +1,17 @@
-== 0. Document Control
+== Document Control
 
-=== 0.1 Version History
+=== Version History
 
-[width="100%",cols="9%,12%,32%,47%",options="header",]
+[cols="9%,12%,32%,47%",options="header"]
 |===
 |Version |Date |Author(s) |Changes
 |0.1 |2026-02-27 |Erik Pieczkowski (via Claude) |Initial comprehensive spec — Sections 0–6 full; 7–18 detailed stubs
 |0.2 |2026-02-27 |Erik Pieczkowski (via Claude) |Build-ready spec — all stubs replaced with implementable detail; new sections 19–22 added (MVP Decisions, Immutability, Exam Bundle, AI Governance); MVP Cutline produced
 |===
 
-=== 0.2 Authors / Owners
+=== Authors / Owners
 
-[width="100%",cols="31%,21%,48%",options="header",]
+[cols="31%,21%,48%",options="header"]
 |===
 |Role |Name |Responsibility
 |Product Lead |Arielle Sutherland |Product vision, requirements, prioritization
@@ -20,9 +20,9 @@
 |Engineering Lead |TBD |Component design, sprint execution
 |===
 
-=== 0.3 Approvals
+=== Approvals
 
-[cols=",,,",options="header",]
+[cols="1,1,1,1",options="header"]
 |===
 |Approver |Role |Date |Signature
 |_________________ |CEO / GM | |
@@ -31,7 +31,7 @@
 |Erik Pieczkowski |Solutions Architect | |
 |===
 
-=== 0.4 How to Use This Document
+=== How to Use This Document
 
 This document serves three audiences simultaneously:
 

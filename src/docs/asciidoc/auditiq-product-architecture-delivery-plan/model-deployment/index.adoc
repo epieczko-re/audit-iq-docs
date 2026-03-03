@@ -1,10 +1,10 @@
-== 25. Model Deployment: Mistral Self-Hosted (Production Decision)
+== Model Deployment: Mistral Self-Hosted (Production Decision)
 
 ____
 *Executive decision (2026-03-01): YES.* AuditIQ should self-host selected open-weight Mistral models for regulated production extraction, with a deliberate hybrid fallback to cloud for difficult edge cases and burst elasticity. This section records the rationale, target architecture, and implementation plan.
 ____
 
-=== 25.1 Decision Summary
+=== Decision Summary
 
 AuditIQ's extraction workload is a strong fit for controlled local inference:
 
@@ -19,9 +19,9 @@ AuditIQ's extraction workload is a strong fit for controlled local inference:
 * *Cost/latency tier (self-host):* `Ministral 3 (8B/14B)` for lower-complexity or high-volume jobs.
 * *Exception path:* Route low-confidence OCR, schema-failure retries, and complex edge documents to `Mistral Large 3` (if provisioned) or approved cloud models through LiteLLM policy routing.
 
-=== 25.2 Why This Is the Right Choice for AuditIQ
+=== Why This Is the Right Choice for AuditIQ
 
-[width="100%",cols="30%,70%",options="header"]
+[cols="30%,70%",options="header"]
 |===
 |Driver |AuditIQ Implication
 
@@ -41,9 +41,9 @@ AuditIQ's extraction workload is a strong fit for controlled local inference:
 |Self-hosting is not automatically cheapest per token; it wins when utilization is high, fallback is constrained, and compliance requirements dominate.
 |===
 
-=== 25.3 Recommended Model Tiers (2026 Baseline)
+=== Recommended Model Tiers (2026 Baseline)
 
-[width="100%",cols="28%,24%,48%",options="header"]
+[cols="28%,24%,48%",options="header"]
 |===
 |Tier |Model |Usage Guidance
 
@@ -66,7 +66,7 @@ AuditIQ's extraction workload is a strong fit for controlled local inference:
 
 *Licensing posture:* Prioritize open-weight Apache-2.0 model families for production self-hosting. Treat premier/API-only families as cloud/contractual unless legal explicitly grants self-host rights.
 
-=== 25.4 Production Architecture Pattern
+=== Production Architecture Pattern
 
 *Target serving pattern:*
 
@@ -101,7 +101,7 @@ F --> G
 @enduml
 ....
 
-=== 25.5 Security, Compliance, and Provenance Requirements
+=== Security, Compliance, and Provenance Requirements
 
 * *Private inference boundary:* No public inference endpoints. Run within private subnets/VPC.
 * *Transport security:* mTLS/TLS between pipeline services, router, and inference runtime.
@@ -110,13 +110,13 @@ F --> G
 * *Provenance fields (minimum):* `doc_sha256`, `prompt_sha256`, `schema_sha256`, `response_sha256`, model ID, model artifact digest, container digest, runtime version, decoding params, queue/latency metrics, fallback reason.
 * *Legal gate:* Legal/compliance sign-off required before production rollout of each model family and checkpoint.
 
-=== 25.6 Hardware and Scaling Guidance
+=== Hardware and Scaling Guidance
 
 ____
 *Planning note:* Capacity must be validated with AuditIQ document distributions and Docling-Graph contract modes. Published throughput claims are directional only.
 ____
 
-[width="100%",cols="25%,25%,50%",options="header"]
+[cols="25%,25%,50%",options="header"]
 |===
 |Infra tier |Typical GPU profile |Practical guidance
 
@@ -143,7 +143,7 @@ Operational guardrails:
 * Enforce admission control and queue backpressure.
 * Prefer data-parallel replicas for smaller models; use tensor parallelism only when memory constraints force it.
 
-=== 25.7 Rollout Plan and Go/No-Go Gates
+=== Rollout Plan and Go/No-Go Gates
 
 *Stage A — Baseline (cloud):*
 
@@ -167,7 +167,7 @@ Operational guardrails:
 * Security: private networking, secrets management, and logging controls validated.
 * Cost: per-extraction cost meets approved budget threshold.
 
-=== 25.8 Immediate Next Actions
+=== Immediate Next Actions
 
 [arabic]
 . Stand up private vLLM OpenAI-compatible service in VPC and expose through internal LB.
@@ -177,7 +177,7 @@ Operational guardrails:
 . Run a 500+ document benchmark suite across 8B/14B/24B tiers; publish capacity and cost findings.
 . Launch canary rollout with explicit rollback routing to cloud fallback.
 
-=== 25.9 Cross-References
+=== Cross-References
 
 * *Section 10.2.0:* Docling-Graph integration and pipeline design
 * *Section 22.2:* PII redaction requirements

@@ -1,8 +1,13 @@
-== 10. Component-Level Design
+== Component-Level Design
 
-=== 10.1 Ingestion Service
+=== Ingestion Service
 
-*Responsibilities:* - Accept target datasets (CSV, API endpoint, cross-module transfer) - Validate format and completeness - Detect and report encoding issues - Store validated data in staging area
+*Responsibilities:*
+
+* Accept target datasets (CSV, API endpoint, cross-module transfer)
+* Validate format and completeness
+* Detect and report encoding issues
+* Store validated data in staging area
 
 *Input contracts:*
 
@@ -64,15 +69,21 @@ interface ValidationError {
 
 *Storage:* Validated records stored in audit.staging_datasets table (temporary, cleaned up after audit completion or 30 days, whichever first).
 
-=== 10.2 Document Processing Service (Docling + OCR)
+=== Document Processing Service (Docling + OCR)
 
-*Responsibilities:* - Process source documents through Docling (document conversion + layout understanding substrate) - Build AuditIQ Field Confidence (AFC) scores per extracted field (see below) - Extract text, tables, key-value pairs via deterministic field extractor layer on top of Docling - Fall back to cloud OCR for pages graded POOR or FAIR by Docling - Store extracted text, AFC metadata, and Docling page-level confidence grades
+*Responsibilities:*
+
+* Process source documents through Docling (document conversion + layout understanding substrate)
+* Build AuditIQ Field Confidence (AFC) scores per extracted field (see below)
+* Extract text, tables, key-value pairs via deterministic field extractor layer on top of Docling
+* Fall back to cloud OCR for pages graded POOR or FAIR by Docling
+* Store extracted text, AFC metadata, and Docling page-level confidence grades
 
 ____
 *Critical Architecture Clarification (per Docling Technical Validation Report v1):* Docling is a *document conversion + layout understanding engine*, not a per-field extraction system. Its confidence scores (`layout_score`, `ocr_score`, `parse_score`) are *conversion-quality indicators* (POOR/FAIR/GOOD/EXCELLENT) that grade how well the page was converted—they are NOT per-field extraction confidence. AuditIQ must build its own *deterministic field extractor* that consumes Docling’s `DoclingDocument` output and produces per-field AFC scores. Do not use Docling’s numeric scores directly for field-level gating.
 ____
 
-==== 10.2.0 Docling-Graph Integration
+==== Docling-Graph Integration
 
 *Overview.* AuditIQ adopts *Docling-Graph* as the Phase 1 baseline for document extraction and structured output. Docling-Graph combines Docling’s document conversion and VLM extraction capabilities with a Pydantic-based schema enforcement layer and a directed knowledge graph. This transforms free-text and OCR outputs into validated, strongly-typed Pydantic objects and a directed graph of entities and relationships that the Schema Mapping Service and Comparison Engine consume.
 
@@ -106,11 +117,11 @@ _(Source: Docling-Graph README, https://github.com/docling-project/docling-graph
 * *Provenance:* Every extracted Pydantic object records `pydantic_template_id`, `template_version`, `graph_node_id`, and `graph_export_version` in the extraction metadata (see Section 22.3 for provenance fields).
 * *Legal:* Docling-Graph is MIT-licensed. If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms.
 
-==== 10.2.1 AuditIQ Field Confidence (AFC)
+==== AuditIQ Field Confidence (AFC)
 
 AFC is a deterministic, per-field composite score built from six signals (v2 — updated to include Docling-Graph corroboration):
 
-[width="100%",cols="20%,10%,30%,40%",options="header",]
+[cols="20%,10%,30%,40%",options="header"]
 |===
 |Signal |Weight |Source |Description
 |`docling_page_grade` |0.12 |Docling conversion output |Page-level conversion quality (POOR=0.2, FAIR=0.5, GOOD=0.8, EXCELLENT=1.0)
@@ -136,9 +147,13 @@ afc = (docling_page_grade * 0.12) +
 
 NOTE: Weights are calibration targets — tune during Phase 1a using labeled extraction data. See Canonical Glossary (Appendix) for routing thresholds (unchanged: ≥0.85 auto-confirm, 0.50–0.85 human review, <0.50 manual entry).
 
-*AFC routing thresholds:* - `afc >= 0.85`: Auto-confirm (no human review required) - `0.50 <= afc < 0.85`: Human review required (field highlighted in UI) - `afc < 0.50`: Flag as extraction failure; route to manual entry queue
+*AFC routing thresholds:*
 
-==== 10.2.2 Input/Output Contracts
+* `afc >= 0.85`: Auto-confirm (no human review required)
+* `0.50 <= afc < 0.85`: Human review required (field highlighted in UI)
+* `afc < 0.50`: Flag as extraction failure; route to manual entry queue
+
+==== Input/Output Contracts
 
 [source,typescript]
 ----
@@ -199,7 +214,7 @@ interface PageGrade {
 }
 ----
 
-==== 10.2.3 Fallback Logic (Refined — Docling-Graph-First)
+==== Fallback Logic (Refined — Docling-Graph-First)
 
 *Phase 1 fallback chain:* Docling-Graph (VLM) → Docling-Graph (LLM via LiteLLM/Mistral) → Cloud OCR → Manual entry
 
@@ -256,11 +271,11 @@ end
 
 *Cloud OCR fallback providers (ranked by cost):* 1. AWS Textract `DetectDocumentText` — $0.0015/page 2. Google Enterprise Document OCR — $0.0015/page ($1.50/1000 pages) 3. AWS Textract `AnalyzeDocument` — $0.01/page (tables/forms; use only when needed)
 
-==== 10.2.4 Known Extraction Failure Modes
+==== Known Extraction Failure Modes
 
 The Docling validation report identified 10 failure modes AuditIQ must handle:
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |# |Failure Mode |Likely Impact |Mitigation
 |1 |Scanned PDF with degraded OCR quality |Low AFC on text-heavy fields |Cloud OCR fallback; AFC flags for review
@@ -275,7 +290,7 @@ The Docling validation report identified 10 failure modes AuditIQ must handle:
 |10 |Digital signatures / form fields (XFA) |Docling may skip interactive form data |Flatten PDF before processing; extract XFA data separately
 |===
 
-==== 10.2.5 Performance Model
+==== Performance Model
 
 Based on Docling validation report benchmarks:
 
@@ -284,7 +299,7 @@ Based on Docling validation report benchmarks:
 * *Cloud OCR fallback adds:* 1–3s/page (network roundtrip + API processing)
 * *Estimated monthly cost:* $1,000–$3,000/month for compute + $500–$2,000/month for cloud OCR fallback (assuming 10–15% fallback rate)
 
-==== 10.2.6 Licensing Warning
+==== Licensing Warning
 
 ____
 *GPL Risk:* The `docling-surya` integration package wraps SuryaOCR, which is licensed under GPL. If AuditIQ links or imports `docling-surya`, the entire application may be subject to GPL copyleft obligations. *For commercial SaaS deployment, either (a) ensure Docling is used WITHOUT `docling-surya` (use EasyOCR or Tesseract OCR backends instead), or (b) obtain legal review of GPL implications before Phase 1a.*
@@ -292,9 +307,9 @@ ____
 *Docling-Graph (MIT):* Docling-Graph is MIT-licensed and represents a lower-risk integration option than GPL-linked adapters such as `docling-surya`. Where possible prefer Docling-Graph for production deployments to avoid GPL copyleft risk. If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms before Phase 1a.
 ____
 
-==== 10.2.7 POC Test Plan (Phase 0)
+==== POC Test Plan (Phase 0)
 
-[width="100%",cols="34%,33%,33%",options="header",]
+[cols="34%,33%,33%",options="header"]
 |===
 |Step |Activity |Pass Criteria
 |1 |Install Docling; convert 10 representative CDs |All 10 produce DoclingDocument output
@@ -313,15 +328,22 @@ ____
 
 *Determinism:* Deterministic within a Docling version + field extractor version. Same document + same versions = same extraction + same AFC. All versions logged as provenance.
 
-=== 10.3 Schema Mapping Service
+=== Schema Mapping Service
 
-*Responsibilities:* - Suggest field-level mappings between MISMO-aligned canonical target schema (see Section 11.2) and source schema (customer-uploaded data from LOS, CSV, or document extraction) - Validate that target field references exist in the `mismo_dictionary` (or use `custom:` namespace) - Produce two-layer confidence scores for each suggestion (raw signals + calibrated decision score) - Clearly demarcate CD-supported fields (~10–20% auto-mappable at ≥0.85) vs. fields requiring additional document types or manual entry - Provide UI for human review and override with confidence-based routing - Version and store approved mappings; feed override data back into calibration
+*Responsibilities:*
+
+* Suggest field-level mappings between MISMO-aligned canonical target schema (see Section 11.2) and source schema (customer-uploaded data from LOS, CSV, or document extraction)
+* Validate that target field references exist in the `mismo_dictionary` (or use `custom:` namespace)
+* Produce two-layer confidence scores for each suggestion (raw signals + calibrated decision score)
+* Clearly demarcate CD-supported fields (~10–20% auto-mappable at ≥0.85) vs. fields requiring additional document types or manual entry
+* Provide UI for human review and override with confidence-based routing
+* Version and store approved mappings; feed override data back into calibration
 
 ____
 *Scope constraint (per Schema Mapping Strategy Report):* HMDA LAR spans 48 data points → ~110 fields, with 37 ``key HMDA data fields'' (Fed CA Letter 18-9). Closing Disclosure (CD) documents alone cover only ~10–20% of these at ≥0.85 auto-mappable confidence. MVP must explicitly label fields as ``CD-supported,'' ``requires 1003/URLA,'' ``requires appraisal,'' or ``manual entry required.''
 ____
 
-==== 10.3.1 Matching Algorithm (Phase 1 — Hybrid Heuristic)
+==== Matching Algorithm (Phase 1 — Hybrid Heuristic)
 
 The matcher uses a COMA-style combination of multiple independent signals, weighted to produce a raw mapping confidence:
 
@@ -333,7 +355,7 @@ The matcher uses a COMA-style combination of multiple independent signals, weigh
 
 *Mapping Pattern Taxonomy (5 types):*
 
-[width="100%",cols="34%,33%,33%",options="header",]
+[cols="34%,33%,33%",options="header"]
 |===
 |Pattern |Example |Signal Used
 |Exact name match |`loan_amount` → `loan_amount` |Name similarity = 1.0
@@ -343,7 +365,7 @@ The matcher uses a COMA-style combination of multiple independent signals, weigh
 |Multi-source field |`total_income` (W-2 + 1003 + pay stubs) |Flagged as ``Phase 2: requires additional documents''
 |===
 
-==== 10.3.2 Two-Layer Confidence Design
+==== Two-Layer Confidence Design
 
 *Layer 1 — Raw signals (produced per mapping suggestion):*
 
@@ -361,11 +383,20 @@ where each component is normalized to [0.0, 1.0].
 
 Additional raw signals passed to Layer 2: - `conf_extraction`: AFC score from Section 10.2 (how confident we are in the extracted value) - `conf_rule`: Business rule pass/fail from Section 10.5 (does the mapped value pass validation?)
 
-*Layer 2 — Calibrated decision score:* - Combines `conf_mapping`, `conf_extraction`, and `conf_rule` into a single calibrated probability - Phase 1: Temperature scaling on logistic regression of Layer 1 signals (requires ≥200 labeled mapping decisions for initial calibration) - Phase 2: Isotonic regression for non-parametric calibration (requires ≥500 labeled decisions) - Calibration validation: Reliability diagrams (predicted confidence vs. actual accuracy in 10 bins); Expected Calibration Error (ECE) must be ≤0.05
+*Layer 2 — Calibrated decision score:*
 
-*Routing thresholds (calibrated score):* - ≥0.95: Auto-accept (reviewer sees green checkmark; ~10s visual confirmation). NOTE: Initial conservative threshold per Decision D2 (Section 19.3); may be lowered to ≥0.90 after calibration validation on ≥500 mappings. - 0.70–0.95: Human review required (reviewer evaluates suggestion; ~45s per field) - <0.70: Manual mapping required (no suggestion shown; reviewer selects from field list)
+* Combines `conf_mapping`, `conf_extraction`, and `conf_rule` into a single calibrated probability
+* Phase 1: Temperature scaling on logistic regression of Layer 1 signals (requires ≥200 labeled mapping decisions for initial calibration)
+* Phase 2: Isotonic regression for non-parametric calibration (requires ≥500 labeled decisions)
+* Calibration validation: Reliability diagrams (predicted confidence vs. actual accuracy in 10 bins); Expected Calibration Error (ECE) must be ≤0.05
 
-==== 10.3.3 Input/Output Contracts
+*Routing thresholds (calibrated score):*
+
+* ≥0.95: Auto-accept (reviewer sees green checkmark; ~10s visual confirmation). NOTE: Initial conservative threshold per Decision D2 (Section 19.3); may be lowered to ≥0.90 after calibration validation on ≥500 mappings.
+* 0.70–0.95: Human review required (reviewer evaluates suggestion; ~45s per field)
+* <0.70: Manual mapping required (no suggestion shown; reviewer selects from field list)
+
+==== Input/Output Contracts
 
 [source,typescript]
 ----
@@ -409,7 +440,7 @@ interface ApprovedMapping {
 }
 ----
 
-==== 10.3.4 Synonym Dictionary Management
+==== Synonym Dictionary Management
 
 The HMDA/CD synonym dictionary is a versioned JSON artifact stored alongside pack definitions:
 
@@ -427,9 +458,9 @@ interface SynonymEntry {
 * Reviewed quarterly; auto-additions from reviewer overrides (when override rate >10% for a specific field pair, propose as new synonym)
 * Initial dictionary: ~150 entries covering 37 key HMDA data fields across CD, 1003, and common LOS exports
 
-==== 10.3.5 Reviewer Burden Model
+==== Reviewer Burden Model
 
-[cols=",,,",options="header",]
+[cols=",,,",options="header"]
 |===
 |Scenario |Fields |Override Rate |Est. Session Time
 |CD-only, good extraction |~15–20 CD fields |10–15% |8–12 min
@@ -439,7 +470,7 @@ interface SynonymEntry {
 
 Target: ≤25% override rate on CD-supported fields by end of Phase 1b UAT.
 
-==== 10.3.6 UI Workflow
+==== UI Workflow
 
 [arabic]
 . System presents mappings grouped by confidence tier (auto-accept → review → manual)
@@ -456,9 +487,13 @@ Target: ≤25% override rate on CD-supported fields by end of Phase 1b UAT.
 
 *Phase 2 upgrade path:* Embedding-based candidate expansion → LLM-based reranking → LogMap ontology track → isotonic regression calibration.
 
-=== 10.4 Normalization Engine
+=== Normalization Engine
 
-*Responsibilities:* - Standardize values before comparison (remove formatting, case, whitespace) - Coerce types (string to decimal, date string to ISO 8601) - Apply format rules defined in pack
+*Responsibilities:*
+
+* Standardize values before comparison (remove formatting, case, whitespace)
+* Coerce types (string to decimal, date string to ISO 8601)
+* Apply format rules defined in pack
 
 *Normalization rules (pack-defined):*
 
@@ -495,9 +530,14 @@ Target: ≤25% override rate on CD-supported fields by end of Phase 1b UAT.
 
 *Determinism:* Deterministic — same input + same rules = same output.
 
-=== 10.5 Comparison & Rules Engine
+=== Comparison & Rules Engine
 
-*Responsibilities:* - Load pack comparison rules - Execute rules against normalized target and source values - Generate findings with confidence and severity scores - Support rule types: exact match, tolerance, conditional, lookup, cross-field
+*Responsibilities:*
+
+* Load pack comparison rules
+* Execute rules against normalized target and source values
+* Generate findings with confidence and severity scores
+* Support rule types: exact match, tolerance, conditional, lookup, cross-field
 
 *Rule execution (deterministic):*
 
@@ -545,9 +585,15 @@ interface FindingOutput {
 
 *Determinism:* Fully deterministic. Same inputs → same findings.
 
-=== 10.6 Findings Management Service
+=== Findings Management Service
 
-*Responsibilities:* - Create, retrieve, update findings - Manage finding lifecycle (IDENTIFIED → TRIAGED → … → CLOSED) - Track remediation, corrective actions, evidence - Enforce segregation of duties (reviewers cannot close own findings) - Generate escalation events for aging findings
+*Responsibilities:*
+
+* Create, retrieve, update findings
+* Manage finding lifecycle (IDENTIFIED → TRIAGED → … → CLOSED)
+* Track remediation, corrective actions, evidence
+* Enforce segregation of duties (reviewers cannot close own findings)
+* Generate escalation events for aging findings
 
 *Finding lifecycle state machine:*
 
@@ -650,9 +696,15 @@ interface StatusTransition {
 |===
 
 
-=== 10.7 Evidence & Attachment Service
+=== Evidence & Attachment Service
 
-*Responsibilities:* - Accept document, image, and note attachments - Compute and store SHA-256 hash for integrity verification - Maintain chain-of-custody metadata - Implement append-only semantics (new versions do not modify originals) - Enable full-text search on evidence content
+*Responsibilities:*
+
+* Accept document, image, and note attachments
+* Compute and store SHA-256 hash for integrity verification
+* Maintain chain-of-custody metadata
+* Implement append-only semantics (new versions do not modify originals)
+* Enable full-text search on evidence content
 
 *Chain-of-custody metadata:*
 
@@ -688,15 +740,22 @@ interface EvidenceRecord {
 
 *Append-only semantics:* When a user ``replaces'' an evidence file, the system: 1. Stores the new file with a new evidence_id 2. Creates a ``supersedes'' link from new to old 3. Marks the original as visible in history (never deleted) 4. Audit trail records both the original and the replacement
 
-=== 10.8 Audit Trail & Event Store (Immutable Log)
+=== Audit Trail & Event Store (Immutable Log)
 
-*Responsibilities:* - Record every state change as an immutable, hash-chained event with RFC 8785 canonical JSON serialization - Maintain global monotonic sequence IDs (per-tenant) for gap and reorder detection - Produce cryptographic anchor points at configurable intervals for tamper resistance - Support querying events by audit, finding, user, date range - Enable audit replay for investigations and regulator exam response - Support litigation defensibility via FRE Rule 902(13)/(14) self-authentication
+*Responsibilities:*
+
+* Record every state change as an immutable, hash-chained event with RFC 8785 canonical JSON serialization
+* Maintain global monotonic sequence IDs (per-tenant) for gap and reorder detection
+* Produce cryptographic anchor points at configurable intervals for tamper resistance
+* Support querying events by audit, finding, user, date range
+* Enable audit replay for investigations and regulator exam response
+* Support litigation defensibility via FRE Rule 902(13)/(14) self-authentication
 
 ____
 *Critical design requirement (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient. An attacker with database write access can rewrite the entire chain. This design adds three mandatory layers: (1) RFC 8785 canonical JSON serialization for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points that cannot be silently rewritten. See Section 19.4 (Decision D3) for design tier rationale.
 ____
 
-==== 10.8.1 Event Schema
+==== Event Schema
 
 [source,typescript]
 ----
@@ -731,7 +790,7 @@ interface AuditEvent {
 }
 ----
 
-==== 10.8.2 RFC 8785 Canonical JSON Serialization
+==== RFC 8785 Canonical JSON Serialization
 
 *MANDATORY:* All event payloads MUST be serialized using RFC 8785 (JSON Canonicalization Scheme) before hashing. This ensures: - Deterministic key ordering (lexicographic) - Consistent number formatting (no trailing zeros, no positive sign) - Consistent Unicode normalization - No optional whitespace
 
@@ -748,7 +807,7 @@ event_hash = SHA-256(canonical_json)
 assert(RFC8785.canonicalize(JSON.parse(RFC8785.canonicalize(event))) === RFC8785.canonicalize(event))
 ....
 
-==== 10.8.3 Hash Chain Computation
+==== Hash Chain Computation
 
 ....
 event_hash = SHA-256(
@@ -760,15 +819,19 @@ event_hash = SHA-256(
 )
 ....
 
-*Chain rules:* - First event in tenant chain: `previous_event_hash = SHA-256("GENESIS:" + tenant_id)` - Each subsequent event: `previous_event_hash = event_hash` of the immediately preceding event (by sequence_id) - Gap in sequence_id → chain is broken → alert + investigation required
+*Chain rules:*
 
-==== 10.8.4 Cryptographic Anchor Points
+* First event in tenant chain: `previous_event_hash = SHA-256("GENESIS:" + tenant_id)`
+* Each subsequent event: `previous_event_hash = event_hash` of the immediately preceding event (by sequence_id)
+* Gap in sequence_id → chain is broken → alert + investigation required
+
+==== Cryptographic Anchor Points
 
 Every N events (default N=100, configurable per tenant), the system writes an *anchor event*: - `is_anchor = true` - `anchor_hash` = SHA-256 of the event_hash at this point - Anchor hash is written to *WORM storage* (e.g., AWS S3 Object Lock, Azure Immutable Blob) — cannot be overwritten or deleted during retention period - Anchor verification: compare stored anchor hash against recomputed hash from event chain; mismatch = tampering detected
 
 *Phase 2 upgrade:* Replace WORM anchors with KMS-signed checkpoint events (AWS KMS, Azure Key Vault) for non-repudiation and litigation support under FRE 902(13)/(14).
 
-==== 10.8.5 Operational Integrity Controls (NIST AU-9 / FFIEC)
+==== Operational Integrity Controls (NIST AU-9 / FFIEC)
 
 Per NIST SP 800-53 Rev 5 AU-9 and FFIEC IT Examination Handbook:
 
@@ -778,7 +841,7 @@ Per NIST SP 800-53 Rev 5 AU-9 and FFIEC IT Examination Handbook:
 * *Retention:* Minimum 7 years (configurable per tenant; aligned with NIST AU-11); events never purged during retention window
 * *Backup verification:* Weekly automated restore-and-verify of audit trail backup; hash chain re-verified on restored data
 
-==== 10.8.6 Event Store Table
+==== Event Store Table
 
 [source,sql]
 ----
@@ -817,7 +880,7 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 -- REVOKE TRUNCATE ON audit_trail.events FROM app_role;
 ----
 
-==== 10.8.7 Tamper Detection & Verification
+==== Tamper Detection & Verification
 
 *Chain verification tool (MVP — Phase 1a):*
 
@@ -830,11 +893,19 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 * Weekly: Full chain verification for each tenant
 * On anchor write: Verify chain from previous anchor to current anchor before writing to WORM
 
-*Snapshot integrity (see Section 20):* - When snapshots are materialized, compute snapshot hash and store in event stream - Periodic re-materialization from events; compare against stored snapshot hash; mismatch = drift alert
+*Snapshot integrity (see Section 20):*
 
-=== 10.9 Reporting Service
+* When snapshots are materialized, compute snapshot hash and store in event stream
+* Periodic re-materialization from events; compare against stored snapshot hash; mismatch = drift alert
 
-*Responsibilities:* - Generate pack-specific reports from findings - Support AI-assisted narrative generation - Enforce mandatory human approval for AI content - Export in multiple formats (PDF, CSV, XLSX, JSON)
+=== Reporting Service
+
+*Responsibilities:*
+
+* Generate pack-specific reports from findings
+* Support AI-assisted narrative generation
+* Enforce mandatory human approval for AI content
+* Export in multiple formats (PDF, CSV, XLSX, JSON)
 
 *Report generation flow:* 1. Admin or Manager initiates report generation 2. System loads pack report template 3. Findings data is aggregated per template sections 4. For AI-narrative sections: - AI generates draft labeled ``[AI-DRAFT — REQUIRES APPROVAL]'' - Manager reviews and approves - Approved narrative embedded in report 5. Report finalized, exported, and stored immutably
 
@@ -876,7 +947,7 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 * *XLSX:* Excel format with formatting, multiple sheets (findings, summary, metrics)
 * *JSON:* Machine-readable export for API consumers
 
-=== 10.10 Reporting Service Output Contracts
+=== Reporting Service Output Contracts
 
 *Report output:*
 
@@ -916,11 +987,11 @@ interface ReportSection {
 }
 ----
 
-=== 10.11 RBAC & Permission Matrix
+=== RBAC & Permission Matrix
 
 *Roles and permissions:*
 
-[width="100%",cols="30%,70%",options="header",]
+[cols="30%,70%",options="header"]
 |===
 |Role |Capabilities
 |*Reviewer* |Create findings, mark as confirmed/discrepancy. Cannot approve findings, close findings, or generate reports. Cannot view other reviewers’ work.
@@ -933,9 +1004,13 @@ interface ReportSection {
 
 *Permission enforcement:* Implemented via API gateway middleware (every request is checked against user role and resource ownership before processing).
 
-*Segregation of duties enforcement:* - Reviewer cannot close own findings (query: `finding.created_by != current_user`) - Reviewer cannot approve own findings (query: `finding.created_by != current_user`) - Senior Reviewer cannot retest own triages (query: `finding.triaged_by != current_user`)
+*Segregation of duties enforcement:*
 
-=== 10.12 AI Governance & Approval Workflow
+* Reviewer cannot close own findings (query: `finding.created_by != current_user`)
+* Reviewer cannot approve own findings (query: `finding.created_by != current_user`)
+* Senior Reviewer cannot retest own triages (query: `finding.triaged_by != current_user`)
+
+=== AI Governance & Approval Workflow
 
 *Core principle:* Every AI output is advisory, non-finalized, and requires explicit human approval before inclusion in official records.
 

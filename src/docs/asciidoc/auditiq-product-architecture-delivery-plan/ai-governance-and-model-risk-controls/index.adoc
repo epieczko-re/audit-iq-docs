@@ -1,6 +1,6 @@
-== 22. AI Governance & Model Risk Controls
+== AI Governance & Model Risk Controls
 
-=== 22.1 Purpose & Regulatory Context
+=== Purpose & Regulatory Context
 
 AuditIQ uses AI (LLMs, schema matchers, scoring models) to extract data, suggest mappings, and generate narratives. *Regulators increasingly scrutinize AI in regulated products.* This section defines operational controls to manage AI risk, ensure transparency, and maintain audit trail.
 
@@ -23,7 +23,7 @@ ____
 * *USE:* ``AI-assisted documentation and review acceleration''
 * *DO NOT USE:* ``AI-powered compliance determinations'' or ``automated examiner-ready conclusions'' - All marketing, sales, and product materials must frame AI as an assistant to human reviewers, not a replacement.
 
-==== 22.1.1 Conditional Acceptability Standard
+==== Conditional Acceptability Standard
 
 AI-drafted audit narratives are acceptable in regulatory lending QC when ALL of the following conditions are met:
 
@@ -34,9 +34,9 @@ AI-drafted audit narratives are acceptable in regulatory lending QC when ALL of 
 . *Traceability:* Every AI output is linked to its model, version, prompt template, input context, and human approval
 . *Third-party risk management:* AI providers contractually agree to exam access, data handling restrictions, and no-training clauses
 
-==== 22.1.2 Risk Scenarios (from AI Regulatory Acceptance Report)
+==== Risk Scenarios (from AI Regulatory Acceptance Report)
 
-[width="100%",cols="20%,20%,20%,20%,20%",options="header",]
+[cols="20%,20%,20%,20%,20%",options="header"]
 |===
 |# |Scenario |Likelihood |Impact |Control
 |1 |*Confabulation:* AI invents finding details not in source documents |Medium |High |Citation verification + human review gate
@@ -51,7 +51,7 @@ AI-drafted audit narratives are acceptable in regulatory lending QC when ALL of 
 |10 |*Adverse action linkage:* AI finding used as basis for credit decision without human determination |Low–Med |Very High |UI guard: AI findings cannot be exported to adverse action system without human override
 |===
 
-==== 22.1.3 Required Disclaimers (MANDATORY on all AI-generated content)
+==== Required Disclaimers (MANDATORY on all AI-generated content)
 
 [arabic]
 . *Generation disclaimer:* ``This content was drafted by an AI assistant and requires human verification before use in any official audit work product.''
@@ -60,7 +60,7 @@ AI-drafted audit narratives are acceptable in regulatory lending QC when ALL of 
 
 These disclaimers must appear: (a) in the UI above every AI-generated narrative, (b) in the report footer of any report containing AI-generated content, (c) in the exam-ready bundle manifest.
 
-==== 22.1.4 Red Lines (ABSOLUTE — no exceptions)
+==== Red Lines (ABSOLUTE — no exceptions)
 
 [arabic]
 . *No AI narratives in official audit record without documented human approval.* Every AI-generated finding narrative must have an explicit ``Approved'' action by a named human reviewer before it can appear in any finalized report.
@@ -69,13 +69,13 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 . *No unredacted PII sent to AI providers.* All customer-identifying information must be removed before any API call (Section 22.2).
 . *No black-box AI in legally-required explanations.* If a finding contributes to an adverse action notice, the explanation must be human-authored and based on documented evidence — not AI-generated text.
 
-=== 22.2 Data Handling: PII Redaction & Residency
+=== Data Handling: PII Redaction & Residency
 
 *Requirement:* LLM API calls must NOT expose customer or loan data (names, SSNs, account numbers).
 
 *Implementation:*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Data Type |Redaction Rule |Implementation |Verified?
 |*Customer Name* |Remove before LLM call |Regex: `[A-Z][a-z]+ [A-Z][a-z]+` → `[REDACTED_NAME]` |Phase 1b POC
@@ -90,9 +90,12 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 * Customer contracts may specify: ``All data must remain in US region.'' - LLM calls may violate residency if using cloud API (e.g., OpenAI uses US servers; EU customers may require EU-based inference).
 * *Mitigation:* (a) Contractual data processing agreement with LLM provider; (b) Optional: Self-hosted LLM (local inference, slower); (c) Optional: Redacted context only (lower accuracy)
 
-*Data NOT used for training:* - Explicit contractual clause with LLM provider (OpenAI, Anthropic, etc.): ``Do not use customer data for model training.'' - Verified in API contract before Phase 1a launch
+*Data NOT used for training:*
 
-=== 22.3 Provenance: Every AI Output is Traceable
+* Explicit contractual clause with LLM provider (OpenAI, Anthropic, etc.): ``Do not use customer data for model training.''
+* Verified in API contract before Phase 1a launch
+
+=== Provenance: Every AI Output is Traceable
 
 *Requirement:* If an AI-generated narrative or score appears in an audit, humans must be able to trace it back to the model, version, prompt, retrieval corpus, and input. This is a regulatory requirement under SR 11-7 (documentation) and NIST GenAI Profile (content provenance).
 
@@ -100,7 +103,7 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 
 *Required Logging Fields (per AI Regulatory Acceptance Report — ALL fields mandatory for every AI API call):*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |# |Field |Type |Purpose
 |1 |`tenant_id` |string |Multi-tenant isolation
@@ -197,13 +200,13 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 }
 ----
 
-=== 22.4 Evaluation Plan: Hallucination Detection & QA Gates
+=== Evaluation Plan: Hallucination Detection & QA Gates
 
 *Hallucination risk:* LLMs can generate plausible-sounding but incorrect narratives (e.g., ``Found disclosure in loan estimate'' when document doesn’t mention it).
 
 *Detection & mitigation:*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Stage |Check |Responsible |Action
 |*Generation (automated)* |Citation verification: Does narrative mention evidence that actually exists in extracted data? |Narrative engine |Flag if <0.80 citation accuracy; lower confidence; human review required
@@ -228,13 +231,13 @@ Phase 2:
 - Retraining trigger: If monthly accuracy drops >5% from baseline
 ....
 
-=== 22.5 Drift Monitoring & Automated Alerts
+=== Drift Monitoring & Automated Alerts
 
 *Risk:* Model performance degrades over time (concept drift, input distribution shift).
 
 *Monitoring metrics:*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Metric |Target |Check Frequency |Alert Threshold
 |*AI override rate* |<10% of AI narratives rejected by reviewers |Daily |>15% for 3 consecutive days
@@ -249,15 +252,19 @@ Phase 2:
 * Anomaly detection: Automated alerts if metric crosses threshold
 * Action: Alert sent to Data Science team; recommendation for retraining or threshold adjustment
 
-*Retraining trigger (Phase 2):* - If override rate >15% for 1 week, initiate retraining on recent audit data (1000+ samples) - If calibration error >5%, adjust confidence thresholds - If hallucination rate >5%, review prompt template + context window size
+*Retraining trigger (Phase 2):*
 
-=== 22.6 UI Labeling & Transparency
+* If override rate >15% for 1 week, initiate retraining on recent audit data (1000+ samples)
+* If calibration error >5%, adjust confidence thresholds
+* If hallucination rate >5%, review prompt template + context window size
+
+=== UI Labeling & Transparency
 
 *Requirement:* Users must know which content is AI-generated and maintain appropriate skepticism.
 
 *Implementation:*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |UI Element |Indicator |Placement |User Action
 |*AI-generated narrative in finding* |Badge: ``🤖 AI-Generated'' + tooltip |Above narrative text |``Approve'' button (required) or ``Edit/Override'' (not in MVP)
@@ -280,9 +287,9 @@ Human approval required before audit finalization.
 [Approve] [View Details]"
 ....
 
-=== 22.7 Where External Expertise Needed
+=== Where External Expertise Needed
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Expertise |Activity |Timeline |Provider Options
 |*Model risk validation* |Third-party review of AI components (models, prompts, evaluation methodology) per SR 11-7 / OCC 2011-12 |Phase 1c (pre-launch) |Big Four audit firm (Deloitte, EY), or specialized ML audit firm
@@ -292,11 +299,11 @@ Human approval required before audit finalization.
 |*Third-party AI vendor due diligence* |Review AI provider contracts for exam access, data handling, no-training clauses, SLA per Interagency Third-Party Relationships Guidance |Phase 1a (before first API call) |Internal procurement + external regulatory counsel
 |===
 
-=== 22.8 Third-Party AI Provider Requirements
+=== Third-Party AI Provider Requirements
 
 Per Interagency Guidance on Third-Party Relationships (OCC 2023-17 / FDIC FIL-29-2024), all third-party AI providers used by AuditIQ must satisfy:
 
-[width="100%",cols="34%,33%,33%",options="header",]
+[cols="34%,33%,33%",options="header"]
 |===
 |Requirement |Contractual Clause |Verification
 |*Exam access* |Regulators may examine the AI vendor relationship and inspect controls |Contract review before Phase 1a launch
@@ -307,4 +314,13 @@ Per Interagency Guidance on Third-Party Relationships (OCC 2023-17 / FDIC FIL-29
 |*Right to audit* |AuditIQ (or its regulator) may audit provider’s AI controls |Contract clause
 |===
 
-*Cross-references:* - Section 22.1: Regulatory context, conditional acceptability standard, risk scenarios, disclaimers, red lines - Section 22.2: PII redaction and data residency controls - Section 22.3: Required logging fields and provenance metadata - Section 22.4: Hallucination detection and QA gates - Section 22.5: Drift monitoring and retraining triggers - Section 22.6: UI labeling and transparency requirements - *Section 24 (Model Registry):* Schema, API contract, lifecycle governance, and validation requirements for all AI model artifacts referenced by provenance fields - AI Regulatory Acceptance Report: Full regulatory analysis, risk exposure assessment, and recommended controls
+*Cross-references:*
+
+* Section 22.1: Regulatory context, conditional acceptability standard, risk scenarios, disclaimers, red lines
+* Section 22.2: PII redaction and data residency controls
+* Section 22.3: Required logging fields and provenance metadata
+* Section 22.4: Hallucination detection and QA gates
+* Section 22.5: Drift monitoring and retraining triggers
+* Section 22.6: UI labeling and transparency requirements
+* *Section 24 (Model Registry):* Schema, API contract, lifecycle governance, and validation requirements for all AI model artifacts referenced by provenance fields
+* AI Regulatory Acceptance Report: Full regulatory analysis, risk exposure assessment, and recommended controls

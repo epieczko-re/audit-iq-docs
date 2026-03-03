@@ -1,10 +1,10 @@
-== 3. Product Vision and Strategic Positioning
+== Product Vision and Strategic Positioning
 
-=== 3.1 Vision Statement
+=== Vision Statement
 
 Make every financial institution always exam-ready by providing a unified audit workflow platform that combines human expertise with AI-assisted efficiency, immutable evidence management, and confidence-scored transparency — so that compliance teams can focus on judgment, not data entry.
 
-=== 3.2 Strategic Positioning
+=== Strategic Positioning
 
 AuditIQ is positioned as:
 
@@ -13,9 +13,9 @@ AuditIQ is positioned as:
 * *Examiner-friendly* — designed to produce the evidence packages and audit trails that regulators want to see.
 * *AI opt-out, not opt-in* — per Board directive, AI capabilities are available by default but can be fully disabled. (Source: 2026_02.10 - CEO Letter)
 
-=== 3.3 Target Users
+=== Target Users
 
-[width="100%",cols="21%,13%,33%,33%",options="header",]
+[cols="21%,13%,33%,33%",options="header"]
 |===
 |Persona |Role |Primary Needs |AuditIQ Value
 |QC Reviewer |First-line quality control |Efficient field-by-field review; clear discrepancy reporting |Side-by-side viewer; confidence-scored findings; structured workflow
@@ -25,6 +25,6 @@ AuditIQ is positioned as:
 |IT Administrator |System administration |User management; integration; data security |RBAC admin; SSO; audit log access; tenant configuration
 |===
 
-=== 3.4 Interested Clients (Design Partner Candidates)
+=== Interested Clients (Design Partner Candidates)
 
 Commerce Bank, Ally Financial, Truist, Citizens Financial Group, and SoFi have expressed interest. (Source: 5 Audit-IQ - RiskExec New Product Brief.pdf) Board directive requires validation with 8–10 design partners. (Source: 2026_02.10 - CEO Letter)

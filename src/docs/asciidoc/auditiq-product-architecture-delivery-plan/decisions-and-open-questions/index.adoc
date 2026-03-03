@@ -1,10 +1,10 @@
-== 17. Decisions Needed, Open Questions, and Assumptions
+== Decisions Needed, Open Questions, and Assumptions
 
-=== 17.1 Decision Log – Status Update from v0.1 to v0.2
+=== Decision Log – Status Update from v0.1 to v0.2
 
 *DECISIONS LOCKED (refer to Section 19 for full detail):*
 
-[width="100%",cols="13%,27%,22%,30%,8%",options="header",]
+[cols="13%,27%,22%,30%,8%",options="header"]
 |===
 |ID |Decision |Status |Rationale |Overrideable?
 |*D1* |Document extraction: *Docling baseline + cloud OCR fallback* |LOCKED |Docling provides open-source control + accuracy; cloud OCR (AWS/GCP) is fallback for edge cases (handwritten docs). |Only if Docling accuracy <75% in Phase 0 testing
@@ -17,7 +17,7 @@
 
 *New Decisions D9–D12 (Phase 1b–1c scope):*
 
-[width="100%",cols="16%,29%,23%,8%,8%,8%,8%",options="header",]
+[cols="16%,29%,23%,8%,8%,8%,8%",options="header"]
 |===
 |ID |Decision |Status |Options Considered |Choice |Rationale |Conditions to Override
 |*D9* |*AI governance: Approval gates for all AI-generated content* |LOCKED |(a) AI output auto-finalized (fast, risky); (b) Optional human review (configurable); (c) *Mandatory approval (chosen)*. |Option (c): Mandatory approval for all AI narratives + critical findings. |Regulators expect explainability + human accountability; auto-finalization violates expected norms. |Only if customer feedback >80% report approval gates as friction
@@ -26,9 +26,9 @@
 |*D12* |*Pack update cadence: Versioning + approval workflow* |OPEN |(a) Auto-rollout of pack updates (fast, risky); (b) Customer approval per update (slow, safe); (c) Staging environments for pre-launch. |Option (c): Staging environment + automated tests; updates staged by default, promoted to prod after customer UAT (1-week approval window). |Reduces customer risk; maintains audit trail of updates. |Monitor for friction in Q2 beta; adjust approval timeline if needed
 |===
 
-=== 17.2 Open Questions (Unresolved Before MVP)
+=== Open Questions (Unresolved Before MVP)
 
-[width="100%",cols="31%,38%,23%,8%",options="header",]
+[cols="31%,38%,23%,8%",options="header"]
 |===
 |Question |Stakeholder |Impact |Target Resolution
 |*Q1: Will regulators accept LLM-generated audit narratives as evidence?* |Compliance SME, Legal |High |Beta customer interviews + early regulator engagement (Q1 2026)
@@ -41,9 +41,9 @@
 |*Q8: Can Docling extraction achieve >85% accuracy on handwritten HMDA docs?* |Data/ML Lead |Critical |Phase 0 testing (by Mar 31); fallback to cloud OCR if not
 |===
 
-=== 17.3 Explicit Assumptions (Risk-if-Wrong)
+=== Explicit Assumptions (Risk-if-Wrong)
 
-[width="99%",cols="37%,33%,10%,10%,10%",options="header",]
+[cols="37%,33%,10%,10%,10%",options="header"]
 |===
 |Assumption |Category |Confidence |Risk-if-Wrong |Mitigation
 |*A1: Docling can extract HMDA field values with >80% accuracy* |Technical |Medium |Extraction useless; product DOA. |Phase 0 POC on sample corpus; cloud OCR fallback.

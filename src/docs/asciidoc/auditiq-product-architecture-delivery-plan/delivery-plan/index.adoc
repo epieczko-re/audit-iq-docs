@@ -1,6 +1,6 @@
-== 14. Delivery Plan and Work Breakdown Structure (WBS)
+== Delivery Plan and Work Breakdown Structure (WBS)
 
-=== 14.1 High-Level Phased Delivery (Q2–Q4 2026)
+=== High-Level Phased Delivery (Q2–Q4 2026)
 
 ....
 Phase 0: Foundation & Infrastructure (Mar 1–Mar 31, 2026)
@@ -44,11 +44,11 @@ Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
 └─ Vertical expansion (beyond lending: insurance, credit unions, fund management)
 ....
 
-=== 14.2 Expanded WBS: Phase 1a–1c (MVP) with Estimates
+=== Expanded WBS: Phase 1a–1c (MVP) with Estimates
 
 ==== Phase 0: Foundation & Infrastructure (Mar 2026, 4 weeks)
 
-[width="100%",cols="31%,35%,17%,17%",options="header",]
+[cols="31%,35%,17%,17%",options="header"]
 |===
 |Work Item |Story Points |Owner |Notes
 |*Backend infra* | |Full-stack lead |
@@ -66,7 +66,7 @@ Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
 
 ==== Phase 1a: Core Audit Workflow (Apr 2026, 4 weeks)
 
-[width="100%",cols="32%,40%,20%,8%",options="header",]
+[cols="32%,40%,20%,8%",options="header"]
 |===
 |Work Item |Story Points |Owner |Dependencies
 |*Document upload & ingestion* | | |
@@ -90,7 +90,7 @@ Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
 
 ==== Phase 1b: Intelligence & Auto-Scoring (May 2026, 4 weeks)
 
-[width="100%",cols="32%,40%,20%,8%",options="header",]
+[cols="32%,40%,20%,8%",options="header"]
 |===
 |Work Item |Story Points |Owner |Dependencies
 |*Schema & mapping* | | |
@@ -114,7 +114,7 @@ Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
 
 ==== Phase 1c: Launch Prep & QA (Jun 2026, 4 weeks)
 
-[width="100%",cols="32%,40%,20%,8%",options="header",]
+[cols="32%,40%,20%,8%",options="header"]
 |===
 |Work Item |Story Points |Owner |Dependencies
 |*Beta onboarding* | | |
@@ -138,11 +138,15 @@ Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
 |*Total Phase 1c* |*97 points* |(Velocity ~24 pts/week = 4 weeks) |_Buffer for customer feedback_
 |===
 
-=== 14.3 Critical Path & Dependencies
+=== Critical Path & Dependencies
 
 *Critical Path (longest dependency chain):* 1. Phase 0: Docling integration + LLM setup (Week 1–2) 2. Phase 1a: Document processing pipeline (Week 2–4) 3. Phase 1b: Schema matcher quality + LLM narratives (Week 5–8) 4. Phase 1c: Performance tuning & security review (Week 9–12)
 
-*Parallel workstreams:* - UX prototyping (Phase 0) → UI implementation (Phase 1a–b) - Data/ML model training (Phase 0–1a) → Integration testing (Phase 1b–c) - Compliance review (Phase 1c) → Documentation (Phase 1c)
+*Parallel workstreams:*
+
+* UX prototyping (Phase 0) → UI implementation (Phase 1a–b)
+* Data/ML model training (Phase 0–1a) → Integration testing (Phase 1b–c)
+* Compliance review (Phase 1c) → Documentation (Phase 1c)
 
 *Go/No-Go Gates:*
 
@@ -151,9 +155,9 @@ Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
 * *Phase 1b exit gate (May 31):* Scoring engine produces findings with >85% precision on test packs; AI narratives reviewed <2 min each
 * *Phase 1c GO/NO-GO decision (Jun 15):* Beta customer sign-off on at least 3 critical workflows; zero critical security issues
 
-=== 14.4 Resourcing Plan (MVP Team)
+=== Resourcing Plan (MVP Team)
 
-[width="99%",cols="24%,39%,17%,10%,10%",options="header",]
+[cols="24%,39%,17%,10%,10%",options="header"]
 |===
 |Role |Headcount |FTE |Responsibilities |Ramp-Up
 |*Full-stack Engineer* |3–4 |3.5 |API, state machine, workflow UI, DB schema, integration testing |Week 1
@@ -167,4 +171,8 @@ Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
 |*Total* |*9–10 FTE* |*9.5 FTE* | |
 |===
 
-*Procurement for external support:* - Security partner: Penetration testing (Phase 1c, ~$15K–$25K) - Docling support (if needed): Technical consultation ($5K–$10K) - Customer success consultant: Beta onboarding & training (Phase 1c, $2K–$5K)
+*Procurement for external support:*
+
+* Security partner: Penetration testing (Phase 1c, ~$15K–$25K)
+* Docling support (if needed): Technical consultation ($5K–$10K)
+* Customer success consultant: Beta onboarding & training (Phase 1c, $2K–$5K)

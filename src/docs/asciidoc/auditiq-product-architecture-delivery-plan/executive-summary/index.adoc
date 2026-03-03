@@ -1,4 +1,4 @@
-== 1. Executive Summary
+== Executive Summary
 
 AuditIQ is a new module for the RiskExec platform that transforms how financial institutions perform lending quality control and compliance audits. It replaces manual ``stare-and-compare'' audit workflows — where reviewers tediously compare loan data fields against source documents using spreadsheets and email — with a structured, confidence-scored, evidence-managed platform that serves all three lines of defense (QC, compliance, and audit) in a single system.
 

@@ -1,10 +1,10 @@
-== 13. Pricing and Packaging
+== Pricing and Packaging
 
-=== 13.1 Market Context: ACES Pricing Intelligence
+=== Market Context: ACES Pricing Intelligence
 
 Based on internal competitive analysis of ~141 ACES customers (circa 2023 data). See Section 4.1 for full tier-by-tier breakdown.
 
-[width="100%",cols="40%,60%",options="header"]
+[cols="40%,60%",options="header"]
 |===
 |Metric |Value
 
@@ -38,7 +38,7 @@ Based on internal competitive analysis of ~141 ACES customers (circa 2023 data).
 
 *Key competitive insight:* ACES prices each audit type (Origination, Servicing, Consumer, HMDA) as a separate subscription. Customers buying multiple packs at high volume drive the $135K average ACV. Banks average $167K because they buy more pack types. AuditIQ's pack architecture is a natural fit for the same per-pack pricing model — but with AI governance controls included at no surcharge.
 
-=== 13.2 RiskExec Baseline & AuditIQ Uplift Strategy
+=== RiskExec Baseline & AuditIQ Uplift Strategy
 
 *RiskExec current market baseline:*
 
@@ -52,11 +52,11 @@ Based on internal competitive analysis of ~141 ACES customers (circa 2023 data).
 * *Standalone product:* For audit-first prospects (e.g., ACES displacement), AuditIQ competes directly at $40K–$150K ACV with full pack portfolio
 * *Rationale:* Reduces audit labor cost by ~40% per engagement; enables higher audit frequency; consolidates 3 lines of defense into one system
 
-=== 13.3 Pricing Model
+=== Pricing Model
 
 *DECISION PROPOSED (D6):* Platform + Pack subscription model, mirroring the ACES tiered structure that the market understands, with AI governance controls included as a competitive differentiator.
 
-==== 13.3.1 Pricing Architecture
+==== Pricing Architecture
 
 AuditIQ pricing consists of three components:
 
@@ -67,9 +67,9 @@ AuditIQ pricing consists of three components:
 
 This mirrors ACES's proven model while adding value through included AI governance features.
 
-==== 13.3.2 Platform Access Fee
+==== Platform Access Fee
 
-[width="100%",cols="18%,22%,20%,40%",options="header"]
+[cols="18%,22%,20%,40%",options="header"]
 |===
 |Tier |Monthly Fee |Annual |Includes
 
@@ -91,13 +91,13 @@ This mirrors ACES's proven model while adding value through included AI governan
 
 *RiskExec bundle discount:* Existing RiskExec customers receive *20% off platform access fee*. (Essentials: $1,200/mo; Professional: $2,400/mo; Enterprise: $4,000/mo.)
 
-==== 13.3.3 Pack Subscriptions (Per Pack, Tiered by Volume)
+==== Pack Subscriptions (Per Pack, Tiered by Volume)
 
 Each audit pack is licensed as a separate monthly subscription with included audit volume and per-audit excess fees. Customers select a tier based on expected monthly audit volume. Annual contracts required; monthly billing.
 
 *HMDA Audit Pack (Phase 1 — launch pack):*
 
-[width="100%",cols="14%,18%,18%,18%,16%,16%",options="header"]
+[cols="14%,18%,18%,18%,16%,16%",options="header"]
 |===
 |Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
 
@@ -134,7 +134,7 @@ NOTE: HMDA pricing deliberately undercuts ACES by 17–20% to drive Phase 1 adop
 
 *Origination Audit Pack (Phase 2):*
 
-[width="100%",cols="14%,18%,18%,18%,16%,16%",options="header"]
+[cols="14%,18%,18%,18%,16%,16%",options="header"]
 |===
 |Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
 
@@ -183,7 +183,7 @@ NOTE: HMDA pricing deliberately undercuts ACES by 17–20% to drive Phase 1 adop
 
 *Servicing Audit Pack (Phase 2):*
 
-[width="100%",cols="14%,18%,18%,18%,16%,16%",options="header"]
+[cols="14%,18%,18%,18%,16%,16%",options="header"]
 |===
 |Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
 
@@ -218,7 +218,7 @@ NOTE: HMDA pricing deliberately undercuts ACES by 17–20% to drive Phase 1 adop
 
 *Consumer Audit Pack (Phase 3):*
 
-[width="100%",cols="14%,18%,18%,18%,16%,16%",options="header"]
+[cols="14%,18%,18%,18%,16%,16%",options="header"]
 |===
 |Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
 
@@ -251,11 +251,11 @@ NOTE: HMDA pricing deliberately undercuts ACES by 17–20% to drive Phase 1 adop
 |−14% vs. ACES Enterprise
 |===
 
-==== 13.3.4 Multi-Pack Discount
+==== Multi-Pack Discount
 
 Customers purchasing 2+ packs simultaneously receive a *10% discount on pack subscription fees* (platform fee unchanged). Customers purchasing 4+ packs receive *15% discount*. This encourages multi-pack adoption and drives ACV toward the $100K+ range that competes with ACES.
 
-[width="100%",cols="30%,35%,35%",options="header"]
+[cols="30%,35%,35%",options="header"]
 |===
 |Packs Purchased |Discount on Pack Fees |Rationale
 
@@ -272,9 +272,9 @@ Customers purchasing 2+ packs simultaneously receive a *10% discount on pack sub
 |Locks in enterprise commitment; drives ACV toward $120K+
 |===
 
-==== 13.3.5 AI Copilot Add-On
+==== AI Copilot Add-On
 
-[width="100%",cols="30%,30%,40%",options="header"]
+[cols="30%,30%,40%",options="header"]
 |===
 |Feature |Pricing |Details
 
@@ -289,9 +289,9 @@ Customers purchasing 2+ packs simultaneously receive a *10% discount on pack sub
 
 NOTE: Including AI Copilot in Professional tier (free) is a key competitive differentiator. ACES charges separately for AI features via bolt-on partnerships. AuditIQ's governance-first AI is a core value proposition, not an upsell.
 
-==== 13.3.6 Professional Services
+==== Professional Services
 
-[width="100%",cols="30%,25%,45%",options="header"]
+[cols="30%,25%,45%",options="header"]
 |===
 |Service |Pricing |Scope
 
@@ -312,11 +312,11 @@ NOTE: Including AI Copilot in Professional tier (free) is a key competitive diff
 |On-demand consulting for complex integrations, custom workflows, regulatory interpretation
 |===
 
-=== 13.4 Revenue Model & Scenario Analysis
+=== Revenue Model & Scenario Analysis
 
 *Target: $3–4M incremental ARR within 24 months of GA launch.*
 
-[width="100%",cols="20%,20%,20%,20%,20%",options="header"]
+[cols="20%,20%,20%,20%,20%",options="header"]
 |===
 |Scenario |Customers |Avg ACV |Total ARR |Assumption
 
@@ -347,7 +347,7 @@ NOTE: Including AI Copilot in Professional tier (free) is a key competitive diff
 
 *ACV buildup example — Regional bank, Professional tier, 3 packs:*
 
-[width="100%",cols="50%,25%,25%",options="header"]
+[cols="50%,25%,25%",options="header"]
 |===
 |Component |Monthly |Annual
 
@@ -378,9 +378,9 @@ NOTE: Including AI Copilot in Professional tier (free) is a key competitive diff
 
 This $132K ACV is competitive with ACES's $135K average and $167K bank average, while including AI governance features that ACES charges extra for.
 
-=== 13.5 Contract Terms
+=== Contract Terms
 
-[width="100%",cols="30%,70%",options="header"]
+[cols="30%,70%",options="header"]
 |===
 |Term |Policy
 
@@ -400,7 +400,7 @@ This $132K ACV is competitive with ACES's $135K average and $167K bank average, 
 |30-day free trial: Essentials platform + HMDA pack, limited to 50 audits, 3 users. No credit card required. Trial data migrates to paid account.
 |===
 
-=== 13.6 Pricing Exclusions
+=== Pricing Exclusions
 
 The following are *not* included in AuditIQ pricing and are procured separately:
 
@@ -409,11 +409,11 @@ The following are *not* included in AuditIQ pricing and are procured separately:
 * White-label packs — not in scope for v1.0; roadmap item for pack marketplace
 * On-premises deployment — cloud-only SaaS for Phase 1; on-prem evaluation in Phase 3 based on demand
 
-=== 13.7 Decision Status & Validation Plan
+=== Decision Status & Validation Plan
 
 *DECISION STATUS (D6):* PROPOSED — pending validation with design partners and CEO approval.
 
-[width="100%",cols="5%,50%,20%,25%",options="header"]
+[cols="5%,50%,20%,25%",options="header"]
 |===
 |# |Decision |Status |Rationale
 

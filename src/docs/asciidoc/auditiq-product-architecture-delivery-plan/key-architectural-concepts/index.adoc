@@ -1,12 +1,12 @@
-== 6. Key Architectural Concepts
+== Key Architectural Concepts
 
-=== 6.1 Audit Packs: The ``Brain'' Plugin Model
+=== Audit Packs: The ``Brain'' Plugin Model
 
 An audit pack encapsulates everything needed to audit a specific regulatory domain. It is a versioned, declarative configuration artifact — not executable code. The platform interprets the pack to drive ingestion validation, schema mapping, comparison rules, scoring, and report generation. This makes AuditIQ extensible: adding a new regulation means creating a new pack, not modifying platform code.
 
 *Phase 1:* One pack — HMDA Origination QC. Pre-built by RiskExec. *Phase 2:* CRA, SBL (Section 1071). Pre-built by RiskExec. *Future:* Client-customizable packs, potentially a third-party pack marketplace.
 
-=== 6.2 Three-Layer Confidence Scoring
+=== Three-Layer Confidence Scoring
 
 AuditIQ applies confidence scoring at three independent layers:
 
@@ -25,11 +25,11 @@ combined_confidence = min(mapping_confidence, extraction_confidence, rule_confid
 
 When a layer is not applicable (e.g., no OCR involved in a record-to-record audit), that layer is set to 1.0 (full confidence) and does not reduce the combined score.
 
-=== 6.3 Findings Severity vs. Confidence (Orthogonal Dimensions)
+=== Findings Severity vs. Confidence (Orthogonal Dimensions)
 
 Severity measures the regulatory importance of a finding (how bad is it?). Confidence measures how sure the system is that the finding is real (how certain is it?). These are independent:
 
-[width="100%",cols="25%,25%,30%,20%",options="header",]
+[cols="25%,25%,30%,20%",options="header"]
 |===
 |Scenario |Severity |Confidence |Action
 |Action Taken code clearly wrong |Critical |High |Immediate remediation; no additional verification needed
@@ -38,11 +38,11 @@ Severity measures the regulatory importance of a finding (how bad is it?). Confi
 |Property address potentially wrong but document blurry |Medium |Low |Flag for manual verification with original document
 |===
 
-=== 6.4 Immutable Audit Trail with Regulator-Safe Semantics
+=== Immutable Audit Trail with Regulator-Safe Semantics
 
 Every state change in the system is recorded as an immutable event. Events are append-only and hash-chained for tamper evidence. The system differentiates between truly immutable artifacts (evidence, events) and correctible artifacts (findings, mappings) where corrections are modeled as new events that supersede prior state. See Section 20 for the full immutability/correctability specification.
 
-=== 6.5 Architecture Diagrams
+=== Architecture Diagrams
 
 ==== Diagram 1: Audit Run State Machine
 

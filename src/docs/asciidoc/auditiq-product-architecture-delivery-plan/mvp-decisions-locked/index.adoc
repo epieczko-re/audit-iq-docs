@@ -1,6 +1,6 @@
-== 19. MVP Decisions Locked (Default Unless Overridden)
+== MVP Decisions Locked (Default Unless Overridden)
 
-=== 19.1 Purpose & Authority
+=== Purpose & Authority
 
 *These five decisions are locked for MVP (Sections 1–12). They must not be reopened without explicit override decision by Product Lead + Compliance SME + CEO.*
 
@@ -12,9 +12,9 @@ Each decision includes:
 5. *Risks of this choice* – What could go wrong
 6. *Conditions to revisit/override* – When to reconsider
 
-'''''
+'''
 
-=== 19.2 Decision D1: Document Extraction Strategy
+=== Decision D1: Document Extraction Strategy
 
 *Decision Statement:* Which document parsing and OCR technology will AuditIQ use for HMDA loan document extraction, and how will per-field extraction confidence be produced?
 
@@ -26,7 +26,7 @@ ____
 
 *Alternatives Considered:*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Alternative |Pros |Cons |Rejected?
 |Docling only (no AFC layer) |Open-source, free, no vendor lock-in |No per-field confidence; Docling confidence ≠ extraction accuracy; cannot drive auto-confirm routing |Yes — AFC layer required
@@ -35,7 +35,17 @@ ____
 |*Docling-Graph + AFC v2 + LiteLLM/Mistral + cloud OCR fallback* |Open-source MIT baseline + Pydantic schema validation + graph corroboration + self-hosted LLM inference + fallback safety |Multi-component system with Docling-Graph templates (complexity); requires Mistral legal sign-off for self-hosting |*CHOSEN*
 |===
 
-*Rationale:* - *Docling-Graph* extends Docling with Pydantic schema enforcement and a directed knowledge graph, yielding validated structured outputs and explicit cross-document entity relationships — improving determinism, traceability, and corroboration scoring - The *AFC v2 layer* (Section 10.2.1) builds deterministic per-field confidence from 6 signals: `docling_page_grade` (0.12), `ocr_segment_confidence` (0.23), `pattern_validity` (0.20), `layout_anchor_consistency` (0.18), `cross_doc_redundancy` (0.12), `graph_corrob_score` (0.15) - AFC routing thresholds: ≥0.85 auto-confirm, 0.50–0.85 human review, <0.50 manual entry - Docling-Graph supports both VLM and LLM extraction backends via LiteLLM — self-hosted Mistral via vLLM provides lower per-call cost, data residency, and high throughput for batch workloads - Fallback chain: Docling-Graph VLM → Docling-Graph LLM (Mistral) → cloud OCR → manual entry - *Docling-Graph is MIT-licensed* — reduces GPL copyleft risk vs. `docling-surya`; *WARNING:* `docling-surya` plugin wraps SuryaOCR under GPL — do NOT adopt without legal review (see Risk #4 below) - *Mistral self-hosting requires legal sign-off* for model license before deployment — see Section 25 (Model Deployment) - Graph artifacts (CSV, Cypher) are exportable for exam-ready bundles (Section 21) - MVP timeline: Docling-Graph integration + AFC v2 by end of Phase 0; Mistral self-hosted by Phase 1a; cloud OCR as operational fallback
+*Rationale:*
+
+* *Docling-Graph* extends Docling with Pydantic schema enforcement and a directed knowledge graph, yielding validated structured outputs and explicit cross-document entity relationships — improving determinism, traceability, and corroboration scoring
+* The *AFC v2 layer* (Section 10.2.1) builds deterministic per-field confidence from 6 signals: `docling_page_grade` (0.12), `ocr_segment_confidence` (0.23), `pattern_validity` (0.20), `layout_anchor_consistency` (0.18), `cross_doc_redundancy` (0.12), `graph_corrob_score` (0.15)
+* AFC routing thresholds: ≥0.85 auto-confirm, 0.50–0.85 human review, <0.50 manual entry
+* Docling-Graph supports both VLM and LLM extraction backends via LiteLLM — self-hosted Mistral via vLLM provides lower per-call cost, data residency, and high throughput for batch workloads
+* Fallback chain: Docling-Graph VLM → Docling-Graph LLM (Mistral) → cloud OCR → manual entry
+* *Docling-Graph is MIT-licensed* — reduces GPL copyleft risk vs. `docling-surya`; *WARNING:* `docling-surya` plugin wraps SuryaOCR under GPL — do NOT adopt without legal review (see Risk #4 below)
+* *Mistral self-hosting requires legal sign-off* for model license before deployment — see Section 25 (Model Deployment)
+* Graph artifacts (CSV, Cypher) are exportable for exam-ready bundles (Section 21)
+* MVP timeline: Docling-Graph integration + AFC v2 by end of Phase 0; Mistral self-hosted by Phase 1a; cloud OCR as operational fallback
 
 * *Risks of This Choice:* 1. *AFC precision insufficient on HMDA corpus:* If Phase 0 POC reveals <85% precision on key HMDA fields at AFC ≥0.85, the auto-confirm tier is unusable and all fields route to human review, negating the value proposition.
 * *Mitigation:* Phase 0 POC test plan (Section 10.2.7) with explicit go/kill criteria; sample HMDA corpus (≥200 loans, 5+ lenders) 2. *Cloud OCR fallback rate too high:* If >40% of pages require cloud OCR fallback, cost model breaks ($0.20–$0.50+ per document) and latency degrades
@@ -50,7 +60,11 @@ ____
 * *Kill:* <70% precision at AFC ≥0.85 OR fallback rate >40% of pages OR non-deterministic output across runs
 * *Pivot:* If killed, evaluate AWS Textract as primary with Docling relegated to pre-processing only
 
-*Do Not Do (per Docling Validation Report):* - Do NOT treat Docling’s native confidence scores as per-field extraction probabilities - Do NOT adopt GPL-licensed Docling plugins (`docling-surya`) in any commercial build - Do NOT rely on Docling’s beta extraction API for production field extraction
+*Do Not Do (per Docling Validation Report):*
+
+* Do NOT treat Docling’s native confidence scores as per-field extraction probabilities
+* Do NOT adopt GPL-licensed Docling plugins (`docling-surya`) in any commercial build
+* Do NOT rely on Docling’s beta extraction API for production field extraction
 
 *Conditions to Revisit/Override:*
 
@@ -59,9 +73,9 @@ ____
 * *Revisit AFC weights:* After Phase 1a production data (≥1,000 loans) allows empirical recalibration of the 5-signal AFC formula
 * *Revisit in Phase 2:* When pack marketplace includes non-English or specialized document types, reassess Docling + cloud coverage
 
-'''''
+'''
 
-=== 19.3 Decision D2: Schema Mapping Approach
+=== Decision D2: Schema Mapping Approach
 
 *Decision Statement:* How will AuditIQ map extracted HMDA field values to audit pack schema fields with confidence scoring, given that HMDA LAR structure spans 48 data points expanding to ~110 fields with 37 ``key HMDA data fields'' (per Fed CA Letter 18-9)?
 
@@ -73,7 +87,7 @@ ____
 
 *Alternatives Considered:*
 
-[width="100%",cols="20%,20%,20%,20%,20%",options="header",]
+[cols="20%,20%,20%,20%,20%",options="header"]
 |===
 |Alternative |Approach |Precision (est.) |Latency |Rejected?
 |*Hybrid heuristic + synonym dictionary (chosen)* |String similarity + type compat + doc-section context + HMDA/CD curated dictionary + COMA-style signal combination |85–92% on CD-supported fields |<50ms |*CHOSEN*
@@ -85,7 +99,7 @@ ____
 
 *Mapping Pattern Taxonomy (5 types the matcher must handle):*
 
-[width="100%",cols="34%,33%,33%",options="header",]
+[cols="34%,33%,33%",options="header"]
 |===
 |Pattern |Example |Heuristic Approach
 |Exact name match |`loan_amount` → `loan_amount` |String equality; trivial
@@ -101,7 +115,14 @@ ____
 * *Layer 2 — Calibrated decision score:* Combines Layer 1 signals using reliability diagrams + temperature scaling (or isotonic regression in Phase 2) to produce a calibrated probability that the mapping is correct
 * *Routing:* ≥0.90 auto-accept, 0.60–0.90 human review, <0.60 manual mapping required
 
-*Rationale:* - Hybrid heuristic with curated synonym dictionary is MVP-fast, interpretable, and auditable (regulator requirement) - COMA-style combination of multiple signals (name similarity, type compatibility, document-section context) outperforms any single signal - Two-layer confidence separates raw signal production from calibrated decision-making — enables recalibration without retraining - Curated HMDA/CD synonym dictionary captures domain-specific equivalences that generic string matching misses - Human-in-the-loop for 0.60–0.90 band ensures safety while building training data for Phase 2 ML upgrade - CD-only coverage reality (~10–20% at ≥0.85) is explicitly communicated to stakeholders — no over-promising
+*Rationale:*
+
+* Hybrid heuristic with curated synonym dictionary is MVP-fast, interpretable, and auditable (regulator requirement)
+* COMA-style combination of multiple signals (name similarity, type compatibility, document-section context) outperforms any single signal
+* Two-layer confidence separates raw signal production from calibrated decision-making — enables recalibration without retraining
+* Curated HMDA/CD synonym dictionary captures domain-specific equivalences that generic string matching misses
+* Human-in-the-loop for 0.60–0.90 band ensures safety while building training data for Phase 2 ML upgrade
+* CD-only coverage reality (~10–20% at ≥0.85) is explicitly communicated to stakeholders — no over-promising
 
 *Reviewer Burden Model:*
 
@@ -123,7 +144,12 @@ ____
 * *Kill:* >40% override rate on CD-supported fields OR confidence scores uncalibratable (no separation between correct and incorrect mappings) OR unable to distinguish CD-supported vs. non-CD fields in UI
 * *Pivot:* If killed, evaluate embedding-based matcher as primary; if that fails, fall back to manual mapping with template pre-fill
 
-*Phase 2 Upgrade Path:* - Embedding-based candidate expansion (vector similarity for synonym discovery) - LLM-based reranking of top-N candidates (zero-shot, batch processing for cost control) - LogMap ontology track (if academic partnership delivers) - Isotonic regression for Layer 2 calibration (replaces temperature scaling)
+*Phase 2 Upgrade Path:*
+
+* Embedding-based candidate expansion (vector similarity for synonym discovery)
+* LLM-based reranking of top-N candidates (zero-shot, batch processing for cost control)
+* LogMap ontology track (if academic partnership delivers)
+* Isotonic regression for Layer 2 calibration (replaces temperature scaling)
 
 *Conditions to Revisit/Override:*
 
@@ -132,9 +158,9 @@ ____
 * *Expand to multi-document:* Phase 2 when 1003/URLA and appraisal extraction are available; requires new mapping patterns for derived and multi-source fields
 * *Recalibrate confidence:* After ≥1,000 production mappings with reviewer feedback; adjust Layer 2 weights and thresholds
 
-'''''
+'''
 
-=== 19.4 Decision D3: Audit Trail Immutability & Correctability Semantics
+=== Decision D3: Audit Trail Immutability & Correctability Semantics
 
 *Decision Statement:* How will AuditIQ balance the need for immutable, cryptographically defensible audit trails (regulator + litigation requirement) with the business need to correct mistakes after finalization (operational reality)?
 
@@ -156,7 +182,7 @@ ____
 
 *Three Design Tiers (per Audit Trail Defensibility Report):*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Tier |Components |Use Case |MVP?
 |*Minimal Defensible* |Hash chain + RFC 8785 canonical JSON + monotonic sequence + WORM-stored anchor hashes |Regulatory exam defense; satisfies FFIEC + NIST AU-9 |*YES — MVP target*
@@ -166,7 +192,7 @@ ____
 
 *Alternatives Considered:*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Alternative |Pros |Cons |Rejected?
 |*Append-only + hash chain + RFC 8785 + anchoring (chosen)* |Regulator-friendly; litigation-defensible; gap/tamper detectable |Requires canonical serialization discipline + anchor storage |*CHOSEN*
@@ -176,11 +202,19 @@ ____
 |Mutable with change log |Maximum flexibility; classic audit log pattern |Doesn’t guarantee immutability; deletion still possible |Deferred
 |===
 
-*Rationale:* - Regulators (FFIEC IT Examination Handbook) expect log controls with read-only media and isolated storage; append-only + WORM anchors is the gold standard - RFC 8785 (JSON Canonicalization Scheme) ensures identical JSON input always produces identical hash output — mandatory for repeatable verification (non-canonical JSON causes hash mismatches on logically identical data) - Global monotonic sequence IDs (per-tenant minimum) detect event gaps, reordering, and insertion attacks - Cryptographic anchor points (WORM-stored hashes, or KMS-signed checkpoints in Phase 2) prevent silent chain rewriting - Compensating events preserve complete audit history while allowing operational corrections - FRE Rule 902(13)/(14) allows self-authentication of electronic records via hash values — our design directly supports litigation defensibility - NIST SP 800-53 Rev 5 controls: AU-9 (protection of audit information, WORM + crypto), AU-10 (non-repudiation), AU-11 (audit record retention)
+*Rationale:*
+
+* Regulators (FFIEC IT Examination Handbook) expect log controls with read-only media and isolated storage; append-only + WORM anchors is the gold standard
+* RFC 8785 (JSON Canonicalization Scheme) ensures identical JSON input always produces identical hash output — mandatory for repeatable verification (non-canonical JSON causes hash mismatches on logically identical data)
+* Global monotonic sequence IDs (per-tenant minimum) detect event gaps, reordering, and insertion attacks
+* Cryptographic anchor points (WORM-stored hashes, or KMS-signed checkpoints in Phase 2) prevent silent chain rewriting
+* Compensating events preserve complete audit history while allowing operational corrections
+* FRE Rule 902(13)/(14) allows self-authentication of electronic records via hash values — our design directly supports litigation defensibility
+* NIST SP 800-53 Rev 5 controls: AU-9 (protection of audit information, WORM + crypto), AU-10 (non-repudiation), AU-11 (audit record retention)
 
 *Failure Modes (from Audit Trail Defensibility Report):*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Failure Mode |Likelihood |Impact |Mitigation
 |Non-canonical JSON breaks hash verification |High |High |RFC 8785 mandatory; reject non-canonical events at write time
@@ -206,9 +240,9 @@ ____
 * *Revisit WORM strategy:* If cloud provider WORM costs exceed $2K/month or operational burden is unsustainable; evaluate signed checkpoints as alternative anchor mechanism
 * *Revisit in Phase 2:* Merkle tree evaluation if multi-party audit or public verifiability becomes a requirement
 
-'''''
+'''
 
-=== 19.5 Decision D4: Pack Interface – Declarative vs. Executable
+=== Decision D4: Pack Interface – Declarative vs. Executable
 
 *Decision Statement:* Should audit packs be declarative (JSON configuration) or executable (code with logic)?
 
@@ -216,7 +250,7 @@ ____
 
 *Alternatives Considered:*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Alternative |Pros |Cons |Rejected?
 |*Declarative JSON (chosen)* |Secure (no code injection); versioning simple; portable; audit trail clear |Limited expressiveness; complex rule logic hard to encode |Partially
@@ -225,7 +259,13 @@ ____
 |Domain-specific language (DSL) |Security + expressiveness balance |Custom DSL requires design + parser (time cost) |Deferred Phase 2
 |===
 
-*Rationale:* - MVP scope requires HMDA + CRA + ECOA packs; all expressible in declarative JSON with rule definitions + confidence weights - No code execution = no code injection = no security audit headaches - Versioning and comparison (e.g., ``what changed in pack v2.1?'') are trivial with JSON - Regulator approval of pack logic is easier when pack is declarative (rules are explicit, not hidden in code) - Community pack marketplace (Phase 3) must be secure; declarative packs are safer for distribution
+*Rationale:*
+
+* MVP scope requires HMDA + CRA + ECOA packs; all expressible in declarative JSON with rule definitions + confidence weights
+* No code execution = no code injection = no security audit headaches
+* Versioning and comparison (e.g., ``what changed in pack v2.1?'') are trivial with JSON
+* Regulator approval of pack logic is easier when pack is declarative (rules are explicit, not hidden in code)
+* Community pack marketplace (Phase 3) must be secure; declarative packs are safer for distribution
 
 * *Risks of This Choice:* 1. *Customers demand executable logic:* Custom pack requirements include complex conditional rules (e.g., ``if loan_type == `ARM' AND rate > 5%, then find TRID violations'').
 * *Mitigation:* JSON rule schema supports nested conditions & weights; covers 90% of use cases. For remaining 10%, Phase 2 DSL or API-based custom rules 2. *Declarative JSON becomes unwieldy:* As pack complexity grows (50+ rules), JSON becomes hard to maintain.
@@ -238,9 +278,9 @@ ____
 * *Implement DSL:* If community pack marketplace shows >20% DSL requests in Phase 3; prioritize DSL design for Phase 4
 * *Hybrid approach:* If phase 2 customer feedback shows JSON limitations prevent >3 custom packs; adopt JSON + expression language (lower risk than full code)
 
-'''''
+'''
 
-=== 19.6 Decision D5: Tenant Isolation – Row-Level Security (RLS) for Phase 1
+=== Decision D5: Tenant Isolation – Row-Level Security (RLS) for Phase 1
 
 *Decision Statement:* What is the data isolation strategy for the multi-tenant AuditIQ system in Phase 1?
 
@@ -248,7 +288,7 @@ ____
 
 *Alternatives Considered:*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Alternative |Pros |Cons |Rejected?
 |*RLS only (Phase 1a–b); + encryption Phase 1c (chosen)* |RLS prevents data queries across tenants; simple to implement in PostgreSQL; audit logging for compliance |RLS alone not sufficient for SOC 2; encryption deferred to Phase 1c risk |Partially
@@ -276,9 +316,9 @@ ____
 * *Add application-layer filtering:* If RLS policy proves too restrictive (rare); phase 2 research on RLS + app-layer hybrid
 * *Upgrade encryption strategy:* If performance testing shows >10% latency; consider targeted encryption (only sensitive columns) vs. full TDE
 
-'''''
+'''
 
-=== 19.7 Decision D6: Canonical Data Schema — MISMO Reference Model (Flattened Subset)
+=== Decision D6: Canonical Data Schema — MISMO Reference Model (Flattened Subset)
 
 *Decision Statement:* What naming convention and field definition standard should AuditIQ use for its canonical loan-level data model — the schema to which source records are mapped during ingestion and against which audit rules are evaluated?
 
@@ -286,7 +326,7 @@ ____
 
 *Alternatives Considered:*
 
-[width="100%",cols="25%,25%,25%,25%",options="header",]
+[cols="25%,25%,25%,25%",options="header"]
 |===
 |Alternative |Pros |Cons |Rejected?
 |*MISMO flattened subset (chosen)* |Industry standard; LOS/servicing systems already export MISMO; examiners recognize field names; HMDA Reporting Dataset well-defined; reduces integration friction |Verbose full schema (mitigated by flattening); requires maintaining MISMO dictionary; version tracking needed |No
@@ -295,7 +335,14 @@ ____
 |ULAD (Uniform Loan Application Dataset) |Standardized for GSE delivery; well-known in origination |Narrower scope than MISMO (origination-focused); doesn’t cover servicing, HMDA-specific, or QC fields |Yes
 |===
 
-*Rationale:* - MISMO is the mortgage industry’s lingua franca — HMDA data, Fannie/Freddie deliveries, MERS, and most LOS systems speak some dialect of MISMO XML or the MISMO Reference Model - The MISMO HMDA Reporting Dataset provides a well-defined ~80-field mapping that directly covers Phase 1’s HMDA compliance audit domain - Adopting MISMO field names (e.g., `ActionTakenType`, `LienStatusType`, `PropertyValuationAmount`) means less translation when customers upload data from MISMO-aware systems - Examiners and regulators recognize MISMO terminology, which increases AuditIQ’s credibility in exam-ready bundles and audit reports - The flattened subset approach avoids the verbosity problem — we store a single-level JSON with MISMO field names rather than deeply nested XML - Non-MISMO fields (custom institution fields, derived metrics) use a `custom:` prefix (e.g., `custom:InternalRiskScore`) for clear separation
+*Rationale:*
+
+* MISMO is the mortgage industry’s lingua franca — HMDA data, Fannie/Freddie deliveries, MERS, and most LOS systems speak some dialect of MISMO XML or the MISMO Reference Model
+* The MISMO HMDA Reporting Dataset provides a well-defined ~80-field mapping that directly covers Phase 1’s HMDA compliance audit domain
+* Adopting MISMO field names (e.g., `ActionTakenType`, `LienStatusType`, `PropertyValuationAmount`) means less translation when customers upload data from MISMO-aware systems
+* Examiners and regulators recognize MISMO terminology, which increases AuditIQ’s credibility in exam-ready bundles and audit reports
+* The flattened subset approach avoids the verbosity problem — we store a single-level JSON with MISMO field names rather than deeply nested XML
+* Non-MISMO fields (custom institution fields, derived metrics) use a `custom:` prefix (e.g., `custom:InternalRiskScore`) for clear separation
 
 * *Risks of This Choice:* 1. *MISMO version drift:* MISMO releases periodic updates; field names or enumerations could change.
 * *Mitigation:* Pin to MISMO v3.6 for Phase 1; `mismo_dictionary` table includes version tracking; migration path defined in Section 11.6. 2. *Incomplete MISMO coverage for non-mortgage regulations:* Future regulations (BSA/AML, CRA, fair lending) may have fields not well-represented in MISMO.

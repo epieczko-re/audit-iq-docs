@@ -1,4 +1,4 @@
-== 18. Appendices
+== Appendices
 
 === Appendix A: Glossary (Expanded from v0.1)
 
@@ -44,7 +44,7 @@
 
 *Audit Trail / Audit Log:* Complete record of all events (extractions, approvals, corrections) for an audit. Append-only; forms basis of regulatory compliance proof.
 
-'''''
+'''
 
 === Appendix B: Full Pack Manifest JSON Schema
 
@@ -119,7 +119,7 @@
 }
 ----
 
-'''''
+'''
 
 === Appendix C: Audit Event Schema
 
@@ -201,7 +201,7 @@
 }
 ----
 
-'''''
+'''
 
 === Appendix D: Report Template Outlines
 
@@ -229,9 +229,14 @@ Attachments:
   - Sampling methodology documentation
 ....
 
-*Extended Reports (Phase 2+):* - Trend analysis (findings over time by category) - Drill-down reports (filter by severity, rule, business line) - Comparative audits (current vs. prior audit, same pack version) - Regulatory submission format (FDIC, OCC specific)
+*Extended Reports (Phase 2+):*
 
-'''''
+* Trend analysis (findings over time by category)
+* Drill-down reports (filter by severity, rule, business line)
+* Comparative audits (current vs. prior audit, same pack version)
+* Regulatory submission format (FDIC, OCC specific)
+
+'''
 
 === Appendix E: References (Source Documents)
 
@@ -239,7 +244,7 @@ Attachments:
 
 *New references for v0.2:* 6. Docling Documentation – PDF/document extraction library (https://github.com/ds4sd/docling) 7. GraphQL Best Practices – Apollo & community resources 8. PostgreSQL RLS Documentation – Row-level security implementation guide 9. OpenAI API Reference – Completion & embedding models 10. PCI DSS v3.2.1 – Payment Card Industry security framework 11. NIST AI Risk Management Framework – AI governance guidance (https://airc.nist.gov/AI_RMF_Interactivity) 12. Immutable Audit Trail Patterns – Journal of Information Security & Privacy 13. Internal ACES Pricing Study – Proprietary pricing intelligence (~141 customers)
 
-'''''
+'''
 
 === Appendix F: CEO Memo (Carry Forward from v0.1)
 
@@ -253,11 +258,16 @@ We are committed to launching AuditIQ MVP by June 30, 2026. The specification in
 3. *Team:* 9–10 FTE allocated; external security & compliance support contracted
 4. *Customer Readiness:* 3–5 beta customers onboarded by June 1
 
-*Success Criteria:* - Docling extraction >85% accuracy (Phase 0 gate) - Schema matcher >80% precision (Phase 1b gate) - Zero critical security issues (Phase 1c gate) - 3+ beta customers sign off on core workflows
+*Success Criteria:*
+
+* Docling extraction >85% accuracy (Phase 0 gate)
+* Schema matcher >80% precision (Phase 1b gate)
+* Zero critical security issues (Phase 1c gate)
+* 3+ beta customers sign off on core workflows
 
 We will communicate progress weekly to the board and escalate blockers immediately.
 
-'''''
+'''
 
 === Appendix G: Mermaid Diagram Sources (All Diagrams in Document)
 

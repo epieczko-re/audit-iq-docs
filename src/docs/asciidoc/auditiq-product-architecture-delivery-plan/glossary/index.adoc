@@ -5,9 +5,9 @@ ____
 *Purpose.* This glossary is the *single source of truth* for every confidence metric, routing threshold, and severity level used in AuditIQ. All other sections reference these definitions; if a value in another section conflicts with this glossary, this glossary governs. When thresholds are tuned, update *this file first*, then propagate.
 ____
 
-=== G.1 Confidence Metrics
+=== Confidence Metrics
 
-[width="100%",cols="18%,12%,40%,30%",options="header"]
+[cols="18%,12%,40%,30%",options="header"]
 |===
 |Metric |Range |Definition |Canonical Source
 
@@ -47,11 +47,11 @@ ____
 |Section 10.3.2
 |===
 
-=== G.2 Routing Thresholds
+=== Routing Thresholds
 
 ==== AFC Routing (Document Extraction — Section 10.2)
 
-[width="100%",cols="25%,25%,50%",options="header"]
+[cols="25%,25%,50%",options="header"]
 |===
 |Band |Threshold |Action
 
@@ -70,7 +70,7 @@ ____
 
 ==== Schema Mapping Routing (Calibrated Score — Section 10.3)
 
-[width="100%",cols="25%,25%,50%",options="header"]
+[cols="25%,25%,50%",options="header"]
 |===
 |Band |Threshold |Action
 
@@ -89,7 +89,7 @@ ____
 
 ==== Combined Confidence Routing (Findings — Section 12.1)
 
-[width="100%",cols="25%,25%,50%",options="header"]
+[cols="25%,25%,50%",options="header"]
 |===
 |Band |Threshold |Action
 
@@ -108,7 +108,7 @@ ____
 
 ==== Cloud OCR Fallback Trigger (Section 10.2)
 
-[width="100%",cols="30%,70%",options="header"]
+[cols="30%,70%",options="header"]
 |===
 |Condition |Action
 
@@ -119,11 +119,11 @@ ____
 |Trigger cloud OCR fallback for that page.
 |===
 
-=== G.3 Severity Definitions
+=== Severity Definitions
 
 *Severity measures regulatory importance. It is orthogonal to confidence.*
 
-[width="100%",cols="13%,17%,16%,27%,27%",options="header"]
+[cols="13%,17%,16%,27%,27%",options="header"]
 |===
 |Level |Definition |Examples |Action Required |Review Timeline
 
@@ -160,9 +160,9 @@ ____
 
 Severity is assigned by: (1) pack rule definition (default), (2) optionally overridden by Reviewer with justification, (3) may be escalated by Manager if pattern detected. Severity is immutable once finding is triaged unless explicitly re-scored by Manager with audit trail event.
 
-=== G.4 Calibration & Go/Kill Criteria
+=== Calibration & Go/Kill Criteria
 
-[width="100%",cols="30%,35%,35%",options="header"]
+[cols="30%,35%,35%",options="header"]
 |===
 |Metric |Threshold |Context
 
@@ -187,9 +187,9 @@ Severity is assigned by: (1) pack rule definition (default), (2) optionally over
 |Decision D2 (Section 19.3)
 |===
 
-=== G.5 UI Confidence Badge Colors
+=== UI Confidence Badge Colors
 
-[width="100%",cols="20%,20%,60%",options="header"]
+[cols="20%,20%,60%",options="header"]
 |===
 |Color |Threshold |Usage
 

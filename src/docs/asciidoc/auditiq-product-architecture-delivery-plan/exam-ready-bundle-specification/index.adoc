@@ -1,10 +1,10 @@
-== 21. Exam-Ready Bundle Specification
+== Exam-Ready Bundle Specification
 
-=== 21.1 Purpose
+=== Purpose
 
 *Exam-ready bundle* = A complete, portable artifact of an audit suitable for export to examiners, regulators, or auditors. Includes all evidence, findings, trail, and metadata. Format: ZIP (structured directories) + optional merged PDF.
 
-=== 21.2 Bundle Contents & Manifest
+=== Bundle Contents & Manifest
 
 *Manifest file (bundle_manifest.json):*
 
@@ -94,7 +94,7 @@
 }
 ----
 
-=== 21.3 Detailed File Specifications
+=== Detailed File Specifications
 
 ==== A. Audit Summary Report (PDF)
 
@@ -277,7 +277,7 @@ Zero critical findings; 2 minor findings (4% error rate).
 }
 ----
 
-=== 21.4 Export Formats
+=== Export Formats
 
 *ZIP Bundle Structure:*
 
@@ -297,9 +297,12 @@ bundle_20260215_loanXYZ_hmda_v2p1.zip
 
 *Optional: Merged PDF* - Single PDF combining audit summary + findings + attestation - Use case: Email-friendly; print-friendly - Metadata embedded in PDF (searchable)
 
-*Encryption (future):* - AES-256 encryption of ZIP contents (Phase 2) - Customer-managed or platform-managed keys (TBD)
+*Encryption (future):*
 
-=== 21.5 Evidence Referencing Protocol
+* AES-256 encryption of ZIP contents (Phase 2)
+* Customer-managed or platform-managed keys (TBD)
+
+=== Evidence Referencing Protocol
 
 *Standard format for evidence references throughout bundle:*
 
