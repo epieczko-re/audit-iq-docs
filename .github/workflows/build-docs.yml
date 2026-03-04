@@ -40,34 +40,8 @@ jobs:
 
       - name: Install additional dependencies
         run: |
-          # Install mermaid-cli for Mermaid diagram rendering
-          npm install -g @mermaid-js/mermaid-cli
-
           # Install pandoc for DOCX conversion
           apk add --no-cache pandoc
-
-          # Create puppeteer config for mermaid-cli in containers
-          cat > /tmp/puppeteer-config.json <<'PCEOF'
-          {
-            "executablePath": "/usr/bin/chromium-browser",
-            "args": ["--no-sandbox", "--disable-setuid-sandbox"]
-          }
-          PCEOF
-
-          # Create mermaid config
-          cat > /tmp/mermaid-config.json <<'MCEOF'
-          {
-            "theme": "default",
-            "themeVariables": {
-              "primaryColor": "#4A6FA5",
-              "primaryTextColor": "#fff",
-              "primaryBorderColor": "#2B4570",
-              "lineColor": "#333",
-              "secondaryColor": "#FF7E2D",
-              "tertiaryColor": "#E7EBF4"
-            }
-          }
-          MCEOF
 
       - name: Create build directory
         run: mkdir -p ${{ env.BUILD_DIR }}
@@ -75,10 +49,12 @@ jobs:
       - name: Build HTML
         run: |
           asciidoctor \
+            -r asciidoctor-kroki \
             -r asciidoctor-diagram \
             -r asciidoctor-mathematical \
+            -a kroki-server-url=https://kroki.io \
+            -a kroki-fetch-diagram \
             -a imagesoutdir=${{ env.BUILD_DIR }}/images \
-            -a mermaid-puppeteer-config=/tmp/puppeteer-config.json \
             -a data-uri \
             -a allow-uri-read \
             -a toc=left \
@@ -92,10 +68,12 @@ jobs:
       - name: Build PDF
         run: |
           asciidoctor-pdf \
+            -r asciidoctor-kroki \
             -r asciidoctor-diagram \
             -r asciidoctor-mathematical \
+            -a kroki-server-url=https://kroki.io \
+            -a kroki-fetch-diagram \
             -a imagesoutdir=${{ env.BUILD_DIR }}/images \
-            -a mermaid-puppeteer-config=/tmp/puppeteer-config.json \
             -a pdf-theme=src/docs/resources/themes/riskexec-theme.yml \
             -a pdf-fontsdir=src/docs/resources/fonts \
             -a allow-uri-read \
@@ -108,9 +86,11 @@ jobs:
         run: |
           asciidoctor \
             -b docbook5 \
+            -r asciidoctor-kroki \
             -r asciidoctor-diagram \
+            -a kroki-server-url=https://kroki.io \
+            -a kroki-fetch-diagram \
             -a imagesoutdir=${{ env.BUILD_DIR }}/images \
-            -a mermaid-puppeteer-config=/tmp/puppeteer-config.json \
             -a data-uri \
             -a allow-uri-read \
             -D ${{ env.BUILD_DIR }} \

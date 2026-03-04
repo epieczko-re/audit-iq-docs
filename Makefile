@@ -1,16 +1,22 @@
 # =============================================================================
 # AuditIQ Documentation Build System
 # =============================================================================
-# Builds AsciiDoc documentation to PDF, HTML, and DOCX formats
-# Supports Mermaid, PlantUML, and other AsciiDoc diagram types
+# Builds AsciiDoc documentation to PDF, HTML, and DOCX formats.
+#
+# Diagram rendering strategy:
+#   - Mermaid diagrams  → rendered via Kroki (asciidoctor-kroki gem)
+#   - PlantUML, Ditaa, Graphviz → rendered locally (asciidoctor-diagram gem)
+#
+# The asciidoctor/docker-asciidoctor image ships with both gems plus
+# local PlantUML, Graphviz, and Ditaa binaries — no extra installs needed.
+# Mermaid requires a headless browser, so we delegate it to Kroki instead.
 #
 # Prerequisites (native):
-#   - Ruby + asciidoctor, asciidoctor-pdf, asciidoctor-diagram,
-#     asciidoctor-mathematical gems
-#   - Node.js + @mermaid-js/mermaid-cli (mmdc)
-#   - pandoc (for DOCX)
+#   gem install asciidoctor asciidoctor-pdf asciidoctor-diagram \
+#              asciidoctor-kroki asciidoctor-mathematical
+#   apt install pandoc    # or brew install pandoc
 #
-# Or use Docker (recommended):
+# Or use Docker (recommended — zero local deps):
 #   make docker-all
 # =============================================================================
 
@@ -24,13 +30,20 @@ FONTS_DIR    := $(RESOURCES)/fonts
 IMAGES_DIR   := $(RESOURCES)/images
 STYLES_DIR   := $(RESOURCES)/styles
 
-# Docker image
+# Kroki server for Mermaid rendering (public instance; override for self-hosted)
+KROKI_URL    ?= https://kroki.io
+
+# Docker image (ships with asciidoctor + asciidoctor-diagram + asciidoctor-kroki)
 DOCKER_IMAGE := asciidoctor/docker-asciidoctor:latest
 DOCKER_RUN   := docker run --rm -v "$(CURDIR)":/documents -w /documents $(DOCKER_IMAGE)
 
 # --- Common Asciidoctor flags ------------------------------------------------
+# Load both gems: kroki handles Mermaid; diagram handles PlantUML/Ditaa/Graphviz
 ASCIIDOCTOR_COMMON := \
+	-r asciidoctor-kroki \
 	-r asciidoctor-diagram \
+	-a kroki-server-url=$(KROKI_URL) \
+	-a kroki-fetch-diagram \
 	-a imagesoutdir=$(BUILD_DIR)/images \
 	-a allow-uri-read \
 	-a icons=font
