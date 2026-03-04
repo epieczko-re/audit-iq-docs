@@ -49,8 +49,8 @@ make docker-shell        # Open a shell in the build container
 Install prerequisites:
 
 ```bash
-gem install asciidoctor asciidoctor-pdf asciidoctor-diagram \
-           asciidoctor-kroki asciidoctor-mathematical
+gem install asciidoctor asciidoctor-pdf asciidoctor-kroki \
+           asciidoctor-mathematical
 brew install pandoc      # or apt install pandoc
 ```
 
@@ -69,14 +69,14 @@ Output goes to `build/`.
 
 Diagrams are authored inline in AsciiDoc source using fenced blocks:
 
-| Type | Rendering | Example syntax |
-|------|-----------|----------------|
-| Mermaid | Kroki (remote) | `[mermaid]\n----\ngraph LR; A-->B\n----` |
-| PlantUML | Local (built-in) | `[plantuml]\n----\nAlice -> Bob\n----` |
-| Graphviz | Local (built-in) | `[graphviz]\n----\ndigraph { a -> b }\n----` |
-| Ditaa | Local (built-in) | `[ditaa]\n----\n+--+\n|  |\n+--+\n----` |
+| Type | Example syntax |
+|------|----------------|
+| Mermaid | `[mermaid]\n----\ngraph LR; A-->B\n----` |
+| PlantUML | `[plantuml]\n----\nAlice -> Bob\n----` |
+| Graphviz | `[graphviz]\n----\ndigraph { a -> b }\n----` |
+| Ditaa | `[ditaa]\n----\n+--+\n|  |\n+--+\n----` |
 
-Mermaid is rendered by a [Kroki](https://kroki.io) service container in CI. For local Docker builds, diagrams go through the public `kroki.io` API (override with `KROKI_URL`).
+All diagrams are rendered via [Kroki](https://kroki.io). In CI, a self-hosted Kroki service container runs as a sidecar. For local Docker builds, the public `kroki.io` API is used by default (override with `KROKI_URL`).
 
 ## CI/CD Pipeline
 

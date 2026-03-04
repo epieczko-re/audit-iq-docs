@@ -4,16 +4,13 @@
 # Builds AsciiDoc documentation to PDF, HTML, and DOCX formats.
 #
 # Diagram rendering strategy:
-#   - Mermaid diagrams  → rendered via Kroki (asciidoctor-kroki gem)
-#   - PlantUML, Ditaa, Graphviz → rendered locally (asciidoctor-diagram gem)
-#
-# The asciidoctor/docker-asciidoctor image ships with both gems plus
-# local PlantUML, Graphviz, and Ditaa binaries — no extra installs needed.
-# Mermaid requires a headless browser, so we delegate it to Kroki instead.
+#   All diagrams (Mermaid, PlantUML, Graphviz, Ditaa) are rendered via Kroki.
+#   In CI, a self-hosted Kroki container runs as a service sidecar.
+#   For local Docker builds, the public kroki.io API is used by default.
 #
 # Prerequisites (native):
-#   gem install asciidoctor asciidoctor-pdf asciidoctor-diagram \
-#              asciidoctor-kroki asciidoctor-mathematical
+#   gem install asciidoctor asciidoctor-pdf asciidoctor-kroki \
+#              asciidoctor-mathematical
 #   apt install pandoc    # or brew install pandoc
 #
 # Or use Docker (recommended — zero local deps):
@@ -30,18 +27,17 @@ FONTS_DIR    := $(RESOURCES)/fonts
 IMAGES_DIR   := $(RESOURCES)/images
 STYLES_DIR   := $(RESOURCES)/styles
 
-# Kroki server for Mermaid rendering (public instance; override for self-hosted)
+# Kroki server for diagram rendering (public instance; override for self-hosted)
 KROKI_URL    ?= https://kroki.io
 
-# Docker image (ships with asciidoctor + asciidoctor-diagram + asciidoctor-kroki)
+# Docker image (ships with asciidoctor + asciidoctor-kroki)
 DOCKER_IMAGE := asciidoctor/docker-asciidoctor:latest
 DOCKER_RUN   := docker run --rm -v "$(CURDIR)":/documents -w /documents $(DOCKER_IMAGE)
 
 # --- Common Asciidoctor flags ------------------------------------------------
-# Load both gems: kroki handles Mermaid; diagram handles PlantUML/Ditaa/Graphviz
+# Kroki handles all diagram types: Mermaid, PlantUML, Graphviz, Ditaa
 ASCIIDOCTOR_COMMON := \
 	-r asciidoctor-kroki \
-	-r asciidoctor-diagram \
 	-a kroki-server-url=$(KROKI_URL) \
 	-a kroki-fetch-diagram \
 	-a imagesoutdir=$(BUILD_DIR)/images \
