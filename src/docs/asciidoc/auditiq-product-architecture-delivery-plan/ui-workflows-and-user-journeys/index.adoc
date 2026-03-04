@@ -40,7 +40,7 @@ This is the primary happy-path workflow from login to exam-ready bundle export. 
 
 *Audit Trail:* Every step from extraction through finalization emits an immutable audit event (RFC 8785 + hash chain, Section 10.8).
 
-[source,mermaid]
+[mermaid]
 ----
 flowchart TD
     A([Auditor Logs In]) --> B[Create New Audit<br/>Select Pack Template]
@@ -113,7 +113,7 @@ This workflow details the document processing pipeline from upload through field
 
 *Design Reference:* Section 10.2, Decision D1 (Section 19.2)
 
-[source,mermaid]
+[mermaid]
 ----
 flowchart TD
     A([User Uploads Documents]) --> B[Document Classifier<br/>CD / 1003 / Appraisal / Other]
@@ -198,7 +198,7 @@ This workflow details how extracted fields are mapped to the HMDA/MISMO target s
 
 *Design Reference:* Section 10.3, Decision D2 (Section 19.3)
 
-[source,mermaid]
+[mermaid]
 ----
 flowchart TD
     A([Extracted Fields<br/>from Docling + AFC]) --> B[Hybrid Heuristic Matcher<br/>5 Weighted Signals]
@@ -290,7 +290,7 @@ This workflow details the human oversight process for AI-generated findings, enf
 
 *Design Reference:* Section 10.6 (Findings Management), Section 10.9 (Reporting), Section 22, Decision D1–D3
 
-[source,mermaid]
+[mermaid]
 ----
 flowchart TD
     A[Rules Engine<br/>Generates Exceptions] --> B[LLM Drafts Finding<br/>Narrative + Citations]

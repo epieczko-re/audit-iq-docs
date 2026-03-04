@@ -1,0 +1,187 @@
+name: Build Documentation
+
+on:
+  push:
+    branches: [main, master, 'release/**']
+    paths:
+      - 'src/docs/**'
+      - '.asciidoctorconfig.adoc'
+      - 'Makefile'
+      - 'Dockerfile'
+      - '.github/workflows/build-docs.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - 'src/docs/**'
+      - '.asciidoctorconfig.adoc'
+      - 'Makefile'
+      - 'Dockerfile'
+      - '.github/workflows/build-docs.yml'
+  workflow_dispatch:
+    inputs:
+      formats:
+        description: 'Output formats (comma-separated: pdf,html,docx)'
+        required: false
+        default: 'pdf,html,docx'
+
+env:
+  DOC_SRC: src/docs/asciidoc/auditiq-product-architecture-delivery-plan/index.adoc
+  BUILD_DIR: build
+  KROKI_SERVER_URL: http://kroki:8000
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: docker://asciidoctor/docker-asciidoctor:latest
+
+    services:
+      kroki:
+        image: yuzutech/kroki
+        ports:
+          - 8000:8000
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install additional dependencies
+        run: |
+          # Install pandoc for DOCX conversion
+          apk add --no-cache pandoc
+
+      - name: Create build directory
+        run: mkdir -p ${{ env.BUILD_DIR }}
+
+      - name: Build HTML
+        run: |
+          asciidoctor \
+            -r asciidoctor-kroki \
+            -r asciidoctor-diagram \
+            -r asciidoctor-mathematical \
+            -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
+            -a kroki-fetch-diagram \
+            -a imagesoutdir=${{ env.BUILD_DIR }}/images \
+            -a data-uri \
+            -a allow-uri-read \
+            -a toc=left \
+            -a toclevels=3 \
+            -a icons=font \
+            -a source-highlighter=highlight.js \
+            -D ${{ env.BUILD_DIR }} \
+            -o auditiq-product-architecture-delivery-plan.html \
+            ${{ env.DOC_SRC }}
+
+      - name: Build PDF
+        run: |
+          asciidoctor-pdf \
+            -r asciidoctor-kroki \
+            -r asciidoctor-diagram \
+            -r asciidoctor-mathematical \
+            -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
+            -a kroki-fetch-diagram \
+            -a imagesoutdir=${{ env.BUILD_DIR }}/images \
+            -a pdf-theme=src/docs/resources/themes/riskexec-theme.yml \
+            -a pdf-fontsdir=src/docs/resources/fonts \
+            -a allow-uri-read \
+            -a icons=font \
+            -D ${{ env.BUILD_DIR }} \
+            -o auditiq-product-architecture-delivery-plan.pdf \
+            ${{ env.DOC_SRC }}
+
+      - name: Build DocBook XML (intermediate for DOCX)
+        run: |
+          asciidoctor \
+            -b docbook5 \
+            -r asciidoctor-kroki \
+            -r asciidoctor-diagram \
+            -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
+            -a kroki-fetch-diagram \
+            -a imagesoutdir=${{ env.BUILD_DIR }}/images \
+            -a data-uri \
+            -a allow-uri-read \
+            -D ${{ env.BUILD_DIR }} \
+            -o auditiq-product-architecture-delivery-plan.xml \
+            ${{ env.DOC_SRC }}
+
+      - name: Convert DocBook to DOCX
+        run: |
+          cd ${{ env.BUILD_DIR }}
+          pandoc \
+            --from docbook \
+            --to docx \
+            --toc \
+            --toc-depth=3 \
+            --resource-path=.:../src/docs/resources/images \
+            -o auditiq-product-architecture-delivery-plan.docx \
+            auditiq-product-architecture-delivery-plan.xml
+
+          # Clean up intermediate XML
+          rm -f auditiq-product-architecture-delivery-plan.xml
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-${{ github.sha }}
+          path: |
+            ${{ env.BUILD_DIR }}/*.html
+            ${{ env.BUILD_DIR }}/*.pdf
+            ${{ env.BUILD_DIR }}/*.docx
+          retention-days: 30
+
+  # Publish HTML to GitHub Pages on push to main/master
+  deploy-pages:
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-${{ github.sha }}
+          path: site/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Create a release with PDF/DOCX when a tag is pushed
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation-${{ github.sha }}
+          path: release-assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/*.pdf
+            release-assets/*.docx
+          generate_release_notes: true

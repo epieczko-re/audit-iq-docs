@@ -273,7 +273,7 @@ We will communicate progress weekly to the board and escalate blockers immediate
 
 *Diagram 1: Audit Workflow State Machine (Section 5 / 6.5)*
 
-[source,mermaid]
+[mermaid]
 ----
 stateDiagram-v2
   direction TB
@@ -299,7 +299,7 @@ stateDiagram-v2
 
 *Diagram 2: Pack Engine Architecture (Section 8.1)*
 
-[source,mermaid]
+[mermaid]
 ----
 graph LR
   A[Audit Instance] -->|Instantiate| B[Pack Engine]
@@ -325,7 +325,7 @@ graph LR
 
 *Diagram 3: AI & Human-in-Loop (Section 22)*
 
-[source,mermaid]
+[mermaid]
 ----
 graph TD
   A[Extracted Data] -->|LLM Call| B{Confidence > 0.70?}
@@ -350,7 +350,7 @@ graph TD
 
 *Diagram 4: Multi-Tenant Data Isolation (Section 9 / 19.6)*
 
-[source,mermaid]
+[mermaid]
 ----
 graph TD
   A[API Request] -->|Tenant ID| B[Auth Middleware]
@@ -373,7 +373,7 @@ graph TD
 
 *Diagram 5: Document Processing Pipeline (Section 10.2)*
 
-[source,mermaid]
+[mermaid]
 ----
 graph LR
   A[Upload PDF] -->|Scan| B{Malware Check}
@@ -397,7 +397,7 @@ graph LR
 
 *Diagram 6: Immutability & Versioning (Section 20.2)*
 
-[source,mermaid]
+[mermaid]
 ----
 graph TD
   A[Finding v1] -->|Approve| B[Event: Approved]

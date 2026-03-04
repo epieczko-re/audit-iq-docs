@@ -46,7 +46,7 @@ Every state change in the system is recorded as an immutable event. Events are a
 
 ==== Diagram 1: Audit Run State Machine
 
-[source,mermaid]
+[mermaid]
 ----
 ---
 title: Audit Run State Machine
@@ -74,7 +74,7 @@ stateDiagram-v2
 
 ==== Diagram 2: Data Flow — OCR-Assisted Audit
 
-[source,mermaid]
+[mermaid]
 ----
 ---
 title: Data Flow — OCR-Assisted Audit
@@ -115,7 +115,7 @@ graph LR
 
 ==== Diagram 3: Component Architecture
 
-[source,mermaid]
+[mermaid]
 ----
 ---
 title: AuditIQ Component Architecture
@@ -179,7 +179,7 @@ graph TB
 
 ==== Diagram 4: Audit Event Sequence (Finding Lifecycle)
 
-[source,mermaid]
+[mermaid]
 ----
 ---
 title: Finding Lifecycle Event Sequence
