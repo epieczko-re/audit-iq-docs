@@ -57,7 +57,6 @@ jobs:
         run: |
           asciidoctor \
             -r asciidoctor-kroki \
-            -r asciidoctor-diagram \
             -r asciidoctor-mathematical \
             -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
             -a kroki-fetch-diagram \
@@ -76,7 +75,6 @@ jobs:
         run: |
           asciidoctor-pdf \
             -r asciidoctor-kroki \
-            -r asciidoctor-diagram \
             -r asciidoctor-mathematical \
             -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
             -a kroki-fetch-diagram \
@@ -94,7 +92,6 @@ jobs:
           asciidoctor \
             -b docbook5 \
             -r asciidoctor-kroki \
-            -r asciidoctor-diagram \
             -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
             -a kroki-fetch-diagram \
             -a imagesoutdir=${{ env.BUILD_DIR }}/images \
