@@ -88,11 +88,13 @@ jobs:
 
       - name: Build HTML
         run: |
+          DOC_DIR=$(dirname "${{ env.DOC_SRC }}")
           asciidoctor \
             -r asciidoctor-kroki \
             -r asciidoctor-mathematical \
             -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
             -a kroki-fetch-diagram \
+            -a imagesoutdir="$DOC_DIR" \
             -a data-uri \
             -a allow-uri-read \
             -a toc=left \
@@ -105,11 +107,13 @@ jobs:
 
       - name: Build PDF
         run: |
+          DOC_DIR=$(dirname "${{ env.DOC_SRC }}")
           asciidoctor-pdf \
             -r asciidoctor-kroki \
             -r asciidoctor-mathematical \
             -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
             -a kroki-fetch-diagram \
+            -a imagesoutdir="$DOC_DIR" \
             -a pdf-theme=src/docs/resources/themes/riskexec-theme.yml \
             -a pdf-fontsdir=src/docs/resources/fonts \
             -a allow-uri-read \
