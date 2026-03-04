@@ -27,12 +27,19 @@ on:
 env:
   DOC_SRC: src/docs/asciidoc/auditiq-product-architecture-delivery-plan/index.adoc
   BUILD_DIR: build
+  KROKI_SERVER_URL: http://kroki:8000
 
 jobs:
   build:
     runs-on: ubuntu-latest
     container:
       image: docker://asciidoctor/docker-asciidoctor:latest
+
+    services:
+      kroki:
+        image: yuzutech/kroki
+        ports:
+          - 8000:8000
 
     steps:
       - name: Checkout repository
@@ -52,7 +59,7 @@ jobs:
             -r asciidoctor-kroki \
             -r asciidoctor-diagram \
             -r asciidoctor-mathematical \
-            -a kroki-server-url=https://kroki.io \
+            -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
             -a kroki-fetch-diagram \
             -a imagesoutdir=${{ env.BUILD_DIR }}/images \
             -a data-uri \
@@ -71,7 +78,7 @@ jobs:
             -r asciidoctor-kroki \
             -r asciidoctor-diagram \
             -r asciidoctor-mathematical \
-            -a kroki-server-url=https://kroki.io \
+            -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
             -a kroki-fetch-diagram \
             -a imagesoutdir=${{ env.BUILD_DIR }}/images \
             -a pdf-theme=src/docs/resources/themes/riskexec-theme.yml \
@@ -88,7 +95,7 @@ jobs:
             -b docbook5 \
             -r asciidoctor-kroki \
             -r asciidoctor-diagram \
-            -a kroki-server-url=https://kroki.io \
+            -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
             -a kroki-fetch-diagram \
             -a imagesoutdir=${{ env.BUILD_DIR }}/images \
             -a data-uri \
