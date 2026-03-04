@@ -260,7 +260,7 @@ This workflow details the human oversight process for AI-generated findings, enf
 [arabic]
 . *Rules engine fires* — pack rules evaluate mapped data; exceptions identified
 . *LLM drafts finding narrative* — generates human-readable description with citations to source documents
-. *AI label applied* — every AI-drafted finding carries mandatory disclaimer: _``AI-Drafted — Requires Human Verification''_
+. *AI label applied* — every AI-drafted finding carries mandatory disclaimer: _“AI-Drafted — Requires Human Verification”_
 . *AI provenance logged* — system records: `model_id`, `model_version`, `prompt_template_version`, `input_context_hash`, `timestamp`, `retrieval_corpus`, `token_counts`, `data_handling_flags`
 . *Finding enters review queue* — sorted by severity and confidence
 . *Reviewer opens finding* — sees AI label, evidence panel, source document highlights
@@ -284,9 +284,9 @@ This workflow details the human oversight process for AI-generated findings, enf
 
 *Required Disclaimers (Section 22.1.3):*
 
-* ``This content was drafted by an AI assistant and requires human verification before use''
-* ``AI-generated content may contain inaccuracies — reviewer is responsible for verifying accuracy''
-* ``This finding has been reviewed and approved by [reviewer name] on [date]''
+* “This content was drafted by an AI assistant and requires human verification before use”
+* “AI-generated content may contain inaccuracies — reviewer is responsible for verifying accuracy”
+* “This finding has been reviewed and approved by [reviewer name] on [date]”
 
 *Design Reference:* Section 10.6 (Findings Management), Section 10.9 (Reporting), Section 22, Decision D1–D3
 

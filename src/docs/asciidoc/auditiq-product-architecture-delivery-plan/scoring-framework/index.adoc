@@ -74,7 +74,7 @@ combined_confidence = min(
 |Trigger |Condition |Required Role |Action
 |*Critical finding* |Any finding with severity=`critical' |Manager or Audit Lead |Must review and sign off before audit finalization
 |*Low confidence finding* |combined_confidence < 0.50 |Reviewer |Cannot create finding; must re-review with manual document inspection
-|*AI-generated narrative* |Any narrative in report |Manager |Cannot finalize report without explicit ``Approve'' click on AI content
+|*AI-generated narrative* |Any narrative in report |Manager |Cannot finalize report without explicit “Approve” click on AI content
 |*Mapping override* |Reviewer overrides auto-suggested mapping |Reviewer |Must provide justification text before acceptance
 |*Second review required* |Configured sampling % applies to finding |Senior Reviewer (different from primary) |Independent re-review before closure
 |*Escalation override* |Manager resolves escalated finding |Manager |Must provide resolution rationale

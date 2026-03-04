@@ -22,7 +22,7 @@ Steps 1–3 as above, then:
 . *Human review:* Reviewer sees pre-populated comparison results. High-confidence matches are pre-confirmed (reviewer can override). Low/medium-confidence items are flagged for manual verification. Reviewer focuses time on genuinely uncertain cases.
 . Steps 6–8 as manual mode.
 
-=== Audit Workflow: Automated Pre-Scan (``Target-to-Source'' / ``Record-to-Record'')
+=== Audit Workflow: Automated Pre-Scan (“Target-to-Source” / “Record-to-Record”)
 
 For structured data audits (e.g., HMDA LAR against LOS database extract), the full audit can be automated:
 

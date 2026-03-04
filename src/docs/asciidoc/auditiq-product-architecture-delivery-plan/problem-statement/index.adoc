@@ -7,7 +7,7 @@ Compliance officers at financial institutions face a systematic workflow problem
 [arabic]
 . *Export* target data (the HMDA LAR) from their LOS or data warehouse into a spreadsheet.
 . *Retrieve* the corresponding source documents — often from multiple systems, in multiple formats.
-. *Compare* each field manually (``stare and compare''), recording discrepancies in the spreadsheet or a separate tracking system.
+. *Compare* each field manually (“stare and compare”), recording discrepancies in the spreadsheet or a separate tracking system.
 . *Triage and remediate* findings — routing them to originators, underwriters, or closers for correction.
 . *Assemble evidence* for examiner readiness — a multi-day exercise involving copying files into shared drives, creating cover memos, and formatting spreadsheets.
 

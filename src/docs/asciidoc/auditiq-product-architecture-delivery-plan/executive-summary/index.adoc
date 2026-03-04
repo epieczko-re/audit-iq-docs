@@ -1,13 +1,13 @@
 == Executive Summary
 
-AuditIQ is a new module for the RiskExec platform that transforms how financial institutions perform lending quality control and compliance audits. It replaces manual ``stare-and-compare'' audit workflows — where reviewers tediously compare loan data fields against source documents using spreadsheets and email — with a structured, confidence-scored, evidence-managed platform that serves all three lines of defense (QC, compliance, and audit) in a single system.
+AuditIQ is a new module for the RiskExec platform that transforms how financial institutions perform lending quality control and compliance audits. It replaces manual “stare-and-compare” audit workflows — where reviewers tediously compare loan data fields against source documents using spreadsheets and email — with a structured, confidence-scored, evidence-managed platform that serves all three lines of defense (QC, compliance, and audit) in a single system.
 
 *Why now:* Over 20% of existing RiskExec clients are already performing audit functions inside the platform using user-defined fields — a clear signal of unmet demand. The Board has directed the team to validate AuditIQ with 8–10 design partners and publish credible launch timelines. (Source: 2026_02.10 - CEO Letter)
 
 *What makes it different from ACES (primary competitor):*
 
 * Three-layer confidence scoring (mapping, extraction, rule application) gives reviewers quantified trust signals, not binary pass/fail.
-* Audit pack architecture makes the platform extensible by domain — each regulation gets a modular ``pack'' rather than hard-coded logic.
+* Audit pack architecture makes the platform extensible by domain — each regulation gets a modular “pack” rather than hard-coded logic.
 * Governance-first AI: every AI output is advisory, explainable, human-approved, and immutably logged.
 * Three-lines-of-defense support in one system, vs. ACES’s QC-only focus.
 

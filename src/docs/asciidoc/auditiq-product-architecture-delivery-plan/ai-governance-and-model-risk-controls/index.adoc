@@ -16,12 +16,12 @@ ____
 * *CFPB Circular 2022-03:* No AI exemption for adverse action notice requirements. If AuditIQ findings influence credit decisions, the human reviewer (not AI) must be the decision-maker.
 * *Interagency Third-Party Relationships Guidance:* Third-party AI providers (OpenAI, Anthropic) must be managed as critical service providers with contractual exam access.
 
-*Key principle:* Every AI output is traceable to its input, model, and version. Humans are in the loop for all critical decisions. AI is positioned as ``documentation and review acceleration'' — NOT as the decision-maker.
+*Key principle:* Every AI output is traceable to its input, model, and version. Humans are in the loop for all critical decisions. AI is positioned as “documentation and review acceleration” — NOT as the decision-maker.
 
 *Go-to-market framing (MANDATORY):*
 
-* *USE:* ``AI-assisted documentation and review acceleration''
-* *DO NOT USE:* ``AI-powered compliance determinations'' or ``automated examiner-ready conclusions'' - All marketing, sales, and product materials must frame AI as an assistant to human reviewers, not a replacement.
+* *USE:* “AI-assisted documentation and review acceleration”
+* *DO NOT USE:* “AI-powered compliance determinations” or “automated examiner-ready conclusions” - All marketing, sales, and product materials must frame AI as an assistant to human reviewers, not a replacement.
 
 ==== Conditional Acceptability Standard
 
@@ -54,16 +54,16 @@ AI-drafted audit narratives are acceptable in regulatory lending QC when ALL of 
 ==== Required Disclaimers (MANDATORY on all AI-generated content)
 
 [arabic]
-. *Generation disclaimer:* ``This content was drafted by an AI assistant and requires human verification before use in any official audit work product.''
-. *Accuracy disclaimer:* ``AI-generated content may be inaccurate or incomplete. The AI assistant does not have access to all relevant context and may produce errors.''
-. *Responsibility disclaimer:* ``The reviewing auditor is responsible for the accuracy and completeness of all audit findings, regardless of whether AI assistance was used in drafting.''
+. *Generation disclaimer:* “This content was drafted by an AI assistant and requires human verification before use in any official audit work product.”
+. *Accuracy disclaimer:* “AI-generated content may be inaccurate or incomplete. The AI assistant does not have access to all relevant context and may produce errors.”
+. *Responsibility disclaimer:* “The reviewing auditor is responsible for the accuracy and completeness of all audit findings, regardless of whether AI assistance was used in drafting.”
 
 These disclaimers must appear: (a) in the UI above every AI-generated narrative, (b) in the report footer of any report containing AI-generated content, (c) in the exam-ready bundle manifest.
 
 ==== Red Lines (ABSOLUTE — no exceptions)
 
 [arabic]
-. *No AI narratives in official audit record without documented human approval.* Every AI-generated finding narrative must have an explicit ``Approved'' action by a named human reviewer before it can appear in any finalized report.
+. *No AI narratives in official audit record without documented human approval.* Every AI-generated finding narrative must have an explicit “Approved” action by a named human reviewer before it can appear in any finalized report.
 . *No representing AI outputs as definitive compliance conclusions.* AI findings are drafts; the human reviewer’s judgment is the conclusion.
 . *No third-party AI providers without contractual exam access.* Regulators must be able to examine the AI vendor relationship; contracts must include right-to-audit and exam-access clauses.
 . *No unredacted PII sent to AI providers.* All customer-identifying information must be removed before any API call (Section 22.2).
@@ -87,12 +87,12 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 
 *Data Residency:*
 
-* Customer contracts may specify: ``All data must remain in US region.'' - LLM calls may violate residency if using cloud API (e.g., OpenAI uses US servers; EU customers may require EU-based inference).
+* Customer contracts may specify: “All data must remain in US region.” - LLM calls may violate residency if using cloud API (e.g., OpenAI uses US servers; EU customers may require EU-based inference).
 * *Mitigation:* (a) Contractual data processing agreement with LLM provider; (b) Optional: Self-hosted LLM (local inference, slower); (c) Optional: Redacted context only (lower accuracy)
 
 *Data NOT used for training:*
 
-* Explicit contractual clause with LLM provider (OpenAI, Anthropic, etc.): ``Do not use customer data for model training.''
+* Explicit contractual clause with LLM provider (OpenAI, Anthropic, etc.): “Do not use customer data for model training.”
 * Verified in API contract before Phase 1a launch
 
 === Provenance: Every AI Output is Traceable
@@ -109,11 +109,11 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 |1 |`tenant_id` |string |Multi-tenant isolation
 |2 |`audit_id` |string |Links AI output to specific audit
 |3 |`finding_id` |string |Links AI output to specific finding
-|4 |`ai_provider` |string |e.g., ``openai'', ``anthropic'', ``self-hosted''
-|5 |`model_name` |string |e.g., ``gpt-4-turbo'', ``claude-3-opus''
-|6 |`model_version` |string |e.g., ``2024-04-09''
+|4 |`ai_provider` |string |e.g., “openai”, “anthropic”, “self-hosted”
+|5 |`model_name` |string |e.g., “gpt-4-turbo”, “claude-3-opus”
+|6 |`model_version` |string |e.g., “2024-04-09”
 |7 |`prompt_template_id` |string |Versioned template identifier
-|8 |`prompt_template_version` |string |e.g., ``narrative_template_v1.2''
+|8 |`prompt_template_version` |string |e.g., “narrative_template_v1.2”
 |9 |`system_prompt_version` |string |System prompt versioned separately
 |10 |`retrieval_corpus_id` + `version` |string |RAG corpus identifier + version
 |11 |`retrieved_document_ids` |string[] |Specific documents retrieved for context
@@ -124,7 +124,7 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 |16 |`pydantic_template_id` + `version` |string |Docling-Graph Pydantic template used for extraction (e.g., `closing_disclosure_v1`)
 |17 |`graph_export_version` |string |Version of graph export format used
 |18 |`graph_db_export_location` |string |S3 path or URI for exported graph artifact
-|19 |`llm_inference_runtime` |string |Runtime used for LLM calls (e.g., ``vLLM'', ``Ollama'', ``LiteLLM'')
+|19 |`llm_inference_runtime` |string |Runtime used for LLM calls (e.g., “vLLM”, “Ollama”, “LiteLLM”)
 |20 |`llm_runtime_cluster_id` |string |Identifier for the inference cluster/host
 |21 |`llm_inference_config` |object |Batch size, max sequence length, GPU profile
 |===
@@ -202,7 +202,7 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 
 === Evaluation Plan: Hallucination Detection & QA Gates
 
-*Hallucination risk:* LLMs can generate plausible-sounding but incorrect narratives (e.g., ``Found disclosure in loan estimate'' when document doesn’t mention it).
+*Hallucination risk:* LLMs can generate plausible-sounding but incorrect narratives (e.g., “Found disclosure in loan estimate” when document doesn’t mention it).
 
 *Detection & mitigation:*
 
@@ -210,7 +210,7 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 |===
 |Stage |Check |Responsible |Action
 |*Generation (automated)* |Citation verification: Does narrative mention evidence that actually exists in extracted data? |Narrative engine |Flag if <0.80 citation accuracy; lower confidence; human review required
-|*Reviewer QA* |Human review: Auditor re-reads narrative + original document; approves or rejects |Reviewer |Cannot finalize without explicit ``Approve AI narrative'' click
+|*Reviewer QA* |Human review: Auditor re-reads narrative + original document; approves or rejects |Reviewer |Cannot finalize without explicit “Approve AI narrative” click
 |*Manager approval* |Manager spot-checks AI narratives in escalated findings |Manager |Random 10% sample audit of AI narratives; flag issues for retraining
 |*Post-launch* |Override rate tracking: % of AI narratives rejected by humans |Data team |Alert if rejection rate >10% (indicate model drift)
 |===
@@ -267,10 +267,10 @@ Phase 2:
 [cols="25%,25%,25%,25%",options="header"]
 |===
 |UI Element |Indicator |Placement |User Action
-|*AI-generated narrative in finding* |Badge: ``🤖 AI-Generated'' + tooltip |Above narrative text |``Approve'' button (required) or ``Edit/Override'' (not in MVP)
-|*AI-suggested mapping* |Badge: ``🤖 Suggested (confidence: 0.87)'' |Next to field mapping |``Accept'' or ``Override with justification''
+|*AI-generated narrative in finding* |Badge: “🤖 AI-Generated” + tooltip |Above narrative text |“Approve” button (required) or “Edit/Override” (not in MVP)
+|*AI-suggested mapping* |Badge: “🤖 Suggested (confidence: 0.87)” |Next to field mapping |“Accept” or “Override with justification”
 |*AI confidence score* |Visual bar chart + numeric value |With finding score |Explains basis (extraction + mapping + rule confidence)
-|*Report disclaimer* |Footer: ``This report includes AI-generated content. See findings for details.'' |PDF footer + HTML |No click required; informational
+|*Report disclaimer* |Footer: “This report includes AI-generated content. See findings for details.” |PDF footer + HTML |No click required; informational
 |===
 
 *Hover tooltip example:*
