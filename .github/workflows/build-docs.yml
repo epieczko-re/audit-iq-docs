@@ -47,8 +47,22 @@ jobs:
 
       - name: Install additional dependencies
         run: |
-          # Install pandoc for DOCX conversion
-          apk add --no-cache pandoc
+          # Install pandoc for DOCX conversion and curl for health checks
+          apk add --no-cache pandoc curl
+
+      - name: Wait for Kroki service
+        run: |
+          echo "Waiting for Kroki to be ready..."
+          for i in $(seq 1 30); do
+            if curl -sf http://kroki:8000/health > /dev/null 2>&1; then
+              echo "Kroki is ready (attempt $i)"
+              break
+            fi
+            echo "Attempt $i: Kroki not ready, waiting 2s..."
+            sleep 2
+          done
+          # Final check — fail the build if Kroki never came up
+          curl -sf http://kroki:8000/health || (echo "ERROR: Kroki service failed to start" && exit 1)
 
       - name: Create build directory
         run: mkdir -p ${{ env.BUILD_DIR }}
@@ -59,6 +73,7 @@ jobs:
             -r asciidoctor-kroki \
             -r asciidoctor-mathematical \
             -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
+            -a kroki-fetch-diagram \
             -a data-uri \
             -a allow-uri-read \
             -a toc=left \
@@ -75,6 +90,7 @@ jobs:
             -r asciidoctor-kroki \
             -r asciidoctor-mathematical \
             -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
+            -a kroki-fetch-diagram \
             -a pdf-theme=src/docs/resources/themes/riskexec-theme.yml \
             -a pdf-fontsdir=src/docs/resources/fonts \
             -a allow-uri-read \
