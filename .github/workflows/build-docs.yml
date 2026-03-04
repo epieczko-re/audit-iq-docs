@@ -125,6 +125,59 @@ jobs:
           name: documentation-${{ github.sha }}
           path: site/
 
+      - name: Create landing page with download links
+        run: |
+          cat > site/index.html << 'LANDING'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>AuditIQ — Product Architecture &amp; Delivery Plan</title>
+            <style>
+              * { box-sizing: border-box; margin: 0; padding: 0; }
+              body { font-family: system-ui, -apple-system, sans-serif; background: #f5f6fa; color: #1a1a2e; }
+              .hero { background: #002C73; color: #fff; padding: 3rem 1.5rem; text-align: center; }
+              .hero h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+              .hero p { opacity: 0.85; font-size: 1.05rem; }
+              .cards { display: flex; flex-wrap: wrap; gap: 1.25rem; max-width: 860px; margin: 2rem auto; padding: 0 1rem; }
+              .card { flex: 1 1 240px; background: #fff; border-radius: 8px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-decoration: none; color: inherit; transition: box-shadow 0.2s; }
+              .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.14); }
+              .card h2 { font-size: 1.15rem; margin-bottom: 0.4rem; color: #002C73; }
+              .card p { font-size: 0.9rem; color: #555; }
+              .badge { display: inline-block; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 4px; margin-bottom: 0.6rem; color: #fff; }
+              .badge-view { background: #002C73; }
+              .badge-dl { background: #FF7E2D; }
+              footer { text-align: center; padding: 2rem 1rem; font-size: 0.8rem; color: #888; }
+            </style>
+          </head>
+          <body>
+            <div class="hero">
+              <h1>AuditIQ Product Architecture &amp; Delivery Plan</h1>
+              <p>View online or download in your preferred format</p>
+            </div>
+            <div class="cards">
+              <a class="card" href="auditiq-product-architecture-delivery-plan.html">
+                <span class="badge badge-view">VIEW</span>
+                <h2>HTML Documentation</h2>
+                <p>Read the full document in your browser with navigation, syntax highlighting, and diagrams.</p>
+              </a>
+              <a class="card" href="auditiq-product-architecture-delivery-plan.pdf" download>
+                <span class="badge badge-dl">DOWNLOAD</span>
+                <h2>PDF</h2>
+                <p>Formatted for print and offline reading with branded styling.</p>
+              </a>
+              <a class="card" href="auditiq-product-architecture-delivery-plan.docx" download>
+                <span class="badge badge-dl">DOWNLOAD</span>
+                <h2>Word (DOCX)</h2>
+                <p>Editable document for collaboration and review workflows.</p>
+              </a>
+            </div>
+            <footer>Built automatically from source on each push to main.</footer>
+          </body>
+          </html>
+          LANDING
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
