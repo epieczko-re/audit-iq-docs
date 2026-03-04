@@ -38,8 +38,12 @@ jobs:
     services:
       kroki:
         image: yuzutech/kroki
+        env:
+          KROKI_MERMAID_HOST: kroki-mermaid
         ports:
           - 8000:8000
+      kroki-mermaid:
+        image: yuzutech/kroki-mermaid
 
     steps:
       - name: Checkout repository
@@ -52,17 +56,32 @@ jobs:
 
       - name: Wait for Kroki service
         run: |
-          echo "Waiting for Kroki to be ready..."
+          echo "Waiting for Kroki gateway..."
           for i in $(seq 1 30); do
             if curl -sf http://kroki:8000/health > /dev/null 2>&1; then
-              echo "Kroki is ready (attempt $i)"
+              echo "Kroki gateway is ready (attempt $i)"
               break
             fi
             echo "Attempt $i: Kroki not ready, waiting 2s..."
             sleep 2
           done
-          # Final check — fail the build if Kroki never came up
-          curl -sf http://kroki:8000/health || (echo "ERROR: Kroki service failed to start" && exit 1)
+          curl -sf http://kroki:8000/health || (echo "ERROR: Kroki gateway failed to start" && exit 1)
+
+          # Verify Mermaid rendering works end-to-end
+          echo "Verifying Mermaid rendering..."
+          for i in $(seq 1 15); do
+            if curl -sf -o /dev/null -X POST http://kroki:8000/mermaid/svg \
+              -H 'Content-Type: text/plain' \
+              -d 'graph TD; A-->B;'; then
+              echo "Mermaid rendering verified (attempt $i)"
+              break
+            fi
+            echo "Attempt $i: Mermaid not ready, waiting 2s..."
+            sleep 2
+          done
+          curl -sf -o /dev/null -X POST http://kroki:8000/mermaid/svg \
+            -H 'Content-Type: text/plain' \
+            -d 'graph TD; A-->B;' || (echo "ERROR: Mermaid rendering failed — check kroki-mermaid service" && exit 1)
 
       - name: Create build directory
         run: mkdir -p ${{ env.BUILD_DIR }}
