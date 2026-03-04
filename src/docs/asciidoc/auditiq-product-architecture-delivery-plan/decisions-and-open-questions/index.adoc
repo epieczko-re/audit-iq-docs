@@ -37,7 +37,7 @@
 |*Q4: What is the revenue-optimal pricing tier structure (tiered features vs. usage-based)?* |CEO, Sales |Critical |Pricing model finalization by May 1 (Section 13.4)
 |*Q5: Will existing RiskExec customers adopt AuditIQ without additional incentive (pricing discount)?* |Sales, Product |High |Sales forecast & pilot feedback (Feb–Apr 2026)
 |*Q6: How many custom packs will customers demand in Y1?* |Product, Compliance SME |Medium |Customer interviews + sales pipeline analysis
-|*Q7: Is the immutability constraint achievable without ``undo'' frustrating reviewers?* |UX, Product |Medium |Phase 1a usability testing with 5+ reviewers
+|*Q7: Is the immutability constraint achievable without “undo” frustrating reviewers?* |UX, Product |Medium |Phase 1a usability testing with 5+ reviewers
 |*Q8: Can Docling extraction achieve >85% accuracy on handwritten HMDA docs?* |Data/ML Lead |Critical |Phase 0 testing (by Mar 31); fallback to cloud OCR if not
 |===
 

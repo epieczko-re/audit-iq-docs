@@ -4,7 +4,7 @@
 
 *Regulator expectation:* Audit trail is immutable and append-only. No deletions, no retroactive changes. Entire audit history is reconstructible from the log.
 
-*Operational reality:* Mistakes happen. A finding might be marked ``critical'' but later determined to be a false positive. A mapping might be wrong and need correction. Reviewers expect ``undo'' or ``edit'' capabilities.
+*Operational reality:* Mistakes happen. A finding might be marked “critical” but later determined to be a false positive. A mapping might be wrong and need correction. Reviewers expect “undo” or “edit” capabilities.
 
 *The v0.1 Conflict:* How can we have a truly immutable audit trail while allowing corrections and preventing reviewer frustration?
 
@@ -16,17 +16,17 @@
 |===
 |Artifact Type |Immutability Rule |Correction Mechanism |Example
 |*Evidence files* |Append-only; never deleted or modified |New evidence version linked (immutability preserved) |PDF uploaded v1 → mistake found → upload v2 PDF (v1 still in trail)
-|*Audit events* |Append-only; never deleted or modified |Compensating event emitted (corrects state without deletion) |Event A: ``Finding marked critical'' → discovered error → Event B: ``Finding status reset to `in-review'''
-|*Findings* |Mutable via status transitions; each transition is an immutable event |Status changes (created → under_review → approved → closed) recorded as events |Finding in state ``approved'' → Manager reopens → new event ``reopened'' → status now ``in-review''
+|*Audit events* |Append-only; never deleted or modified |Compensating event emitted (corrects state without deletion) |Event A: “Finding marked critical” → discovered error → Event B: “Finding status reset to `in-review”'
+|*Findings* |Mutable via status transitions; each transition is an immutable event |Status changes (created → under_review → approved → closed) recorded as events |Finding in state “approved” → Manager reopens → new event “reopened” → status now “in-review”
 |*Pack versions* |Immutable once published |New version published; old version preserved in registry |Pack v1.0 deployed → enhancement → Pack v1.1 published (v1.0 still available)
 |*Mappings (field→schema)* |Versioned; all versions preserved in mapping registry |Active version pointer is mutable (can point to different version); history preserved |Mapping v1 (low confidence) → review determines v2 needed → version pointer switches to v2 (v1 still in history)
-|*Reports* |Immutable once finalized |New report version supersedes old; supersession link in metadata |Report v1 finalized → error found → Report v2 generated with ``supersedes: report_v1'' link
-|*Reviewer comments* |Append-only; edits create new versions |Comment v1 marked ``superseded_by: comment_v2'' with link to revised version |Comment v1: ``critical finding'' → mistake → Comment v2: ``actually minor; see revision'' with link
+|*Reports* |Immutable once finalized |New report version supersedes old; supersession link in metadata |Report v1 finalized → error found → Report v2 generated with “supersedes: report_v1” link
+|*Reviewer comments* |Append-only; edits create new versions |Comment v1 marked “superseded_by: comment_v2” with link to revised version |Comment v1: “critical finding” → mistake → Comment v2: “actually minor; see revision” with link
 |===
 
-=== Definition: ``Undo'' as State Pointer Reset (Not Deletion)
+=== Definition: “Undo” as State Pointer Reset (Not Deletion)
 
-*Classical ``undo'':* Delete or revert an action (e.g., Ctrl+Z). *AuditIQ ``undo'':* Create a compensating event that resets state pointer to a prior snapshot, WITHOUT deleting the original action.
+*Classical “undo”:* Delete or revert an action (e.g., Ctrl+Z). *AuditIQ “undo”:* Create a compensating event that resets state pointer to a prior snapshot, WITHOUT deleting the original action.
 
 *Example workflow:*
 
@@ -142,11 +142,11 @@ ____
 [cols="34%,33%,33%",options="header"]
 |===
 |Scenario |Correction Mechanism |Immutability Preserved?
-|*Mapping confidence too low; reviewer overrides* |Event: ``mapping_override'' with justification text. New mapping event appended. Old mapping remains in trail. |✓ Yes
-|*Finding severity wrong; manager re-scores* |Event: ``finding_severity_reset'' with reason. Finding status may remain ``approved'' or transition to ``re-review''. |✓ Yes
-|*Report finalized but narrative has typo* |Event: ``report_superseded'' with link to corrected Report v2. Old report remains in trail. |✓ Yes
-|*Evidence file uploaded wrong version* |Event: ``evidence_replaced'' with link to new file version. Old file remains in archive. |✓ Yes
-|*Audit finalized; then regulator finds issue* |Event: ``audit_reopened'' with reason. Compensating event resets status. New findings/corrections appended. |✓ Yes
+|*Mapping confidence too low; reviewer overrides* |Event: “mapping_override” with justification text. New mapping event appended. Old mapping remains in trail. |✓ Yes
+|*Finding severity wrong; manager re-scores* |Event: “finding_severity_reset” with reason. Finding status may remain “approved” or transition to “re-review”. |✓ Yes
+|*Report finalized but narrative has typo* |Event: “report_superseded” with link to corrected Report v2. Old report remains in trail. |✓ Yes
+|*Evidence file uploaded wrong version* |Event: “evidence_replaced” with link to new file version. Old file remains in archive. |✓ Yes
+|*Audit finalized; then regulator finds issue* |Event: “audit_reopened” with reason. Compensating event resets status. New findings/corrections appended. |✓ Yes
 |===
 
 *Key principle:* Corrections are *additive* (new events + versions), not *destructive* (deletions). Audit trail grows; it never shrinks.
@@ -169,11 +169,11 @@ ____
 
 *Regulator interview talking points:*
 
-* ``Our immutable event log uses RFC 8785 canonical JSON serialization and SHA-256 hash chaining. No event can be deleted or modified retroactively — any change breaks the cryptographic chain and is immediately detectable.''
-* ``Corrections are recorded as compensating events, not deletions. The entire decision trail is visible and reconstructible.''
-* ``We write cryptographic anchor hashes to WORM storage every 100 events. Even a database administrator cannot silently rewrite the audit trail.''
-* ``Reports can be versioned; old reports are preserved. You can see what was finalized, what changed, and why.''
-* ``Our design aligns with NIST SP 800-53 Rev 5 controls AU-9, AU-10, and AU-11, and FFIEC IT Examination Handbook requirements for log controls and isolated storage.''
+* “Our immutable event log uses RFC 8785 canonical JSON serialization and SHA-256 hash chaining. No event can be deleted or modified retroactively — any change breaks the cryptographic chain and is immediately detectable.”
+* “Corrections are recorded as compensating events, not deletions. The entire decision trail is visible and reconstructible.”
+* “We write cryptographic anchor hashes to WORM storage every 100 events. Even a database administrator cannot silently rewrite the audit trail.”
+* “Reports can be versioned; old reports are preserved. You can see what was finalized, what changed, and why.”
+* “Our design aligns with NIST SP 800-53 Rev 5 controls AU-9, AU-10, and AU-11, and FFIEC IT Examination Handbook requirements for log controls and isolated storage.”
 
 *Cross-references:*
 

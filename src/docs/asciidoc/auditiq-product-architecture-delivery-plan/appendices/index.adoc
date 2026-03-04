@@ -4,7 +4,7 @@
 
 *Audit (noun):* A review of lending compliance for one or more loan records against a pack of rules and policies.
 
-*Audit Event:* Immutable timestamped record of a change to audit state (e.g., ``finding created'', ``manager approval'', ``report finalized''). See Appendix C.
+*Audit Event:* Immutable timestamped record of a change to audit state (e.g., “finding created”, “manager approval”, “report finalized”). See Appendix C.
 
 *Audit Pack (or Pack):* A declarative JSON specification defining rules, scoring weights, evidence requirements, and narratives for a compliance audit category (e.g., HMDA, CRA, ECOA). See Section 8.
 
@@ -48,7 +48,7 @@
 
 === Appendix B: Full Pack Manifest JSON Schema
 
-*Reference:* See Section 8 (``Audit Pack Schema & Configuration'') for detailed pack specification.
+*Reference:* See Section 8 (“Audit Pack Schema & Configuration”) for detailed pack specification.
 
 *Example Pack Manifest (HMDA Compliance Pack v2.1):*
 
@@ -123,7 +123,7 @@
 
 === Appendix C: Audit Event Schema
 
-*Reference:* See Section 10.8 (``Audit Trail & Event Store (Immutable Log)'') for detailed event design.
+*Reference:* See Section 10.8 (“Audit Trail & Event Store (Immutable Log)”) for detailed event design.
 
 *Example Audit Events (JSON):*
 

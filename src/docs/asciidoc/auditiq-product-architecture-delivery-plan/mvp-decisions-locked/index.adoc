@@ -77,7 +77,7 @@ ____
 
 === Decision D2: Schema Mapping Approach
 
-*Decision Statement:* How will AuditIQ map extracted HMDA field values to audit pack schema fields with confidence scoring, given that HMDA LAR structure spans 48 data points expanding to ~110 fields with 37 ``key HMDA data fields'' (per Fed CA Letter 18-9)?
+*Decision Statement:* How will AuditIQ map extracted HMDA field values to audit pack schema fields with confidence scoring, given that HMDA LAR structure spans 48 data points expanding to ~110 fields with 37 “key HMDA data fields” (per Fed CA Letter 18-9)?
 
 *Chosen Default:* *Hybrid heuristic matcher v1 (string similarity + type compatibility + document-section context + curated HMDA/CD synonym dictionary + human-in-the-loop) with two-layer confidence design*
 
@@ -91,7 +91,7 @@ ____
 |===
 |Alternative |Approach |Precision (est.) |Latency |Rejected?
 |*Hybrid heuristic + synonym dictionary (chosen)* |String similarity + type compat + doc-section context + HMDA/CD curated dictionary + COMA-style signal combination |85–92% on CD-supported fields |<50ms |*CHOSEN*
-|Pure string matching (Levenshtein/Jaccard) |Name similarity only |70–80% (fails on synonyms like ``loan_type'' vs. ``mortgage_product'') |<10ms |Yes — insufficient
+|Pure string matching (Levenshtein/Jaccard) |Name similarity only |70–80% (fails on synonyms like “loan_type” vs. “mortgage_product”) |<10ms |Yes — insufficient
 |LogMap / ontology-based |Formal ontology alignment |90–95% (requires ontology) |100ms–1s |Parallel research track
 |Embedding-based (NLP) |Semantic vector similarity |88–94% (requires training data) |50–200ms |Deferred Phase 2
 |LLM-based (zero-shot) |GPT-4 / Claude mapping |92–97% (zero-shot) |1–3s; $0.01–0.05/mapping |Deferred Phase 2 reranking
@@ -106,7 +106,7 @@ ____
 |Abbreviation mismatch |`prop_addr` → `property_address` |Abbreviation expansion dictionary
 |Synonym |`loan_type` → `mortgage_product` |HMDA/CD curated synonym dictionary
 |Derived field |`ltv_ratio` (computed from loan_amount / appraised_value) |Rule-based derivation; not pure mapping
-|Multi-source field |`total_income` (W-2 + 1003 + pay stubs) |Phase 2; flag as ``requires additional documents'' in MVP
+|Multi-source field |`total_income` (W-2 + 1003 + pay stubs) |Phase 2; flag as “requires additional documents” in MVP
 |===
 
 *Two-Layer Confidence Design (see Section 10.3 for implementation):*
@@ -134,8 +134,8 @@ ____
 * *Risks of This Choice:* 1. *Precision too low for auto-accept tier:* If Phase 1b testing shows <95% precision at conf_mapping ≥0.90, auto-accept is unsafe and all mappings route to human review.
 * *Mitigation:* Phase 1b UAT with 5+ reviewers on ≥50 loan files; if precision <95% at ≥0.90, narrow auto-accept to ≥0.95 2. *Override rate too high:* If >40% of CD-supported mappings are overridden, reviewer fatigue makes the product worse than manual mapping.
 * *Mitigation:* Monitor override rate weekly; if >25% after tuning, escalate synonym dictionary expansion; if >40%, trigger kill criteria 3. *Confidence miscalibration:* Layer 2 calibration requires sufficient production data; early-phase scores may be poorly calibrated.
-* *Mitigation:* Start with conservative thresholds (auto-accept ≥0.95); lower to ≥0.90 only after calibration validation on ≥500 mappings 4. *CD-only coverage gap under-communicated:* Stakeholders expect ``HMDA mapping'' but CD covers only ~10–20% of fields — expectation mismatch.
-* *Mitigation:* Explicit MVP scope communication; UI clearly labels ``CD-supported'' vs. ``requires additional documents'' fields 5. *Synonym dictionary maintenance burden:* Curated dictionary requires ongoing updates as new pack definitions and document types are added.
+* *Mitigation:* Start with conservative thresholds (auto-accept ≥0.95); lower to ≥0.90 only after calibration validation on ≥500 mappings 4. *CD-only coverage gap under-communicated:* Stakeholders expect “HMDA mapping” but CD covers only ~10–20% of fields — expectation mismatch.
+* *Mitigation:* Explicit MVP scope communication; UI clearly labels “CD-supported” vs. “requires additional documents” fields 5. *Synonym dictionary maintenance burden:* Curated dictionary requires ongoing updates as new pack definitions and document types are added.
 * *Mitigation:* Dictionary stored as versioned JSON; pack creators can propose additions via PR; reviewed quarterly
 
 *Go/Kill Criteria (Phase 1b UAT):*
@@ -178,7 +178,7 @@ ____
 * Pack versions: Immutable once published
 * Mappings: Versioned; old versions preserved
 * Reports: Immutable once finalized; new versions supersede
-* Reviewer comments: Append-only with ``supersedes'' pointers - *``Undo'' definition:* New compensating event that resets state pointer to prior snapshot (NOT deletion)
+* Reviewer comments: Append-only with “supersedes” pointers - *“Undo” definition:* New compensating event that resets state pointer to prior snapshot (NOT deletion)
 
 *Three Design Tiers (per Audit Trail Defensibility Report):*
 
@@ -227,7 +227,7 @@ ____
 |===
 
 * *Risks of This Choice:* 1. *Complexity introduces bugs:* State machine with multiple artifact types + canonical serialization + hash chain + sequence management is hard to test; incorrect implementation could produce unverifiable chains.
-* *Mitigation:* Extensive state machine testing (Phase 1a); round-trip verification tests (serialize → hash → deserialize → re-hash → compare); compensating event validation 2. *Regulator still rejects:* If regulator interprets ``immutable'' as ``no changes ever,'' compensating events are not sufficient.
+* *Mitigation:* Extensive state machine testing (Phase 1a); round-trip verification tests (serialize → hash → deserialize → re-hash → compare); compensating event validation 2. *Regulator still rejects:* If regulator interprets “immutable” as “no changes ever,” compensating events are not sufficient.
 * *Mitigation:* Early regulator engagement (Q1); whitepaper explaining compensating event pattern; cite NIST AU-9 and FFIEC precedent 3. *RFC 8785 implementation bugs:* Canonical JSON has subtle edge cases (Unicode normalization, number formatting, key ordering) that can silently break hash reproducibility.
 * *Mitigation:* Use well-tested RFC 8785 library (not hand-rolled); round-trip verification on every event write; regression test suite with edge cases 4. *Snapshot storage cost:* If snapshots require 100MB each and we have 10K audits/year, storage = 1TB/year.
 * *Mitigation:* Snapshot compression; tiering (snapshots only for finalized audits); hash snapshot in event stream for integrity 5. *WORM storage operational overhead:* WORM-stored anchors cannot be corrected if written incorrectly.
@@ -263,11 +263,11 @@ ____
 
 * MVP scope requires HMDA + CRA + ECOA packs; all expressible in declarative JSON with rule definitions + confidence weights
 * No code execution = no code injection = no security audit headaches
-* Versioning and comparison (e.g., ``what changed in pack v2.1?'') are trivial with JSON
+* Versioning and comparison (e.g., “what changed in pack v2.1?”) are trivial with JSON
 * Regulator approval of pack logic is easier when pack is declarative (rules are explicit, not hidden in code)
 * Community pack marketplace (Phase 3) must be secure; declarative packs are safer for distribution
 
-* *Risks of This Choice:* 1. *Customers demand executable logic:* Custom pack requirements include complex conditional rules (e.g., ``if loan_type == `ARM' AND rate > 5%, then find TRID violations'').
+* *Risks of This Choice:* 1. *Customers demand executable logic:* Custom pack requirements include complex conditional rules (e.g., “if loan_type == `ARM' AND rate > 5%, then find TRID violations”).
 * *Mitigation:* JSON rule schema supports nested conditions & weights; covers 90% of use cases. For remaining 10%, Phase 2 DSL or API-based custom rules 2. *Declarative JSON becomes unwieldy:* As pack complexity grows (50+ rules), JSON becomes hard to maintain.
 * *Mitigation:* Pack authoring UI (Phase 2); validation + linting tools; versioning support 3. *Performance: Interpreting JSON rules slower than compiled code*
 * *Mitigation:* Rule evaluation is fast (<100ms per rule); not a bottleneck in MVP

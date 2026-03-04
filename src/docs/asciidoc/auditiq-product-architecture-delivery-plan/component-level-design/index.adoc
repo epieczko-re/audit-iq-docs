@@ -340,7 +340,7 @@ ____
 * Version and store approved mappings; feed override data back into calibration
 
 ____
-*Scope constraint (per Schema Mapping Strategy Report):* HMDA LAR spans 48 data points → ~110 fields, with 37 ``key HMDA data fields'' (Fed CA Letter 18-9). Closing Disclosure (CD) documents alone cover only ~10–20% of these at ≥0.85 auto-mappable confidence. MVP must explicitly label fields as ``CD-supported,'' ``requires 1003/URLA,'' ``requires appraisal,'' or ``manual entry required.''
+*Scope constraint (per Schema Mapping Strategy Report):* HMDA LAR spans 48 data points → ~110 fields, with 37 “key HMDA data fields” (Fed CA Letter 18-9). Closing Disclosure (CD) documents alone cover only ~10–20% of these at ≥0.85 auto-mappable confidence. MVP must explicitly label fields as “CD-supported,” “requires 1003/URLA,” “requires appraisal,” or “manual entry required.”
 ____
 
 ==== Matching Algorithm (Phase 1 — Hybrid Heuristic)
@@ -361,8 +361,8 @@ The matcher uses a COMA-style combination of multiple independent signals, weigh
 |Exact name match |`loan_amount` → `loan_amount` |Name similarity = 1.0
 |Abbreviation mismatch |`prop_addr` → `property_address` |Synonym dictionary
 |Synonym |`loan_type` → `mortgage_product` |Synonym dictionary
-|Derived field |`ltv_ratio` (computed) |Rule engine; flagged as ``derived'' not ``mapped''
-|Multi-source field |`total_income` (W-2 + 1003 + pay stubs) |Flagged as ``Phase 2: requires additional documents''
+|Derived field |`ltv_ratio` (computed) |Rule engine; flagged as “derived” not “mapped”
+|Multi-source field |`total_income` (W-2 + 1003 + pay stubs) |Flagged as “Phase 2: requires additional documents”
 |===
 
 ==== Two-Layer Confidence Design
@@ -477,7 +477,7 @@ Target: ≤25% override rate on CD-supported fields by end of Phase 1b UAT.
 . Auto-accept mappings shown as confirmed with green indicators; reviewer can still override
 . Review-tier mappings highlighted in yellow; reviewer must explicitly accept or override
 . Manual-entry fields shown in red with empty mapping; reviewer selects from searchable field list
-. Fields clearly labeled with `documentCoverage` badge (e.g., ``CD-supported'' vs. ``Requires 1003'')
+. Fields clearly labeled with `documentCoverage` badge (e.g., “CD-supported” vs. “Requires 1003”)
 . Override decisions captured with reason and fed back into calibration pipeline
 . Same pack version + matcher version + synonym dictionary version + approved mappings = reproducible across audit runs
 
@@ -738,7 +738,7 @@ interface EvidenceRecord {
 }
 ----
 
-*Append-only semantics:* When a user ``replaces'' an evidence file, the system: 1. Stores the new file with a new evidence_id 2. Creates a ``supersedes'' link from new to old 3. Marks the original as visible in history (never deleted) 4. Audit trail records both the original and the replacement
+*Append-only semantics:* When a user “replaces” an evidence file, the system: 1. Stores the new file with a new evidence_id 2. Creates a “supersedes” link from new to old 3. Marks the original as visible in history (never deleted) 4. Audit trail records both the original and the replacement
 
 === Audit Trail & Event Store (Immutable Log)
 
@@ -885,7 +885,7 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 *Chain verification tool (MVP — Phase 1a):*
 
 * CLI tool that reads entire tenant event chain and verifies: 1. Every `event_hash` matches recomputed SHA-256 of RFC 8785-canonicalized event 2. Every `previous_event_hash` matches `event_hash` of preceding event (by sequence_id) 3. No gaps in sequence_id 4. All anchor hashes match WORM-stored values
-* Output: ``OK'' or list of corrupted/missing events with sequence_id range
+* Output: “OK” or list of corrupted/missing events with sequence_id range
 
 *Periodic integrity check (automated):*
 
@@ -907,7 +907,7 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 * Enforce mandatory human approval for AI content
 * Export in multiple formats (PDF, CSV, XLSX, JSON)
 
-*Report generation flow:* 1. Admin or Manager initiates report generation 2. System loads pack report template 3. Findings data is aggregated per template sections 4. For AI-narrative sections: - AI generates draft labeled ``[AI-DRAFT — REQUIRES APPROVAL]'' - Manager reviews and approves - Approved narrative embedded in report 5. Report finalized, exported, and stored immutably
+*Report generation flow:* 1. Admin or Manager initiates report generation 2. System loads pack report template 3. Findings data is aggregated per template sections 4. For AI-narrative sections: - AI generates draft labeled “[AI-DRAFT — REQUIRES APPROVAL]” - Manager reviews and approves - Approved narrative embedded in report 5. Report finalized, exported, and stored immutably
 
 *Report template (pack-defined):*
 
@@ -1017,10 +1017,10 @@ interface ReportSection {
 *AI output categories:*
 
 [arabic]
-. *Extracted values (OCR/Docling):* Labeled ``AI-extracted (advisory)'' in UI. Recommendation to use: > High confidence (≥0.85) can be pre-confirmed; lower values require manual verification.
+. *Extracted values (OCR/Docling):* Labeled “AI-extracted (advisory)” in UI. Recommendation to use: > High confidence (≥0.85) can be pre-confirmed; lower values require manual verification.
 . *Mapping suggestions:* System suggests field pairings. Reviewer approves, rejects, or overrides. Approved mappings versioned and reusable.
 . *AI-generated narratives:* Audit summary, root cause analysis, remediation recommendations. Generated on-demand with explicit approval workflow:
-* Draft labeled ``[AI-DRAFT — REQUIRES APPROVAL]''
+* Draft labeled “[AI-DRAFT — REQUIRES APPROVAL]”
 * Manager reviews and approves or rejects
 * Approved version embedded in report
 * Rejected version discarded; Manager can request new draft
