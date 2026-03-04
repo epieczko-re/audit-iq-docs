@@ -59,8 +59,6 @@ jobs:
             -r asciidoctor-kroki \
             -r asciidoctor-mathematical \
             -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
-            -a kroki-fetch-diagram \
-            -a imagesoutdir=${{ env.BUILD_DIR }}/images \
             -a data-uri \
             -a allow-uri-read \
             -a toc=left \
@@ -77,8 +75,6 @@ jobs:
             -r asciidoctor-kroki \
             -r asciidoctor-mathematical \
             -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
-            -a kroki-fetch-diagram \
-            -a imagesoutdir=${{ env.BUILD_DIR }}/images \
             -a pdf-theme=src/docs/resources/themes/riskexec-theme.yml \
             -a pdf-fontsdir=src/docs/resources/fonts \
             -a allow-uri-read \
@@ -87,34 +83,16 @@ jobs:
             -o auditiq-product-architecture-delivery-plan.pdf \
             ${{ env.DOC_SRC }}
 
-      - name: Build DocBook XML (intermediate for DOCX)
-        run: |
-          asciidoctor \
-            -b docbook5 \
-            -r asciidoctor-kroki \
-            -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
-            -a kroki-fetch-diagram \
-            -a imagesoutdir=${{ env.BUILD_DIR }}/images \
-            -a data-uri \
-            -a allow-uri-read \
-            -D ${{ env.BUILD_DIR }} \
-            -o auditiq-product-architecture-delivery-plan.xml \
-            ${{ env.DOC_SRC }}
-
-      - name: Convert DocBook to DOCX
+      - name: Convert HTML to DOCX
         run: |
           cd ${{ env.BUILD_DIR }}
           pandoc \
-            --from docbook \
+            --from html \
             --to docx \
             --toc \
             --toc-depth=3 \
-            --resource-path=.:../src/docs/resources/images \
             -o auditiq-product-architecture-delivery-plan.docx \
-            auditiq-product-architecture-delivery-plan.xml
-
-          # Clean up intermediate XML
-          rm -f auditiq-product-architecture-delivery-plan.xml
+            auditiq-product-architecture-delivery-plan.html
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4

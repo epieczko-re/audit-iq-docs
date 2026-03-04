@@ -36,11 +36,10 @@ DOCKER_RUN   := docker run --rm -v "$(CURDIR)":/documents -w /documents $(DOCKER
 
 # --- Common Asciidoctor flags ------------------------------------------------
 # Kroki handles all diagram types: Mermaid, PlantUML, Graphviz, Ditaa
+# Diagrams are rendered server-side and fetched via allow-uri-read (no local file caching)
 ASCIIDOCTOR_COMMON := \
 	-r asciidoctor-kroki \
 	-a kroki-server-url=$(KROKI_URL) \
-	-a kroki-fetch-diagram \
-	-a imagesoutdir=$(BUILD_DIR)/images \
 	-a allow-uri-read \
 	-a icons=font
 
@@ -76,24 +75,15 @@ pdf: $(BUILD_DIR) ## Build PDF output
 		$(DOC_SRC)
 	@echo "PDF output: $(BUILD_DIR)/$(DOC_NAME).pdf"
 
-# --- DOCX Build (via DocBook + pandoc) ---------------------------------------
-docx: $(BUILD_DIR) ## Build DOCX output
-	asciidoctor \
-		-b docbook5 \
-		$(ASCIIDOCTOR_COMMON) \
-		-a data-uri \
-		-D $(BUILD_DIR) \
-		-o $(DOC_NAME).xml \
-		$(DOC_SRC)
+# --- DOCX Build (via HTML + pandoc) ------------------------------------------
+docx: html ## Build DOCX output (depends on HTML)
 	cd $(BUILD_DIR) && pandoc \
-		--from docbook \
+		--from html \
 		--to docx \
 		--toc \
 		--toc-depth=3 \
-		--resource-path=.:../$(IMAGES_DIR) \
 		-o $(DOC_NAME).docx \
-		$(DOC_NAME).xml
-	rm -f $(BUILD_DIR)/$(DOC_NAME).xml
+		$(DOC_NAME).html
 	@echo "DOCX output: $(BUILD_DIR)/$(DOC_NAME).docx"
 
 # --- Docker Builds -----------------------------------------------------------
