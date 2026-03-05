@@ -88,7 +88,7 @@ This phase ends with a go/no-go decision on the Docling-Graph extraction strateg
 |Junior Dev
 |Day 1 priority; all other work depends on this
 
-|Kubernetes cluster (EKS or GCP) + Helm charts, multi-env (dev, staging, prod)
+|AKS (Azure Kubernetes Service) cluster + Helm charts, multi-env (dev, staging, prod)
 |Senior Dev 2
 |Junior Dev assists; target: dev environment usable by end of Week 1
 

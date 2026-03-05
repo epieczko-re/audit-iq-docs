@@ -37,11 +37,13 @@ DOCKER_RUN   := docker run --rm -v "$(CURDIR)":/documents -w /documents $(DOCKER
 # --- Common Asciidoctor flags ------------------------------------------------
 # Kroki handles all diagram types: Mermaid, PlantUML, Graphviz, Ditaa
 # Diagrams are rendered server-side and fetched via allow-uri-read (no local file caching)
+BUILD_TIMESTAMP ?= $(shell date -u '+%Y-%m-%d %H:%M UTC')
 ASCIIDOCTOR_COMMON := \
 	-r asciidoctor-kroki \
 	-a kroki-server-url=$(KROKI_URL) \
 	-a allow-uri-read \
-	-a icons=font
+	-a icons=font \
+	-a "build-timestamp=$(BUILD_TIMESTAMP)"
 
 # --- Targets -----------------------------------------------------------------
 .PHONY: all html pdf docx clean docker-all docker-html docker-pdf docker-docx help

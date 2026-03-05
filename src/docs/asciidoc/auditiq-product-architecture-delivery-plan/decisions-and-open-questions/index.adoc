@@ -16,6 +16,9 @@
 |*D6* |Canonical data schema: *MISMO Reference Model (flattened subset) for all loan-level attributes* |LOCKED |MISMO is the mortgage industry standard; reduces LOS integration friction; recognized by examiners; HMDA Reporting Dataset covers Phase 1 fields. Proprietary `custom:` namespace for non-MISMO fields. See <<sect-mismo-alignment>>. |If MISMO coverage <60% for a new regulation domain (Phase 2+), evaluate domain-specific alternatives
 |===
 
+NOTE: Decision IDs D7 and D8 were reserved for two v0.1 draft decisions (LLM provider selection and report templating approach) that were consolidated into D1 and D4 respectively during the v0.2 rewrite.
+The IDs are intentionally skipped to preserve traceability with early review notes.
+
 *New Decisions D9–D12 (Phase 1b–1c scope):*
 
 [cols="16%,29%,23%,8%,8%,8%,8%",options="header"]
@@ -40,6 +43,7 @@
 |*Q6: How many custom packs will customers demand in Y1?* |Product, Compliance SME |Medium |Customer interviews + sales pipeline analysis
 |*Q7: Is the immutability constraint achievable without “undo” frustrating reviewers?* |UX, Product |Medium |Phase 1a usability testing with 5+ reviewers
 |*Q8: Can Docling extraction achieve >85% accuracy on handwritten HMDA docs?* |Data/ML Lead |Critical |Phase 0 testing (by Mar 31); fallback to cloud OCR if not
+|*Q9: Should RiskExec pursue ISO 42001 (AI Management System) certification for AuditIQ?* |CEO, Compliance SME, Solutions Architect |High |Evaluate certification cost, timeline, and competitive differentiation vs. relying on SR 11-7 / NIST AI RMF alignment alone; decision by May 2026
 |===
 
 === Explicit Assumptions (Risk-if-Wrong)

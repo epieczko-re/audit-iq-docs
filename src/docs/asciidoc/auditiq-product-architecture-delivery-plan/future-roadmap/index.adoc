@@ -28,7 +28,11 @@
 * Telemetry dashboard showing real-time drift in model accuracy per pack per customer
 * Automated alerts if override rate >15% (indicate model degradation)
 
-*Multi-Pack Audit Workflows* - Chain multiple packs in single audit (e.g., “HMDA + CRA + Pricing packs”) - Findings merge, confidence scoring aggregates across packs - Dependency tracking (e.g., “HMDA finding prerequisites CRA data”)
+*Multi-Pack Audit Workflows*
+
+* Chain multiple packs in single audit (e.g., “HMDA + CRA + Pricing packs”)
+* Findings merge, confidence scoring aggregates across packs
+* Dependency tracking (e.g., “HMDA finding prerequisites CRA data”)
 
 === Phase 3 & Beyond: Platform Ecosystem (Q4 2026+)
 
@@ -54,9 +58,19 @@
 * BI dashboards: Risk heat maps, audit metrics by region, examiner prep reports
 * Data residency & encryption respected; opt-in for analytics
 
-*Third-Party Integrations* - LMS (Loan Management System): Pre-populate loan data into audit - Regulatory reporting: Export findings to FDIC/OCC submission tools - Workflow engines: Zapier, Make, RPA tools for audit orchestration - API-first strategy ensures extensibility
+*Third-Party Integrations*
 
-*Vertical Expansion Beyond Lending* - Insurance audits: Policy compliance, claims validation - Credit unions: Regulatory exam preparation - Fund management: Compliance audits, valuation verification - Vertical teams (Q4+) develop packs; core platform scales
+* LMS (Loan Management System): Pre-populate loan data into audit
+* Regulatory reporting: Export findings to FDIC/OCC submission tools
+* Workflow engines: Zapier, Make, RPA tools for audit orchestration
+* API-first strategy ensures extensibility
+
+*Vertical Expansion Beyond Lending*
+
+* Insurance audits: Policy compliance, claims validation
+* Credit unions: Regulatory exam preparation
+* Fund management: Compliance audits, valuation verification
+* Vertical teams (Q4+) develop packs; core platform scales
 
 === Strategic Rationale
 

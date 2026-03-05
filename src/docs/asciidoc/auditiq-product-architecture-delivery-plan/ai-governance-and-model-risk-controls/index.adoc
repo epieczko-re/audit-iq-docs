@@ -103,18 +103,102 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 === Data Handling: PII Redaction & Residency
 
 *Requirement:* LLM API calls must NOT expose customer or loan data (names, SSNs, account numbers).
+This is a RED LINE (item 4 above) — zero PII leakage to external providers.
 
-*Implementation:*
+*HMDA PII Taxonomy:* The following data elements are classified as PII in the context of HMDA loan audit documents.
+This taxonomy covers Closing Disclosures, Loan Estimates, 1003/URLA applications, appraisals, and title documents.
 
-[cols="25%,25%,25%,25%",options="header"]
+[cols="20%,15%,30%,20%,15%",options="header"]
 |===
-|Data Type |Redaction Rule |Implementation |Verified?
-|*Customer Name* |Remove before LLM call |Regex: `[A-Z][a-z]+ [A-Z][a-z]+` → `[REDACTED_NAME]` |Phase 1b POC
-|*SSN* |Remove before LLM call |Regex: `\d{3}-\d{2}-\d{4}` → `[SSN]` |Phase 1b POC
-|*Account Number* |Remove before LLM call |Regex: `\d{10,}` (configurable) → `[ACCT]` |Phase 1b POC
-|*Address* |Remove before LLM call |Regex: `\d+ [A-Z][a-z]+ (St\|Ave\|Rd)` → `[ADDRESS]` |Phase 1b POC
-|*Loan Amount* |KEEP (non-identifying; needed for context) |No redaction |Approved
+|Data Type |Sensitivity |Redaction Rule |Replacement Token |Verified?
+
+|*Borrower / Co-Borrower Name*
+|High
+|Named Entity Recognition (NER) primary; regex fallback: `[A-Z][a-z]+ [A-Z][a-z]+`
+|`[REDACTED_NAME]`
+|Phase 1b POC
+
+|*SSN (full or partial)*
+|Critical
+|Regex: `\d{3}-\d{2}-\d{4}` and `\d{9}` and `XXX-XX-\d{4}` (masked variants)
+|`[SSN]`
+|Phase 1b POC
+
+|*Account / Loan Number*
+|High
+|Regex: `\d{10,}` (configurable per LOS format); pattern library per customer
+|`[ACCT]`
+|Phase 1b POC
+
+|*Property Address*
+|High
+|NER primary; regex fallback: street number + street name + suffix (St, Ave, Rd, Blvd, Dr, Ln, Ct, Way, Pl, Cir); also captures apartment/unit/suite
+|`[ADDRESS]`
+|Phase 1b POC
+
+|*Email Address*
+|Medium
+|Regex: standard email pattern matching
+|`[EMAIL]`
+|Phase 1b POC
+
+|*Phone Number*
+|Medium
+|Regex: US phone formats including optional country code, area code with or without parentheses
+|`[PHONE]`
+|Phase 1b POC
+
+|*Date of Birth*
+|High
+|Regex: date patterns in borrower context (NER disambiguates from loan dates)
+|`[DOB]`
+|Phase 1b POC
+
+|*Employer Name*
+|Medium
+|NER extraction from employment section of 1003/URLA
+|`[EMPLOYER]`
+|Phase 1b POC
+
+|*Loan Amount*
+|Non-PII
+|KEEP — non-identifying; needed for audit context
+|No redaction
+|Approved
+
+|*Interest Rate / APR*
+|Non-PII
+|KEEP — needed for compliance comparison
+|No redaction
+|Approved
+
+|*Property Type / Occupancy*
+|Non-PII
+|KEEP — needed for rule evaluation
+|No redaction
+|Approved
 |===
+
+*Redaction Pipeline Architecture:*
+
+[arabic]
+. *Pre-processing:* Before any LLM API call, the redaction pipeline runs on the input context.
+. *Two-pass strategy:* Pass 1 applies NER (spaCy or similar) for names, addresses, employers.
+Pass 2 applies regex patterns for structured identifiers (SSN, account numbers, phone, email).
+. *Token mapping:* Each redaction generates a reversible token map (e.g., `[REDACTED_NAME_1]` maps to the original value) stored in the tenant's encrypted database — never sent to the LLM provider.
+. *Post-processing:* After LLM response, tokens are re-hydrated in the returned narrative for display to authorized reviewers.
+. *Validation:* A post-redaction scan confirms zero PII patterns remain in the outbound payload.
+If any pattern is detected, the call is blocked and an `ai_pii_redaction_failure` audit event is emitted.
+
+*Performance Target:* < 5% latency overhead on LLM API calls (Assumption A7, <<sect-decisions>>).
+Phase 1b POC must benchmark on 100+ documents and report mean/P95 redaction latency.
+
+*Edge Cases:*
+
+* *International names:* NER handles multi-word, hyphenated, and non-Latin-script names better than regex alone
+* *Non-standard SSN formats:* Some LOS systems mask SSNs differently (e.g., partial masking); pattern library must be configurable per customer
+* *Embedded PII in tables:* Docling extraction preserves table structure; redaction pipeline must process cell-by-cell, not just free text
+* *PII in image regions:* Scanned documents with PII in image-only regions (no OCR text) are NOT sent to the LLM; only OCR-extracted text is processed
 
 *Data Residency:*
 

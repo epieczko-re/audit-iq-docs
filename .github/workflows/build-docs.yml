@@ -101,6 +101,9 @@ jobs:
       - name: Create build directory
         run: mkdir -p ${{ env.BUILD_DIR }}
 
+      - name: Set build timestamp
+        run: echo "BUILD_TIMESTAMP=$(date -u '+%Y-%m-%d %H:%M UTC')" >> "$GITHUB_ENV"
+
       - name: Build HTML
         run: |
           DOC_DIR=$(dirname "${{ env.DOC_SRC }}")
@@ -116,6 +119,7 @@ jobs:
             -a toclevels=3 \
             -a icons=font \
             -a source-highlighter=highlight.js \
+            -a "build-timestamp=${{ env.BUILD_TIMESTAMP }} (${GITHUB_SHA::7})" \
             -D ${{ env.BUILD_DIR }} \
             -o auditiq-product-architecture-delivery-plan.html \
             ${{ env.DOC_SRC }}
@@ -134,6 +138,7 @@ jobs:
             -a pdf-fontsdir=src/docs/resources/fonts \
             -a allow-uri-read \
             -a icons=font \
+            -a "build-timestamp=${{ env.BUILD_TIMESTAMP }} (${GITHUB_SHA::7})" \
             -D ${{ env.BUILD_DIR }} \
             -o auditiq-product-architecture-delivery-plan.pdf \
             ${{ env.DOC_SRC }}
@@ -151,6 +156,7 @@ jobs:
             -a imagesoutdir="$DOC_DIR" \
             -a allow-uri-read \
             -a icons=font \
+            -a "build-timestamp=${{ env.BUILD_TIMESTAMP }} (${GITHUB_SHA::7})" \
             -D ${{ env.BUILD_DIR }} \
             -o auditiq-product-architecture-delivery-plan.xml \
             ${{ env.DOC_SRC }}
@@ -251,6 +257,10 @@ jobs:
           </body>
           </html>
           LANDING
+          # Inject build timestamp into landing page footer
+          BUILD_TS="$(date -u '+%Y-%m-%d %H:%M UTC')"
+          COMMIT_SHORT="${GITHUB_SHA::7}"
+          sed -i "s|Built automatically from source on each push to main.|Built ${BUILD_TS} from commit ${COMMIT_SHORT}.|" site/index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

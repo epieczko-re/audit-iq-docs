@@ -105,6 +105,66 @@ sequenceDiagram
   Manager->>System: Generate report + exam-ready bundle
 ----
 
+=== Finding Remediation Lifecycle
+
+Once findings are generated (in any workflow mode), each finding follows a remediation lifecycle from identification through closure.
+This lifecycle is orthogonal to the audit run state machine — an audit run may be in `FindingsGenerated` while individual findings are in different remediation states.
+
+*Actors:* Rules Engine (creation), Reviewer (triage + retest), Remediation Owner (correction), Manager (escalation + closure approval)
+
+*States:*
+
+[arabic]
+. *Identified* — Finding created by rules engine or reviewer; AI narrative drafted (if applicable)
+. *Triaged* — Reviewer confirms severity and assigns remediation owner; AI-generated findings must pass effective challenge before triage
+. *Remediation Assigned* — Owner notified; corrective action expected within SLA (Critical: 1 day, High: 3 days, Medium: 7 days, Low: 14 days)
+. *Corrected* — Owner marks finding as corrected and attaches evidence of remediation
+. *Retest Passed* — Reviewer independently verifies correction against source documents; finding cleared
+. *Retest Failed* — Reviewer determines correction is insufficient; finding returns to Remediation Assigned with additional notes
+. *Closed* — Manager approves closure (required for Critical/High findings); finding is finalized and immutable
+. *Escalated* — Manager escalates finding (e.g., pattern detected across multiple loans); triggers additional review or regulatory notification workflow
+. *Reopened* — Finding reopened via compensating event (<<sect-immutability>>); original finding record preserved; new event captures reopening rationale
+
+*Approval gates:*
+
+* *Triage → Remediation Assigned:* Reviewer must complete effective challenge for AI-generated findings
+* *Corrected → Retest Passed:* Reviewer (different from remediation owner) must independently verify
+* *Retest Passed → Closed:* Manager approval required for Critical and High severity findings
+* *Closed → Reopened:* Manager or Compliance Officer only; compensating event required with documented rationale
+
+.Finding Remediation State Machine
+[mermaid]
+----
+stateDiagram-v2
+  direction TB
+  [*] --> Identified
+  Identified --> Triaged: Reviewer confirms severity + assigns owner
+  Triaged --> RemediationAssigned: Owner notified
+  RemediationAssigned --> Corrected: Owner submits correction + evidence
+  Corrected --> RetestPassed: Reviewer verifies correction
+  Corrected --> RetestFailed: Reviewer rejects correction
+  RetestFailed --> RemediationAssigned: Additional correction required
+  RetestPassed --> Closed: Manager approves closure
+  Identified --> Escalated: Manager escalates finding
+  Triaged --> Escalated: Manager escalates finding
+  Escalated --> Triaged: Escalation resolved
+  Closed --> Reopened: Compensating event
+  Reopened --> Triaged: Re-enter remediation
+
+  classDef blueState fill:#4A6FA5,color:#fff,stroke:#2B4570
+  classDef greenState fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  classDef orangeState fill:#FF7E2D,color:#fff,stroke:#CC5500
+  classDef redState fill:#C0392B,color:#fff,stroke:#922B21
+
+  class Identified,Triaged,RemediationAssigned,Corrected blueState
+  class RetestPassed,Closed greenState
+  class Escalated,Reopened orangeState
+  class RetestFailed redState
+----
+
+*Audit trail:* Every state transition emits an immutable audit event with `actor_id`, `timestamp`, `disposition`, and `rationale`.
+The complete finding remediation history is included in the exam-ready bundle (<<sect-exam-ready-bundle>>).
+
 === Audit Workflow: Automated Pre-Scan (“Target-to-Source” / “Record-to-Record”)
 
 For structured data audits (e.g., HMDA LAR against LOS database extract), the full audit can be automated:

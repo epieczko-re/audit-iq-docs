@@ -52,6 +52,11 @@ ____
 
 === Routing Thresholds
 
+NOTE: AuditIQ uses *three distinct routing contexts* with different threshold bands, each calibrated for its specific decision context.
+AFC routing (extraction) uses lower thresholds because extraction errors are caught downstream.
+Schema mapping routing uses higher thresholds because incorrect mappings propagate through the entire audit.
+Combined confidence routing reflects the floor of all three layers.
+
 ==== AFC Routing (Document Extraction — <<sect-doc-processing>>)
 
 [cols="25%,25%,50%",options="header"]
@@ -209,4 +214,61 @@ Severity is immutable once finding is triaged unless explicitly re-scored by Man
 |*Red*
 |< 0.50
 |Low confidence — manual entry / reject
+|===
+
+=== Regulatory Terminology
+
+[cols="25%,75%",options="header"]
+|===
+|Term |Definition
+
+|*HMDA (Home Mortgage Disclosure Act)*
+|Federal law requiring financial institutions to collect and report data about mortgage lending activity.
+Regulation C implements HMDA and defines ~110 reportable data fields per loan application.
+
+|*Regulation C*
+|The implementing regulation for HMDA, issued by the CFPB.
+Specifies data collection, reporting, and disclosure requirements for mortgage lenders.
+
+|*CRA (Community Reinvestment Act)*
+|Federal law requiring banks to meet the credit needs of the communities they serve, including low- and moderate-income neighborhoods.
+
+|*ECOA (Equal Credit Opportunity Act)*
+|Federal law prohibiting credit discrimination on the basis of race, color, religion, national origin, sex, marital status, age, or receipt of public assistance.
+Regulation B implements ECOA.
+
+|*TRID (TILA-RESPA Integrated Disclosure)*
+|Combined disclosure rules under the Truth in Lending Act (TILA) and Real Estate Settlement Procedures Act (RESPA).
+Requires Loan Estimate and Closing Disclosure forms for most residential mortgage loans.
+
+|*FCRA (Fair Credit Reporting Act)*
+|Federal law governing the collection, dissemination, and use of consumer credit information.
+
+|*MISMO (Mortgage Industry Standards Maintenance Organization)*
+|Industry body that maintains the standard data model for mortgage transactions.
+AuditIQ uses a flattened subset of the MISMO Reference Model v3.x as its canonical schema (<<sect-decision-d6>>).
+
+|*SR 11-7 / OCC 2011-12*
+|Interagency supervisory guidance on Model Risk Management.
+Requires model inventory, validation, effective challenge, governance, and documentation for any model used in a decision process.
+
+|*NIST AI RMF (AI Risk Management Framework)*
+|Voluntary framework from the National Institute of Standards and Technology for managing AI risk.
+Organized around four functions: Govern, Map, Measure, Manage.
+
+|*CFPB (Consumer Financial Protection Bureau)*
+|Federal agency responsible for consumer protection in the financial sector.
+Issues regulations (Regulation C, Regulation B, Regulation Z) and enforcement actions relevant to AuditIQ's audit domains.
+
+|*FFIEC (Federal Financial Institutions Examination Council)*
+|Interagency body that prescribes uniform principles, standards, and report forms for examining financial institutions.
+FFIEC IT Examination Handbook governs audit trail and information security controls.
+
+|*GLBA (Gramm-Leach-Bliley Act)*
+|Federal law requiring financial institutions to explain their information-sharing practices and safeguard sensitive data.
+Regulation P implements GLBA privacy requirements.
+
+|*SOC 2 (Service Organization Control 2)*
+|AICPA audit framework that certifies a service organization's controls for security, availability, processing integrity, confidentiality, and privacy.
+AuditIQ targets SOC 2 Type II readiness by June 30, 2026.
 |===

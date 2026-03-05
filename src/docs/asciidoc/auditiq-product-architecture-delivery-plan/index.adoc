@@ -4,6 +4,7 @@
 :author: Erik Pieczkowski
 :revnumber: 0.5
 :revdate: 2026-03-05
+:build-timestamp: local build
 :toc:
 :toclevels: 3
 :sectnums:
