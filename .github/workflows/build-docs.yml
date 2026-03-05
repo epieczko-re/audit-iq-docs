@@ -138,16 +138,35 @@ jobs:
             -o auditiq-product-architecture-delivery-plan.pdf \
             ${{ env.DOC_SRC }}
 
-      - name: Convert HTML to DOCX
+      - name: Build DocBook XML
         run: |
+          DOC_DIR=$(dirname "${{ env.DOC_SRC }}")
+          asciidoctor \
+            -b docbook5 \
+            -r asciidoctor-kroki \
+            -r asciidoctor-mathematical \
+            -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
+            -a kroki-fetch-diagram \
+            -a kroki-default-format=png \
+            -a imagesoutdir="$DOC_DIR" \
+            -a allow-uri-read \
+            -a icons=font \
+            -D ${{ env.BUILD_DIR }} \
+            -o auditiq-product-architecture-delivery-plan.xml \
+            ${{ env.DOC_SRC }}
+
+      - name: Convert DocBook to DOCX
+        run: |
+          DOC_DIR=$(dirname "${{ env.DOC_SRC }}")
           cd ${{ env.BUILD_DIR }}
           pandoc \
-            --from html \
+            --from docbook \
             --to docx \
             --toc \
             --toc-depth=3 \
+            --resource-path=../"$DOC_DIR" \
             -o auditiq-product-architecture-delivery-plan.docx \
-            auditiq-product-architecture-delivery-plan.html
+            auditiq-product-architecture-delivery-plan.xml
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
