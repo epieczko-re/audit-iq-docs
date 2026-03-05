@@ -102,7 +102,7 @@
 
 ==== Primary Competitor Strategic Assessment
 
-* *Defensibility:* MEDIUM-HIGH. Deep enterprise relationships and switching costs, but aging architecture and bolt-on AI. 
+* *Defensibility:* MEDIUM-HIGH. Deep enterprise relationships and switching costs, but aging architecture and bolt-on AI.
 * *AI strategy:* Introduced AI features via partnerships (not native) in September 2025. Cannot easily retrofit governance-first AI controls.
 * *Weaknesses:* QC-only (not three lines of defense), documentation quality criticized, limited OCR/document extraction capabilities.
 * *Pricing vulnerability:* Per-pack pricing without AI features means customers pay more for less intelligence. AuditIQ can include AI governance controls at competitive pricing and win on value.
