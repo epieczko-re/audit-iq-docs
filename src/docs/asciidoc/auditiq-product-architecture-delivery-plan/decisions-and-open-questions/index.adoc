@@ -40,6 +40,7 @@
 |*Q6: How many custom packs will customers demand in Y1?* |Product, Compliance SME |Medium |Customer interviews + sales pipeline analysis
 |*Q7: Is the immutability constraint achievable without “undo” frustrating reviewers?* |UX, Product |Medium |Phase 1a usability testing with 5+ reviewers
 |*Q8: Can Docling extraction achieve >85% accuracy on handwritten HMDA docs?* |Data/ML Lead |Critical |Phase 0 testing (by Mar 31); fallback to cloud OCR if not
+|*Q9: Should RiskExec pursue ISO 42001 (AI Management System) certification for AuditIQ?* |CEO, Compliance SME, Solutions Architect |High |Evaluate certification cost, timeline, and competitive differentiation vs. relying on SR 11-7 / NIST AI RMF alignment alone; decision by May 2026
 |===
 
 === Explicit Assumptions (Risk-if-Wrong)
