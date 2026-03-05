@@ -1,183 +1,510 @@
 [[sect-delivery-plan]]
 == Delivery Plan and Work Breakdown Structure (WBS)
 
-=== High-Level Phased Delivery (Q2–Q4 2026)
+=== Team & Approach
+
+==== MVP Team (4 Resources)
+
+[cols="20%,20%,60%",options="header"]
+|===
+|Role |Count |Responsibilities
+|*Senior Developer 1* |1 |Data pipeline, Docling-Graph integration, extraction/AFC, schema mapping, LLM integration, performance tuning
+|*Senior Developer 2* |1 |Platform core: data model, audit trail, pack engine, state machine, rules engine, AI narratives, reporting
+|*Junior Developer* |1 |UI implementation, CI/CD, test automation, model registry, monitoring, documentation
+|*Analyst* |1 |Pack definitions (HMDA/CRA/ECOA), test corpus preparation, UAT, regulatory mapping, beta onboarding, training materials
+|===
+
+==== AI-Assisted Development
+
+The team will use AI coding assistants (Claude Code, Codex, and similar tools) as a core part of the development workflow.
+These tools act as a force multiplier for code generation, boilerplate, test writing, and documentation — effectively doubling or tripling individual developer throughput on implementation tasks.
+
+AI-assisted development does *not* accelerate:
+
+* Architecture and design decisions
+* Security reviews and penetration testing
+* Compliance and regulatory review
+* Customer-facing onboarding and training
+* Integration testing with real-world data
+
+Velocity estimates in this plan assume AI-assisted development is in active use from day one.
+
+=== High-Level Phased Delivery (Mar 9 – Jun 30, 2026)
 
 ....
-Phase 0: Foundation & Infrastructure (Mar 1–Mar 31, 2026)
-├─ Repositories, CI/CD, Kubernetes cluster, monitoring
-├─ Docling + OCR integration POC
-├─ GraphQL API scaffold
-└─ Authentication & RBAC framework
+Phase 0: Foundation & Validation (Mar 9 – Mar 28, 3 weeks)
+├─ Infrastructure: repos, CI/CD, Kubernetes, monitoring
+├─ Database: PostgreSQL + Redis, migrations, RLS policies
+├─ API scaffold: GraphQL + auth middleware (JWT, tenant isolation)
+├─ Docling-Graph + AFC v2 POC (extraction accuracy validation)
+├─ LLM integration POC (LiteLLM routing, Mistral evaluation)
+└─ HMDA test corpus preparation (≥200 loans, 5+ lenders)
 
-Phase 1a: Core Audit Workflow (Apr 1–Apr 30, 2026)
-├─ Document upload & ingestion pipeline
-├─ Evidence tagging & linking
-├─ Manual extraction & review UI
-└─ Basic reporting (audit summary, findings list)
+Phase 1a: Core Pipeline & Workflow (Mar 31 – Apr 25, 4 weeks)
+├─ Document upload, ingestion, Docling-Graph extraction pipeline
+├─ AFC v2 scoring layer + Pydantic template schemas
+├─ Immutable audit trail (RFC 8785, SHA-256 hash chain, sequence IDs)
+├─ Audit pack engine (declarative JSON) + state machine
+├─ Evidence management + manual extraction UI
+├─ Model registry (Postgres table + API endpoints)
+└─ HMDA pack definition (complete)
 
-Phase 1b: Intelligence & Auto-Scoring (May 1–May 31, 2026)
-├─ Schema matcher + confidence scoring
-├─ Rules engine integration
-├─ AI-generated narratives (LLM calls)
+Phase 1b: Intelligence & Scoring (Apr 28 – May 23, 4 weeks)
+├─ Schema mapping service (heuristic matcher v1 + graph edge boosting)
+├─ Confidence scoring API + routing (auto-confirm / review / manual)
+├─ Rules engine integration + finding creation
+├─ AI narrative generation + PII redaction pipeline
 ├─ Manager escalation & approval workflow
-└─ Confidence calibration framework (minimal)
+├─ Provenance logging (21-field schema per AI call)
+└─ CRA + ECOA pack definitions
 
-Phase 1c: Launch Preparation & QA (Jun 1–Jun 30, 2026)
+Phase 1c: Hardening & Launch Prep (May 26 – Jun 27, 5 weeks)
+├─ Performance tuning (extraction latency <2s/page)
+├─ vLLM self-hosted deployment (if Phase 0 POC approved)
+├─ Reporting: audit summary, findings, evidence index
+├─ Exam-ready bundle export (graph CSV/Cypher)
+├─ Security audit + penetration testing (external partner)
+├─ End-to-end integration testing + UAT
 ├─ Beta customer onboarding (3–5 customers)
-├─ Security audit & compliance review
-├─ Documentation & training materials
-├─ Performance tuning & load testing
-└─ **HARD GO/NO-GO DECISION: June 15**
-
-Phase 2: Expansion & Intelligence (Q3 2026, Jul–Sep)
-├─ Adaptive learning (feedback loops, confidence calibration)
-├─ Predictive validation rules
-├─ Conversational copilot (chat interface)
-├─ Advanced reporting (drill-down, trends)
-└─ Multi-pack audit workflows
-
-Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
-├─ Pack marketplace (community + vendor packs)
-├─ Policy management spin-off module
-├─ Audit data warehouse & business intelligence
-├─ Integration with third-party tools (data aggregators, workflow systems)
-└─ Vertical expansion (beyond lending: insurance, credit unions, fund management)
+├─ WORM anchor storage for audit trail
+└─ Documentation, training, and go/no-go checklist
 ....
 
-=== Expanded WBS: Phase 1a–1c (MVP) with Estimates
+Phase 2 and beyond are covered in <<sect-future-roadmap, Future Roadmap and Platform Leverage>>.
 
-==== Phase 0: Foundation & Infrastructure (Mar 2026, 4 weeks)
+=== Work Breakdown Structure (MVP)
 
-[cols="31%,35%,17%,17%",options="header"]
+==== Phase 0: Foundation & Validation (Mar 9 – Mar 28)
+
+*Goal:* Prove the extraction pipeline works on real HMDA documents and stand up the development platform.
+This phase ends with a go/no-go decision on the Docling-Graph extraction strategy.
+
+[cols="40%,20%,40%",options="header"]
 |===
-|Work Item |Story Points |Owner |Notes
-|*Backend infra* | |Full-stack lead |
-|Repository setup, GitHub Actions, RBAC |5 |Full-stack |Incl. secrets mgmt, monitoring hooks
-|Kubernetes cluster (EKS or GCP) + Helm |8 |DevOps (0.5 FTE) |Multi-env (dev, staging, prod)
-|GraphQL API scaffold + auth middleware |8 |Full-stack |JWT + tenant isolation plumbing
-|PostgreSQL + Redis setup, migrations |5 |Full-stack |Backup, HA, connection pooling
-|*AI/ML infrastructure* | |Data/ML lead |
-|LLM API integration (OpenAI, SageMaker) + rate limiting |5 |AI/ML |Incl. cost tracking, fallback logic
-|Docling + local PDF processing setup |8 |Data/ML |Benchmark OCR fallback; latency <2s target
-|*Monitoring & observability* | |DevOps |
-|Prometheus, Grafana, structured logging (ELK) |8 |DevOps |Dashboards for API latency, extraction success rate
-|*Total Phase 0* |*50 points* |(Velocity ~12 pts/week = 4.2 weeks) |_Baseline: On track_
-|===
+|Work Item |Owner |Notes / Dependencies
 
-==== Phase 1a: Core Audit Workflow (Apr 2026, 4 weeks)
+3+|*Infrastructure & Platform*
+|Repository setup, GitHub Actions CI/CD, secrets management
+|Junior Dev
+|Day 1 priority; all other work depends on this
 
-[cols="32%,40%,20%,8%",options="header"]
-|===
-|Work Item |Story Points |Owner |Dependencies
-|*Document upload & ingestion* | | |
-|File upload UI + malware scan |8 |UX + Full-stack |Auth & storage
-|Azure Blob Storage + encryption + quarantine |5 |Full-stack |DevOps infra
-|Async document processing queue (celery/workers) |8 |Full-stack |Messaging, monitoring
-|Docling extraction + OCR fallback |13 |Data/ML + Full-stack |Docling setup, error handling
-|*Evidence & audit state management* | | |
-|Evidence entity + tagging schema |5 |Data/ML + Full-stack |Schema review
-|Evidence link creation UI (drag-drop, search) |13 |UX + Full-stack |Document tree view
-|Audit pack instantiation + record selection |8 |Full-stack |Pack engine from v0.1
-|Manual extraction form + UI states |13 |UX + Full-stack |Schema mapper placeholder
-|*Workflow orchestration* | | |
-|Audit state machine (created → extracted → reviewed → finalized) |8 |Full-stack |Event log, versioning
-|Reviewer assignment + notifications |5 |Full-stack |Email / in-app alerts
-|*Reporting (MVP minimal)* | | |
-|Audit summary report template |8 |UX + Full-stack |HTML/PDF export
-|Findings list & evidence index |5 |Full-stack |Data aggregation
-|*Total Phase 1a* |*99 points* |(Velocity ~25 pts/week = 4 weeks) |_On track if foundation complete_
-|===
+|Kubernetes cluster (EKS or GCP) + Helm charts, multi-env (dev, staging, prod)
+|Senior Dev 2
+|Junior Dev assists; target: dev environment usable by end of Week 1
 
-==== Phase 1b: Intelligence & Auto-Scoring (May 2026, 4 weeks)
+|PostgreSQL + Redis setup, migrations, connection pooling, backup
+|Senior Dev 2
+|Include RLS policy scaffolding for tenant isolation (<<sect-decision-d5>>)
 
-[cols="32%,40%,20%,8%",options="header"]
-|===
-|Work Item |Story Points |Owner |Dependencies
-|*Schema & mapping* | | |
-|Schema matcher v1 (confidence-scored) |13 |Data/ML |Docling output, test corpus
-|Mapping UI + override workflow |8 |UX + Full-stack |API contract
-|LogMap prototype (background task) |5 |Data/ML |Research / exploratory
-|*Scoring & findings* | | |
-|Rules engine integration (scoring logic) |13 |Full-stack + Data/ML |Pack definition, test packs
-|Finding creation + severity assignment |8 |Full-stack |State machine, audit events
-|Confidence scoring API + human-in-loop triggers |13 |Full-stack |Scoring framework (<<sect-scoring-framework>>)
-|*AI narratives* | | |
-|LLM prompt templates for narrative generation |5 |AI engineer |Model selection, cost estimates
-|AI narrative generation + caching |13 |Full-stack + AI |Rate limiting, user approval flow
-|*Manager workflow* | | |
-|Manager escalation UI + approval gates |13 |UX + Full-stack |Finding states, audit events
-|Justification capture & audit trail |5 |Full-stack |Event schema
-|*Confidence monitoring* | | |
-|Dashboard: confidence vs. human agreement (Phase 2 preview) |8 |Full-stack + Data/ML |Telemetry, minimal alerts
-|*Total Phase 1b* |*104 points* |(Velocity ~26 pts/week = 4 weeks) |_Critical path: Schema matcher quality_
+|GraphQL API scaffold + JWT auth middleware + tenant isolation plumbing
+|Senior Dev 2
+|Foundation for all service endpoints
+
+|Prometheus, Grafana, structured logging (ELK)
+|Junior Dev
+|Dashboards for API latency, extraction success rate
+
+3+|*Extraction Pipeline POC*
+|Docling-Graph integration + Pydantic template POC (Closing Disclosure)
+|Senior Dev 1
+|Critical path — validates Decision D1 (<<sect-decision-d1>>); target: ≥85% precision on key HMDA fields
+
+|AFC v2 scoring layer prototype (6-signal composite)
+|Senior Dev 1
+|Requires Docling-Graph output; see <<sect-doc-processing>>
+
+|LLM API integration via LiteLLM + Mistral evaluation
+|Senior Dev 1
+|Rate limiting, cost tracking, fallback logic; see <<sect-model-deployment>>
+
+3+|*Test Data & Pack Preparation*
+|HMDA test corpus assembly (≥200 loans, 5+ lenders, edge cases)
+|Analyst
+|Ground truth labeling for POC validation
+
+|HMDA audit pack draft (field coverage matrix, rule definitions)
+|Analyst
+|Based on <<sect-audit-pack-spec>>; CD-supported fields first
 |===
 
-==== Phase 1c: Launch Prep & QA (Jun 2026, 4 weeks)
+*Phase 0 Exit Gate (Mar 28):* See <<sect-delivery-go-no-go>>.
 
-[cols="32%,40%,20%,8%",options="header"]
+==== Phase 1a: Core Pipeline & Workflow (Mar 31 – Apr 25)
+
+*Goal:* Build the end-to-end audit workflow from document upload through manual review.
+By the end of this phase, a reviewer can upload a document, see extracted fields, tag evidence, and move an audit through its lifecycle.
+
+[cols="40%,20%,40%",options="header"]
 |===
-|Work Item |Story Points |Owner |Dependencies
-|*Beta onboarding* | | |
-|Customer setup (licensing, pack provisioning) |8 |Ops + Sales Engineer |Pricing model finalized
-|Training & documentation |8 |Product + UX |All features complete
-|*Security & compliance* | | |
-|Penetration testing + vulnerability scan |13 |Security partner |Incl. OWASP Top 10
-|Data residency & encryption audit |8 |Compliance SME (0.5 FTE) |All data stores
-|SOC 2 readiness review |5 |Compliance SME |Logging, access controls
-|*Performance & stability* | | |
-|Load testing (1000 concurrent audits/day target) |13 |QA + DevOps |Benchmarking tools, baselines
-|Extraction latency optimization (<2s/page target) |8 |Data/ML + Full-stack |Profiling, caching tuning
-|*QA & bug fixes* | | |
-|Integration testing (end-to-end workflows) |13 |QA |Test automation framework
-|UAT with beta customers |8 |QA + Product |Feedback loop, bug triage
-|*Documentation* | | |
-|API documentation & SDK examples |5 |Full-stack |Auto-generated or manual
-|User guides & FAQ |5 |UX + Product |Video walkthroughs optional
-|*Launch readiness* | | |
-|Go/no-go checklist & board review |3 |Product Lead |Incl. escalation authority
-|*Total Phase 1c* |*97 points* |(Velocity ~24 pts/week = 4 weeks) |_Buffer for customer feedback_
+|Work Item |Owner |Notes / Dependencies
+
+3+|*Document Ingestion Pipeline*
+|File upload UI + malware scan + Azure Blob Storage (encryption, quarantine)
+|Senior Dev 2 + Junior Dev
+|Junior Dev builds upload UI; Senior Dev 2 handles storage + encryption
+
+|Async document processing queue (Celery workers)
+|Senior Dev 1
+|Requires monitoring hooks from Phase 0
+
+|Docling-Graph extraction pipeline (production-grade)
+|Senior Dev 1
+|Promotes Phase 0 POC to production; error handling, retry logic
+
+|AFC v2 scoring layer (production)
+|Senior Dev 1
+|6-signal scoring with routing thresholds (<<sect-doc-processing>>)
+
+|Pydantic template schemas: Closing Disclosure v1.0, Loan Estimate v1.0
+|Senior Dev 1
+|Graph ID field: loan_number; ~15–20 HMDA fields per template; register in model registry
+
+|Graph node/edge extraction (cross-document corroboration: CD ↔ LE)
+|Senior Dev 1
+|Compute graph_corrob_score for AFC v2 formula (<<sect-docling-graph>>)
+
+3+|*Core Data Model & Audit Trail*
+|Data model implementation (all core entities per <<sect-data-model>>)
+|Senior Dev 2
+|Tenants, audits, audit packs, evidence, findings, events
+
+|Immutable audit trail: append-only events, RFC 8785 canonical JSON, SHA-256 hash chain, global monotonic sequence IDs
+|Senior Dev 2
+|Implements Minimal Defensible tier (<<sect-decision-d3>>); round-trip verification tests mandatory
+
+|Audit pack engine: declarative JSON loader, rule schema, validation
+|Senior Dev 2
+|Supports pack instantiation + field coverage matrix (<<sect-decision-d4>>)
+
+|Audit state machine (created → extracted → reviewed → finalized)
+|Senior Dev 2
+|Event-sourced; each transition is an immutable event
+
+3+|*UI & Evidence Management*
+|Evidence entity + tagging schema + link creation UI
+|Junior Dev
+|Drag-drop, search; depends on data model
+
+|Manual extraction form + field-level UI states
+|Junior Dev
+|Schema mapper placeholder for Phase 1b
+
+|Reviewer assignment + notifications (email / in-app)
+|Junior Dev
+|Depends on auth + state machine
+
+3+|*Model Registry*
+|`ai.model_registry` Postgres table + CRUD API endpoints
+|Junior Dev
+|Lifecycle state machine: draft → staging → approved → deprecated (<<sect-model-registry>>)
+
+|Seed production models (LLM, prompt templates, schema matcher, Pydantic templates)
+|Junior Dev
+|Call-time gating: fail closed if no approved model found
+
+3+|*Pack Definitions*
+|HMDA audit pack — complete field coverage, rule definitions, test cases
+|Analyst
+|CD-supported fields with AFC targets; clearly label non-CD fields
+
+|CRA audit pack — initial draft
+|Analyst
+|Parallel to HMDA completion
+|===
+
+==== Phase 1b: Intelligence & Scoring (Apr 28 – May 23)
+
+*Goal:* Add the intelligence layer — automated schema mapping, confidence-scored findings, AI-generated narratives, and manager approval workflows.
+This is where the two development tracks (data pipeline + platform) converge.
+
+[cols="40%,20%,40%",options="header"]
+|===
+|Work Item |Owner |Notes / Dependencies
+
+3+|*Schema Mapping & Confidence*
+|Schema mapping service: heuristic matcher v1 (string similarity + type compat + HMDA/CD synonym dictionary)
+|Senior Dev 1
+|Implements Decision D2 (<<sect-decision-d2>>); 5-pattern taxonomy
+
+|Graph edge boosting for mapping confidence (node property matching + entity type filtering)
+|Senior Dev 1
+|Depends on Phase 1a graph extraction (<<sect-docling-graph>>)
+
+|Confidence scoring API + routing logic (≥0.90 auto-accept, 0.60–0.90 review, <0.60 manual)
+|Senior Dev 1
+|Two-layer design: raw signals → calibrated decision score
+
+|PII redaction pipeline (names, SSN, account numbers, addresses)
+|Senior Dev 1
+|Must run before all LLM API calls (<<sect-ai-governance>>)
+
+3+|*Rules Engine & Findings*
+|Rules engine integration (scoring logic per pack rule definitions)
+|Senior Dev 2
+|Depends on pack engine + schema mapping output
+
+|Finding creation + severity assignment + audit events
+|Senior Dev 2
+|State machine transitions; finding attribution by origin (regulatory, policy, supplemental)
+
+|AI narrative generation + caching + human approval flow
+|Senior Dev 2
+|LLM prompt templates via model registry; rate limiting; cost monitoring
+
+|Provenance logging: 21-field schema per AI call (<<sect-ai-governance>>)
+|Senior Dev 2
+|Model ID, prompt hash, input/output hash, reviewer disposition; joins to model registry
+
+3+|*Manager Workflow*
+|Manager escalation UI + approval gates
+|Junior Dev
+|Depends on finding states + audit events
+
+|Justification capture + audit trail events
+|Junior Dev
+|Compensating events for corrections
+
+3+|*AI Governance UI*
+|Mapping UI + override workflow
+|Junior Dev
+|Evaluate suggestion, select correct mapping; captures training data
+
+|AI-Generated badges, confidence scores, mandatory disclaimers, approval buttons
+|Junior Dev
+|3 required disclaimers per AI output (<<sect-ai-governance>>)
+
+|Drift monitoring dashboard (override rate, confidence accuracy, hallucination rate)
+|Junior Dev
+|Basic alerting; weekly/daily thresholds
+
+3+|*Pack Definitions & Validation*
+|HMDA pack — schema mapping validation on test corpus
+|Analyst
+|Target: ≥95% precision at conf_mapping ≥0.90 on CD-supported fields
+
+|CRA + ECOA pack definitions — complete
+|Analyst
+|Rule definitions, field mappings, test cases
+
+|Reviewer burden testing (session time, override rate)
+|Analyst
+|Target: ≤25% override rate, ≤30 min session for standard CD
+|===
+
+==== Phase 1c: Hardening & Launch Prep (May 26 – Jun 27)
+
+*Goal:* Harden the system for production, onboard beta customers, and validate security and compliance posture.
+This phase has a 5-week window to absorb UAT feedback and bug fixes.
+
+[cols="40%,20%,40%",options="header"]
+|===
+|Work Item |Owner |Notes / Dependencies
+
+3+|*Performance & Deployment*
+|Extraction latency optimization (<2s/page target)
+|Senior Dev 1
+|Profiling, caching, async processing tuning
+
+|vLLM self-hosted Mistral deployment (private VPC, mTLS)
+|Senior Dev 1
+|Only if Phase 0 evaluation approved; canary rollout (5–10% traffic); see <<sect-model-deployment>>
+
+|Model deployment pipeline: allowlist registry, structured output enforcement, JSON repair
+|Senior Dev 1
+|Deny-by-default model loading; provenance per inference call
+
+|WORM anchor storage for audit trail (cryptographic anchor points)
+|Senior Dev 1
+|Validates anchor data before write; dual-write pattern (DB + WORM); see <<sect-decision-d3>>
+
+3+|*Reporting & Export*
+|Audit summary report template (HTML/PDF export)
+|Senior Dev 2
+|Findings list, evidence index, confidence breakdown
+
+|Exam-ready bundle export: graph CSV + Cypher formats as evidence artifacts
+|Senior Dev 2
+|See <<sect-exam-ready-bundle>> and <<sect-docling-graph>>
+
+|End-to-end integration testing (all workflows)
+|Senior Dev 2
+|Test automation framework; 100+ test audits
+
+|Bug fixes from UAT feedback
+|Senior Dev 2
+|Buffer time built into 5-week phase
+
+3+|*Testing & Documentation*
+|Test automation (unit, integration, regression)
+|Junior Dev
+|Covers all critical paths; CI/CD integration
+
+|API documentation + SDK examples
+|Junior Dev
+|Auto-generated where possible
+
+|User guides + FAQ
+|Junior Dev
+|Video walkthroughs optional
+
+|UI polish + accessibility review
+|Junior Dev
+|Based on beta customer feedback
+
+3+|*Security & Compliance (External)*
+|Penetration testing + vulnerability scan (OWASP Top 10)
+|External partner
+|Budget: $15K–$25K; schedule early in phase
+
+|Data residency + encryption audit
+|External partner
+|All data stores; RLS policy validation
+
+3+|*Beta Onboarding & Launch Readiness*
+|Beta customer setup (3–5 customers): licensing, pack provisioning
+|Analyst
+|Requires pricing model finalized (<<sect-pricing>>)
+
+|Training materials + customer documentation
+|Analyst
+|Workflow walkthroughs, FAQ, known limitations
+
+|UAT coordination + feedback triage
+|Analyst
+|Weekly feedback loops with beta customers
+
+|SOC 2 readiness review
+|Analyst
+|Logging, access controls, audit trail completeness
+
+|Third-party AI vendor validation (contractual exam access, no-training clauses, data residency)
+|Analyst
+|Must be complete before production launch (<<sect-ai-governance>>)
+
+|Go/no-go checklist preparation + board review
+|Analyst
+|See <<sect-delivery-launch-readiness>>
 |===
 
 === Critical Path & Dependencies
 
-*Critical Path (longest dependency chain):* 1.
-Phase 0: Docling integration + LLM setup (Week 1–2) 2.
-Phase 1a: Document processing pipeline (Week 2–4) 3.
-Phase 1b: Schema matcher quality + LLM narratives (Week 5–8) 4.
-Phase 1c: Performance tuning & security review (Week 9–12)
+==== Two-Track Development Model
 
-*Parallel workstreams:*
+The MVP delivery follows two parallel tracks that converge in Phase 1b when scoring combines extraction results with pack rules to produce findings.
 
-* UX prototyping (Phase 0) → UI implementation (Phase 1a–b)
-* Data/ML model training (Phase 0–1a) → Integration testing (Phase 1b–c)
-* Compliance review (Phase 1c) → Documentation (Phase 1c)
+....
+Track A: Data Pipeline (Senior Dev 1)          Track B: Platform & Workflow (Senior Dev 2)
+──────────────────────────────────              ────────────────────────────────────────────
+Phase 0:                                        Phase 0:
+  Docling-Graph + AFC POC                         Infrastructure, DB, API scaffold
+  LLM integration POC                             Auth, RLS, monitoring
 
-*Go/No-Go Gates:*
+Phase 1a:                                       Phase 1a:
+  Ingestion pipeline (production)                 Data model, audit trail
+  Graph extraction + AFC scoring                  Pack engine, state machine
+  Pydantic templates                              Reviewer workflow
 
-* *Phase 0 exit gate (Mar 31):* Docling extracts >95% accuracy on test corpus; LLM API latency <1s
-* *Phase 1a exit gate (Apr 30):* Document ingestion processes 100 test audits end-to-end; Reviewer UI usable in UAT
-* *Phase 1b exit gate (May 31):* Scoring engine produces findings with >85% precision on test packs; AI narratives reviewed <2 min each
-* *Phase 1c GO/NO-GO decision (Jun 15):* Beta customer sign-off on at least 3 critical workflows; zero critical security issues
+                    ╲                           ╱
+                     ╲                         ╱
+Phase 1b:             ╲── CONVERGENCE ────────╱
+  Schema mapping ──────→ Rules engine + Findings
+  Confidence scoring ──→ AI narratives + Approval
+  PII redaction ───────→ Provenance logging
 
-=== Resourcing Plan (MVP Team)
+Phase 1c:                                       Phase 1c:
+  Performance tuning                              Reporting + export
+  vLLM deployment                                 Integration testing
+  WORM anchors                                    Bug fixes
+....
 
-[cols="24%,39%,17%,10%,10%",options="header"]
+Junior Dev supports both tracks throughout, focusing on UI, CI/CD, and model registry.
+Analyst works in parallel on pack definitions, test data, and UAT — feeding both tracks.
+
+==== Dependency Chain (Critical Path)
+
+The longest dependency chain runs through Track A:
+
+[arabic]
+. Docling-Graph POC (Phase 0, Week 1–3) — *must validate before committing to production pipeline*
+. Document processing pipeline (Phase 1a, Week 4–7) — depends on validated extraction
+. Schema mapping + confidence scoring (Phase 1b, Week 8–11) — depends on extraction output + pack rules
+. Performance tuning + security review (Phase 1c, Week 12–16) — depends on working system
+
+If any item on this chain slips, the launch date is at risk.
+
+==== Parallel Workstreams
+
+* *Infrastructure + auth* (Phase 0) runs parallel to extraction POC
+* *UI implementation* (Junior Dev) runs continuously from Week 2 onward, building against API contracts
+* *Pack definitions* (Analyst) run continuously from Week 1, providing test data for both tracks
+* *Model registry* (Phase 1a) is independent of extraction pipeline and can proceed in parallel
+* *Compliance + onboarding work* (Phase 1c) runs parallel to engineering hardening
+
+[[sect-delivery-go-no-go]]
+=== Go/No-Go Gate
+
+There is one formal go/no-go gate in the MVP delivery: the *Phase 0 Exit Gate*.
+All other quality and risk criteria are tracked in the risk register (<<sect-risks-constraints>>).
+
+==== Phase 0 Exit Gate (March 28, 2026)
+
+*Purpose:* Validate that the Docling-Graph extraction strategy (Decision D1, <<sect-decision-d1>>) produces acceptable results on real HMDA documents before committing 13 weeks of development to building on it.
+
+*Go criteria:*
+
+* Docling-Graph + AFC v2 achieves ≥85% precision on critical HMDA fields (borrower name, loan amount, property address, action taken, loan type) at AFC ≥0.85
+* Deterministic reproducibility: same input → same output across runs
+* Bounding-box alignment ≥90% overlap with ground truth
+* LLM API integration functional via LiteLLM with latency <2s per extraction call
+
+*Kill criteria:*
+
+* <70% precision at AFC ≥0.85 on critical fields
+* Cloud OCR fallback required for >40% of pages
+* Non-deterministic output across runs
+
+*If killed:* Pivot to Azure AI Document Intelligence as primary extraction with Docling relegated to pre-processing.
+This pivot adds ~2 weeks to Phase 1a timeline.
+See Decision D1 (<<sect-decision-d1>>) for full pivot rationale.
+
+[[sect-delivery-launch-readiness]]
+==== Launch Readiness Checklist (June 2026)
+
+Launch readiness is assessed continuously during Phase 1c rather than at a single gate.
+The following must all be true before production launch:
+
+*Engineering:*
+
+* All P0 functional requirements (<<sect-product-requirements>>) pass end-to-end testing
+* Extraction latency <2s/page (P95)
+* Zero critical or high-severity security findings from penetration test
+* Audit trail hash chain verifiable end-to-end (round-trip test)
+* Model registry contains approved entries for all production AI components
+
+*Compliance:*
+
+* Third-party AI vendor agreements include exam access and no-training clauses (<<sect-ai-governance>>)
+* SOC 2 readiness review complete with no blocking gaps
+* PII redaction validated — zero PII leakage to external LLM providers
+* All AI-generated content carries required disclaimers and provenance metadata
+
+*Customer:*
+
+* At least 3 beta customers have completed UAT on critical workflows
+* Training materials and user documentation available
+* Known limitations documented and communicated to beta customers
+
+*Risk:*
+
+* No risk in <<sect-risks-constraints>> with score ≥15 has an unmitigated status
+* Override rate on CD-supported schema mappings ≤25%
+
+=== External Procurement
+
+[cols="35%,35%,30%",options="header"]
 |===
-|Role |Headcount |FTE |Responsibilities |Ramp-Up
-|*Full-stack Engineer* |3–4 |3.5 |API, state machine, workflow UI, DB schema, integration testing |Week 1
-|*Data/ML Engineer* |1–2 |1.5 |Docling integration, schema matcher, feature engineering, evaluation |Week 2
-|*AI Engineer* |1 |1.0 |LLM integration, prompt templates, cost monitoring, drift detection |Week 1
-|*UX/Product Designer* |1 |1.0 |Information architecture, wireframes, UI implementation, user research |Week 1 (prep)
-|*QA/Test Engineer* |1 |1.0 |Test automation, UAT coordination, performance testing, regression suite |Week 3
-|*Compliance SME* |0.5 |0.5 |Audit trail design, regulatory mapping, SOC 2 prep, PII handling |Week 4 (phase 1b)
-|*DevOps/SRE* |0.5 |0.5 |Infra setup, monitoring, CI/CD, incident response |Week 1
-|*Product Lead / PM* |1 |1.0 |Roadmap, prioritization, stakeholder comms, go/no-go decisions |Ongoing
-|*Total* |*9–10 FTE* |*9.5 FTE* | |
+|Item |Purpose |Estimated Cost
+|Security partner |Penetration testing + vulnerability assessment (Phase 1c) |$15K–$25K
+|Docling technical consultation |On-call support for Docling-Graph integration issues (if needed) |$5K–$10K
+|Customer success consultant |Beta customer onboarding + training support (Phase 1c) |$2K–$5K
 |===
-
-*Procurement for external support:*
-
-* Security partner: Penetration testing (Phase 1c, ~$15K–$25K)
-* Docling support (if needed): Technical consultation ($5K–$10K)
-* Customer success consultant: Beta onboarding & training (Phase 1c, $2K–$5K)
