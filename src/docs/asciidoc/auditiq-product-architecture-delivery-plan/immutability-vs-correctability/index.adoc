@@ -212,3 +212,71 @@ You can see what was finalized, what changed, and why.”
 * <<sect-audit-trail-event-store>>: Full event schema, hash computation, anchor implementation, operational integrity controls
 * <<sect-decision-d3, Decision D3>>: Design tier rationale, failure modes, three-tier architecture
 * Audit Trail Defensibility Report: Detailed threat model, risk heat map, and recommended design changes
+
+'''
+
+[[wf-audit-trail]]
+=== WF-26: Audit Trail Viewer
+
+*Purpose:* Browse and search the immutable audit event log.
+Every system action (extraction, mapping, finding creation, approval, state transition) is recorded with RFC 8785 hash chain integrity.
+
+*Roles:* Manager, Audit Lead, IT Admin, Compliance Officer.
+
+*Flowbite components:* Table, Filter, Search, Badge, Code Block, Button.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Audit Trail Viewer</b>
+  { Home > Admin > Audit Trail }
+  ===
+  { ^Audit: All^ | ^Event Type: All^ | ^Actor: All^ | "2026-03-01" to "2026-03-05" | "Search...          " [Search] }
+  ---
+  {#
+    <b>Event ID</b> | <b>Timestamp</b> | <b>Type</b> | <b>Actor</b> | <b>Target</b> | <b>Details</b> | <b>Hash</b>
+    EVT-342 | 03-05 14:30:15 | human_approval | Jane Smith | F-001 | Finding approved | a3f8...
+    EVT-341 | 03-05 14:29:02 | narrative_generated | System (AI) | F-001 | AI draft created | b7d4...
+    EVT-340 | 03-05 14:15:44 | finding_created | Rules Engine | F-001 | HMDA-R001 fired | c9e2...
+    EVT-339 | 03-05 13:45:12 | mapping_approved | Jane Smith | Rec 10045 | 50 fields mapped | d1f5...
+    EVT-338 | 03-05 13:30:08 | extraction_complete | Docling v1.2 | CD_10045 | 42 fields, AFC avg 0.89 | e3g7...
+  }
+  ---
+  { Showing 1–5 of 342 events | [< Prev] [1] [2] ... [69] [Next >] }
+  ---
+  {+
+    <b>Event Detail: EVT-342</b>
+    {#
+      Event ID | EVT-342 (UUID: 880e8400...)
+      Type | human_approval
+      Timestamp | 2026-03-05T14:30:15.123Z
+      Actor | Jane Smith (Reviewer)
+      Target | Finding F-001 (AUD-2026-001)
+      . | .
+      Previous Hash | d1f5e6c7... (EVT-341)
+      Event Hash | a3f8c2e1...
+      Chain Valid | <color:Green>YES — verified</color>
+    }
+  }
+  ---
+  {+
+    <b>Chain Integrity</b>
+    {
+      Total Events: 342 | Chain Status: <color:Green>VALID — no gaps detected</color>
+      Last Verification: 2026-03-05 15:00 UTC
+      [Run Verification Now] | [Export Audit Log (JSON)] | [Export Audit Log (CSV)]
+    }
+  }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Filters:* by audit, event type (20+ types), actor, date range, and free-text search
+* Clicking an event row expands the detail panel showing full event payload and hash chain position
+* *Chain Valid* field shows whether the event's hash correctly chains to its predecessor (RFC 8785)
+* *[Run Verification Now]* performs full hash chain round-trip verification (<<sect-appendices, Appendix C>>)
+* *[Export]* generates PII-redacted audit log in JSON or CSV format for regulatory submission
+* Hash chain integrity is verified automatically on a nightly schedule; alerts if gaps detected

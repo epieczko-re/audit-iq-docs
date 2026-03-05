@@ -109,6 +109,138 @@ interface ValidationResult {
 |Flag with warning; allow user to choose which to keep
 |===
 
+
+'''
+
+[[wf-doc-upload]]
+=== WF-04: Document Upload
+
+*Purpose:* Upload loan documents (PDF, TIFF, scanned images) for extraction.
+Supports drag-and-drop, batch upload (ZIP), and per-document classification.
+
+*Roles:* Reviewer, Manager, Audit Lead.
+
+*Flowbite components:* Dropzone, Table, Badge, Progress Bar, Button.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Document Upload</b>
+  { Home > Audits > AUD-2026-001 > Documents > Upload }
+  ===
+  {+
+    <b>Upload Documents</b>
+    {
+      .
+      .
+      [ Drag & drop PDF, TIFF, or ZIP files here ]
+      [ or click to browse ]
+      .
+      Accepted formats: PDF, TIFF, JPEG, PNG, ZIP
+      Max file size: 50 MB per file | Max batch: 500 MB
+      .
+    }
+  }
+  ---
+  {+
+    <b>Uploaded Files</b> (6 files)
+    {#
+      <b>Filename</b> | <b>Size</b> | <b>Type (Auto)</b> | <b>Confidence</b> | <b>Loan #</b> | <b>Status</b> | <b>Actions</b>
+      CD_Loan_10045.pdf | 2.1 MB | <color:Green>Closing Disclosure</color> | 0.97 | 10045 | <color:Green>Ready</color> | [Reclassify] [Remove]
+      1003_Loan_10045.pdf | 4.3 MB | <color:Green>URLA (1003)</color> | 0.93 | 10045 | <color:Green>Ready</color> | [Reclassify] [Remove]
+      Appraisal_10045.pdf | 8.7 MB | <color:Green>Appraisal</color> | 0.91 | 10045 | <color:Green>Ready</color> | [Reclassify] [Remove]
+      scan_page_001.tiff | 1.8 MB | <color:Orange>Unknown</color> | 0.42 | — | <color:Orange>Needs Classification</color> | [Classify] [Remove]
+      title_search.pdf | 3.2 MB | <color:Green>Title Document</color> | 0.88 | 10045 | <color:Green>Ready</color> | [Reclassify] [Remove]
+      loan_bundle.zip | 45 MB | <color:RoyalBlue>ZIP (12 files)</color> | — | — | <color:RoyalBlue>Extracting...</color> | [Cancel]
+    }
+  }
+  ---
+  {+
+    <b>Loan Record Matching</b>
+    {
+      Auto-match method: | (X) Loan number in filename  () OCR-extracted loan number  () Manual assignment
+      Unmatched documents: | <color:Orange>1 document requires manual loan assignment</color>
+    }
+  }
+  ===
+  { [<< Back] | . | . | [Match Documents to Records] | [Start Extraction >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Document classification* runs automatically on upload using filename heuristics and first-page OCR
+* *Confidence* column shows classification confidence; orange (<0.85) items need manual classification
+* *[Reclassify]* opens dropdown: Closing Disclosure, Loan Estimate, URLA (1003), Appraisal, Title Document, Other
+* *[Start Extraction >>]* begins Docling processing pipeline; navigates to <<wf-processing-status>>
+* ZIP files are auto-extracted and each contained file classified individually
+
+'''
+
+[[wf-processing-status]]
+=== WF-05: Processing Status
+
+*Purpose:* Monitor document extraction progress at the page and field level.
+Shows Docling processing status, page grades, fallback triggers, and per-document field counts.
+
+*Roles:* All roles with access to the audit.
+
+*Flowbite components:* Table, Progress Bar, Badge, Accordion, Alert.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Processing Status</b>
+  { Home > Audits > AUD-2026-001 > Documents > Processing }
+  ===
+  {+
+    <b>Overall Progress</b>
+    {#
+      <b>Metric</b> | <b>Value</b>
+      Documents total      | 127
+      Documents processed  | 99 (78%)
+      Documents in queue   | 28
+      Avg processing time  | 4.2s / document
+      Fallbacks triggered  | 12 pages (cloud OCR)
+    }
+  }
+  ---
+  {+
+    <b>Per-Document Status</b>
+    {#
+      <b>Document</b> | <b>Type</b> | <b>Pages</b> | <b>Status</b> | <b>Page Grade</b> | <b>Fields</b> | <b>Fallbacks</b> | <b>Actions</b>
+      CD_Loan_10045.pdf | Closing Disclosure | 5 | <color:Green>Complete</color> | EXCELLENT | 42/42 | 0 | [Review Fields]
+      1003_Loan_10045.pdf | URLA (1003) | 8 | <color:Green>Complete</color> | GOOD | 67/71 | 1 pg | [Review Fields]
+      Appraisal_10045.pdf | Appraisal | 24 | <color:RoyalBlue>Processing</color> | — | 15/38 | — | [View Progress]
+      scan_page_001.tiff | Unknown | 1 | <color:Orange>Fallback</color> | POOR | 3/12 | 1 pg | [Review Fields]
+      title_search.pdf | Title Document | 6 | <color:Gray>Queued</color> | — | — | — | —
+    }
+  }
+  ---
+  {+
+    <b>Fallback Details</b>
+    {#
+      <b>Document</b> | <b>Page</b> | <b>Reason</b> | <b>Fallback Method</b> | <b>Result</b>
+      1003_Loan_10045.pdf | Page 6 | Page grade: FAIR | Cloud OCR (Azure) | <color:Green>Improved</color>
+      scan_page_001.tiff | Page 1 | Page grade: POOR | Cloud OCR (Azure) | <color:Orange>Partial</color>
+    }
+  }
+  ===
+  { [<< Back to Documents] | [Retry Failed] | [Continue to Mapping >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Page Grade* reflects Docling conversion quality: EXCELLENT, GOOD, FAIR, POOR (<<sect-doc-processing>>)
+* *Fallback* column shows pages where cloud OCR was triggered (page grade POOR/FAIR or >30% key fields below AFC 0.50)
+* *[Review Fields]* navigates to <<wf-extraction-review>> for that document
+* Processing runs asynchronously; page refreshes via polling or WebSocket updates
+
 '''
 
 ==== Epic 2: Document Extraction (Docling/OCR)
@@ -234,6 +366,158 @@ end
 Per-page: ~0.5–2s (standard), ~3–8s (VLM).
 Cloud OCR fallback adds 1–3s/page.
 
+
+'''
+
+[[wf-extraction-review]]
+=== WF-06: Field Extraction Review
+
+*Purpose:* Core review screen for validating extracted field values.
+Split-pane layout: document viewer on left, extracted fields table on right with AFC confidence badges and accept/override actions.
+
+*Roles:* Reviewer (primary), Senior Reviewer.
+
+*Flowbite components:* Split Pane, Table, Badge, Button, Tooltip, Alert.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Field Extraction Review: CD_Loan_10045.pdf</b>
+  { Home > Audits > AUD-2026-001 > Documents > CD_Loan_10045 > Extraction Review }
+  ===
+  {
+    {+
+      <b>Document Viewer</b>
+      ---
+      Page [1] of 5 | [< Prev] [Next >]
+      [Zoom -] 100% [Zoom +] | [Search]
+      .
+      .
+      (Document rendered here with
+       field bounding boxes overlaid.
+       Clicking a field in the right
+       panel highlights it in the
+       document view.)
+      .
+      .
+      .
+      .
+    }
+    |
+    {+
+      <b>Extracted Fields</b> (42 fields)
+      ---
+      {/ <b>All</b> | <b>Review (8)</b> | <b>Manual (2)</b> | <b>Confirmed (32)</b> }
+      ---
+      {#
+        <b>Field</b> | <b>Value</b> | <b>AFC</b> | <b>Action</b>
+        Borrower Name | JOHN DOE | <color:Green>0.97</color> | <color:Green>Auto</color>
+        Loan Amount | $250,000 | <color:Green>0.94</color> | <color:Green>Auto</color>
+        Interest Rate | 6.25% | <color:Green>0.92</color> | <color:Green>Auto</color>
+        Property Address | 123 Main St | <color:Orange>0.78</color> | [Accept] [Edit]
+        Loan Type | Conventional | <color:Orange>0.72</color> | [Accept] [Edit]
+        Closing Date | 02/15/2026 | <color:Orange>0.68</color> | [Accept] [Edit]
+        PMI Amount | — | <color:Red>0.31</color> | [Enter Value]
+        Co-Borrower Name | — | <color:Red>0.22</color> | [Enter Value]
+      }
+      ---
+      {+
+        <b>AFC Breakdown</b> (selected: Property Address)
+        {#
+          <b>Signal</b> | <b>Weight</b> | <b>Score</b>
+          docling_page_grade | 0.12 | 0.95
+          ocr_segment_confidence | 0.23 | 0.82
+          pattern_validity | 0.20 | 0.70
+          layout_anchor_consistency | 0.18 | 0.75
+          cross_doc_redundancy | 0.12 | 0.60
+          graph_corrob_score | 0.15 | 0.85
+          <b>Composite AFC</b> | <b>1.00</b> | <b><color:Orange>0.78</color></b>
+        }
+      }
+    }
+  }
+  ===
+  { [<< Prev Document] | Fields: 32 confirmed, 8 review, 2 manual | [Save & Continue >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Split-pane* layout: document viewer (left, 55% width) and field panel (right, 45% width); resizable divider
+* *Tabs* filter fields by routing status: All, Review (AFC 0.50–0.84), Manual (AFC <0.50), Confirmed (AFC ≥0.85 or manually accepted)
+* *[Accept]* confirms extracted value as-is; *[Edit]* opens inline text input for correction
+* *[Enter Value]* for manual-entry fields opens text input (no extracted value shown)
+* *AFC Breakdown* panel shows the 6 weighted signals for the selected field (Flowbite Accordion)
+* Clicking a field row highlights the corresponding bounding box in the document viewer
+* *Extraction method badge* shows provenance: `Docling`, `Cloud OCR Fallback`, or `Manual Entry`
+* Color system: green (≥0.85), orange (0.50–0.84), red (<0.50) per <<sect-glossary, Canonical Glossary>>
+
+'''
+
+[[wf-doc-viewer]]
+=== WF-07: Document Viewer
+
+*Purpose:* Full-page document viewing with search, zoom, annotations, and field overlay.
+Used standalone or embedded in extraction review and finding detail screens.
+
+*Roles:* All roles.
+
+*Flowbite components:* Toolbar, Search Input, Button Group, Zoom Controls.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Document Viewer: CD_Loan_10045.pdf</b>
+  { Home > Audits > AUD-2026-001 > Documents > CD_Loan_10045 }
+  ===
+  {
+    { [<< Prev Page] | Page [1] of 5 | [Next Page >>] | . | [Zoom -] [100%] [Zoom +] | . | "Search document...        " [Find] | . | [Download] [Print] }
+  }
+  ---
+  {+
+    .
+    .
+    (Full document page rendered here.)
+    .
+    (Field bounding boxes shown as colored overlays:)
+    (  Green border = high confidence extraction)
+    (  Orange border = needs review)
+    (  Red border = extraction failed)
+    .
+    (Hovering a bounding box shows tooltip:)
+    (  Field: Loan Amount)
+    (  Extracted: $250,000)
+    (  AFC: 0.94)
+    (  Method: Docling)
+    .
+    .
+  }
+  ---
+  {
+    {#
+      <b>Document Metadata</b> | .
+      Type: Closing Disclosure | Loan: 10045
+      Pages: 5 | Size: 2.1 MB
+      Uploaded: 2026-02-15 14:30 UTC | By: Jane Smith
+      SHA-256: a3f8c2... | Extraction: Docling v1.2
+    }
+  }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Zoom* range: 50%–400% with pinch-to-zoom on touch devices
+* *Search* highlights matching text with navigation between results
+* *Bounding box overlays* color-coded by AFC confidence tier
+* *Tooltip on hover* shows field name, extracted value, AFC score, and extraction method
+* *Keyboard navigation:* Left/Right arrows for page navigation, +/- for zoom
+* Document loads in ≤3 seconds per performance NFR (<<sect-architecture-overview>>)
+
 '''
 
 ==== Epic 3: Schema Mapping + Mapping UI
@@ -340,6 +624,140 @@ flowchart TD
 |CD-only, mixed extraction |~15–20 CD fields |20–30% |15–25 min
 |Full HMDA (Phase 2) |~110 fields |15–25% |30–45 min
 |===
+
+
+'''
+
+[[wf-mapping-review]]
+=== WF-08: Schema Mapping Review
+
+*Purpose:* Review and approve AI-suggested field mappings from source documents to HMDA/MISMO target schema.
+Two-layer confidence routing: auto-accept (≥0.95), human review (0.70–0.94), manual entry (<0.70).
+
+*Roles:* Reviewer (primary), Senior Reviewer.
+
+*Flowbite components:* Table, Badge, Button, Dropdown, Tooltip, Accordion, Modal.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Schema Mapping Review: AUD-2026-001</b>
+  { Home > Audits > AUD-2026-001 > Mappings }
+  ===
+  {+
+    <b>Mapping Summary</b>
+    {#
+      <b>Auto-Accepted</b> | <b>Needs Review</b> | <b>Manual Entry</b> | <b>Total Fields</b> | <b>Est. Session Time</b>
+      <color:Green>38 (76%)</color> | <color:Orange>9 (18%)</color> | <color:Red>3 (6%)</color> | 50 | ~12 min
+    }
+  }
+  ---
+  {/ <b>Needs Review (9)</b> | <b>Manual Entry (3)</b> | <b>Auto-Accepted (38)</b> | <b>All (50)</b> }
+  ---
+  {#
+    <b>Target Field (MISMO)</b> | <b>Suggested Source</b> | <b>Pattern</b> | <b>Score</b> | <b>Doc Coverage</b> | <b>Alternatives</b> | <b>Action</b>
+    applicant_first_name | Borrower First Name (CD p1) | Exact | <color:Orange>0.88</color> | CD | ^2 alternatives^ | [Accept] [Override]
+    loan_purpose_type | Purpose of Loan (1003 s1) | Synonym | <color:Orange>0.82</color> | 1003 | ^1 alternative^ | [Accept] [Override]
+    property_county | County (CD p1) | Abbreviation | <color:Orange>0.79</color> | CD | ^3 alternatives^ | [Accept] [Override]
+    rate_spread | APR Spread (CD p3) | Derived | <color:Orange>0.74</color> | CD | ^1 alternative^ | [Accept] [Override]
+    denial_reason_1 | — | — | <color:Red>0.52</color> | Manual Only | — | [Select Field]
+  }
+  ---
+  {+
+    <b>Mapping Detail</b> (selected: applicant_first_name)
+    {
+      {
+        <b>Confidence Breakdown</b>
+        {#
+          <b>Signal</b> | <b>Weight</b> | <b>Score</b>
+          name_similarity (Jaro-Winkler) | 0.30 | 0.92
+          synonym_match | 0.25 | 0.85
+          type_compatibility | 0.20 | 0.95
+          document_section_context | 0.15 | 0.80
+          historical_acceptance | 0.10 | 0.78
+          <b>Layer 1 Raw</b> | . | <b>0.87</b>
+          <b>Layer 2 Calibrated</b> | . | <b><color:Orange>0.88</color></b>
+        }
+      }
+      |
+      {
+        <b>Source Evidence</b>
+        Document: Closing Disclosure (page 1)
+        Section: Borrower Information
+        Extracted Value: "JOHN"
+        AFC Score: 0.97
+        ---
+        <b>Alternatives</b>
+        1. Co-Borrower First Name (CD p1) — 0.61
+        2. Seller First Name (CD p4) — 0.34
+      }
+    }
+  }
+  ---
+  {
+    [] Update synonym dictionary with overrides
+    .
+    { [<< Back] | . | . | Override reason: "                                    " | [Save All Mappings] | [Continue to Rules >>] }
+  }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Tabs* group fields by routing tier (Flowbite Tabs): Needs Review, Manual Entry, Auto-Accepted, All
+* *Score* column shows calibrated Layer 2 score with color badge: green (≥0.95), orange (0.70–0.94), red (<0.70)
+* *Pattern* column shows matching method: Exact, Abbreviation, Synonym, Derived, Multi-Source
+* *Doc Coverage* badge: "CD" (Closing Disclosure), "1003", "Appraisal", "Title", "Manual Only"
+* *[Accept]* confirms suggestion (~10s per field); *[Override]* opens alternatives dropdown (~45s per field)
+* *[Select Field]* for manual-entry fields opens full target schema dropdown
+* *Confidence Breakdown* accordion shows Layer 1 signals and Layer 2 calibrated score
+* *Override reason* text field required when overriding a suggestion (logged to audit trail)
+* *Synonym dictionary checkbox* — when checked, overrides feed back to improve future matching
+* Estimated session time calculated from field counts by routing tier
+
+'''
+
+[[wf-synonym-dict]]
+=== WF-09: Synonym Dictionary
+
+*Purpose:* Manage the curated synonym dictionary used by the schema matcher.
+Reviewers can add, edit, and deactivate synonym pairs that improve future mapping suggestions.
+
+*Roles:* Senior Reviewer, Manager, Data Architect.
+
+*Flowbite components:* Table, Form, Modal, Badge, Search.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Synonym Dictionary</b>
+  { Home > Admin > Synonym Dictionary }
+  ===
+  { "Search synonyms...                    " [Search] | . | [+ Add Synonym Pair] }
+  ---
+  {#
+    <b>Source Term</b> | <b>Target Term (MISMO)</b> | <b>Context</b> | <b>Usage Count</b> | <b>Status</b> | <b>Added By</b> | <b>Actions</b>
+    Borrower First Name | applicant_first_name | CD, 1003 | 142 | <color:Green>Active</color> | Jane Smith | [Edit] [Deactivate]
+    Purpose of Loan | loan_purpose_type | 1003 | 87 | <color:Green>Active</color> | Jane Smith | [Edit] [Deactivate]
+    APR Spread | rate_spread | CD | 23 | <color:Green>Active</color> | Auto (override) | [Edit] [Deactivate]
+    Loan Amt | loan_amount | CD | 5 | <color:Orange>Pending Review</color> | Bob Johnson | [Approve] [Reject]
+    Co-Borr Name | coapplicant_name | 1003 | 0 | <color:Gray>Deactivated</color> | Jane Smith | [Reactivate]
+  }
+  ---
+  { Showing 1–5 of 234 entries | [< Prev] [1] [2] [3] [Next >] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *[+ Add Synonym Pair]* opens modal with: Source Term, Target Term (MISMO dropdown), Context (multi-select: CD, 1003, Appraisal, Title)
+* *Usage Count* shows how many times this synonym contributed to an accepted mapping
+* Synonyms from reviewer overrides enter as "Pending Review" status; Senior Reviewer must approve
+* *[Deactivate]* soft-deletes (preserves history); *[Reactivate]* restores
 
 '''
 
@@ -650,6 +1068,378 @@ sequenceDiagram
 
 *Segregation of duties:* Before closing a finding, system checks: if `current_user == created_by`, then deny with error message and log violation attempt.
 
+
+'''
+
+[[wf-findings-queue]]
+=== WF-10: Findings Review Queue
+
+*Purpose:* Central queue for reviewing all findings generated by the rules engine.
+Sortable and filterable by severity, confidence, status, and age.
+Findings with AI-generated narratives carry mandatory disclaimers.
+
+*Roles:* Reviewer, Senior Reviewer, Manager.
+
+*Flowbite components:* Table, Badge, Filter, Sort, Button, Alert.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Findings Review Queue: AUD-2026-001</b>
+  { Home > Audits > AUD-2026-001 > Findings }
+  ===
+  {+
+    <b>Findings Summary</b>
+    {#
+      <b>Total</b> | <b>Critical</b> | <b>High</b> | <b>Medium</b> | <b>Low</b> | <b>Info</b>
+      47 | <color:Red><b>3</b></color> | <color:Orange><b>8</b></color> | <color:Gold><b>15</b></color> | <color:RoyalBlue>12</color> | <color:Gray>9</color>
+    }
+    {#
+      <b>Identified</b> | <b>Triaged</b> | <b>In Remediation</b> | <b>Closed</b> | <b>Escalated</b>
+      12 | 18 | 9 | 6 | 2
+    }
+  }
+  ---
+  { ^Severity: All^ | ^Status: All^ | ^Confidence: All^ | "Search findings...          " [Search] | [Export CSV] }
+  ---
+  {#
+    <b>ID</b> | <b>Record</b> | <b>Rule</b> | <b>Field</b> | <b>Severity</b> | <b>Confidence</b> | <b>Status</b> | <b>Age</b> | <b>AI</b> | <b>Actions</b>
+    F-001 | 10045 | HMDA-R001 | Loan Amount | <color:Red>Critical</color> | <color:Green>0.94</color> | <color:Orange>Identified</color> | <color:Red>2d</color> | <&star> | [Review]
+    F-002 | 10045 | HMDA-R015 | Action Taken | <color:Red>Critical</color> | <color:Orange>0.78</color> | <color:Orange>Identified</color> | <color:Red>2d</color> | <&star> | [Review]
+    F-003 | 10046 | HMDA-R008 | Interest Rate | <color:Orange>High</color> | <color:Green>0.91</color> | <color:RoyalBlue>Triaged</color> | 1d | <&star> | [Review]
+    F-004 | 10047 | HMDA-R022 | Property Addr | <color:Gold>Medium</color> | <color:Orange>0.67</color> | <color:RoyalBlue>Triaged</color> | 3d | <&star> | [Review]
+    F-005 | 10045 | HMDA-R031 | Closing Date | <color:RoyalBlue>Low</color> | <color:Green>0.88</color> | <color:Green>Closed</color> | 5d | — | [View]
+  }
+  ---
+  { Showing 1–5 of 47 findings | [< Prev] [1] [2] [3] [Next >] }
+  ---
+  <color:Red>! 2 Critical findings untriaged > 1 day — requires immediate action</color>
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Severity badges:* Critical (red), High (orange), Medium (gold), Low (blue), Informational (gray)
+* *Confidence badges:* green (≥0.85), orange (0.50–0.84), red (<0.50) per Canonical Glossary
+* *AI column* (<&star> icon) indicates finding has AI-generated narrative requiring human approval
+* *Age column* turns red when finding exceeds SLA threshold: Critical >1d, High >3d, Medium >7d, Low >14d
+* *[Review]* navigates to <<wf-finding-detail>>; *[View]* opens read-only detail for closed findings
+* *Alert banner* at bottom shows overdue findings per SLA (Flowbite Alert component)
+* Table is sortable by all columns; default sort: Severity DESC, Age DESC
+* *[Export CSV]* exports filtered findings to CSV (<<wf-findings-register>> format)
+
+'''
+
+[[wf-finding-detail]]
+=== WF-11: Finding Detail / Effective Challenge
+
+*Purpose:* Comprehensive finding review screen with effective challenge workflow.
+Multi-panel layout showing finding data, AI narrative, source evidence, triage controls, remediation tracking, and full audit trail.
+This is the most complex screen in the application.
+
+*Roles:* Reviewer (triage, challenge), Senior Reviewer (approve), Manager (escalate, close).
+
+*Flowbite components:* Tabs, Card, Form, Badge, Timeline, Button, Modal, Alert, Accordion.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Finding Detail: F-001</b>
+  { Home > Audits > AUD-2026-001 > Findings > F-001 }
+  ===
+  {/ <b>Finding</b> | <b>Evidence</b> | <b>Remediation</b> | <b>Audit Trail</b> }
+  ===
+  {
+    {+
+      <b>Finding Data</b>
+      {#
+        Finding ID | F-001 (UUID: 550e8400...)
+        Audit | AUD-2026-001 (HMDA Q1 2026)
+        Record | Loan 10045
+        Rule | HMDA-R001: Loan Amount Verification
+        Regulation | 12 CFR 1003.4(a)(7)
+        . | .
+        <b>Target Value</b> | <b>Source Value</b>
+        $250,000 | $251,500
+        . | .
+        Match Result | <color:Red>MISMATCH</color>
+        Comparison | Exact match required; difference: $1,500
+      }
+    }
+    |
+    {+
+      <b>Confidence Scores</b>
+      {#
+        <b>Layer</b> | <b>Score</b> | <b>Status</b>
+        Mapping Confidence | <color:Green>0.97</color> | <color:Green>High</color>
+        Extraction Confidence | <color:Green>0.94</color> | <color:Green>High</color>
+        Rule Confidence | <color:Green>0.92</color> | <color:Green>High</color>
+        <b>Combined</b> | <b><color:Green>0.92</color></b> | <b><color:Green>High</color></b>
+      }
+      ---
+      <b>Severity</b>
+      {
+        Current: | <color:Red>[Critical]</color>
+        Assigned by: | Pack rule definition
+        [Override Severity] (requires justification)
+      }
+    }
+  }
+  ---
+  {+
+    <color:Orange><b>AI-Drafted Narrative — Requires Human Verification</b></color>
+    ---
+    "Loan amount of $251,500 extracted from the Closing
+    Disclosure (page 1, Section A) does not match the HMDA
+    LAR target record value of $250,000. The $1,500
+    discrepancy exceeds the exact-match threshold defined
+    by HMDA-R001. Reporting requirement under 12 CFR
+    1003.4(a)(7) may be affected. Extraction confidence:
+    0.94 (high)."
+    ---
+    {
+      AI Provenance: gpt-4-turbo (2024-04-09) | prompt: narrative_finding v1.2 | corpus: hmda_rules_v2
+      [View Full Provenance]
+    }
+    ---
+    { [Approve Narrative] | [Edit Narrative] | [Reject & Rewrite] }
+  }
+  ---
+  {+
+    <b>Effective Challenge</b> (SR 11-7 — required before approval)
+    ---
+    {
+      Have you independently verified this finding against source documents?
+      (X) Yes, I have reviewed the source document(s)  () No
+      .
+      Challenge Notes:
+      "                                                                      "
+      "                                                                      "
+      .
+      Source Documents Reviewed:
+      [X] Closing Disclosure (CD_Loan_10045.pdf, page 1)  [View]
+      [] URLA 1003 (1003_Loan_10045.pdf)  [View]
+      [] Appraisal
+    }
+  }
+  ---
+  {+
+    <b>Triage</b>
+    {
+      Root Cause:       | ^Data entry error                ^
+      Triaged By:       | Jane Smith (auto)
+      Triaged At:       | 2026-03-03 10:15 UTC
+    }
+  }
+  ===
+  { [<< Prev Finding] | [Escalate to Manager] | [Save Draft] | [Approve Finding >>] | [Next Finding >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Tabs:* Finding (details + narrative), Evidence (linked documents), Remediation (corrective actions), Audit Trail (event history)
+* *AI Narrative* section carries mandatory orange alert banner: "AI-Drafted — Requires Human Verification" (<<sect-ai-governance>>)
+* *[Approve Narrative]* requires effective challenge completion first (radio + notes); blocked until confirmed
+* *[Edit Narrative]* opens inline editor; system captures diff between AI draft and final version
+* *[Reject & Rewrite]* clears narrative; reviewer writes from scratch
+* *Effective Challenge* section enforces SR 11-7: reviewer must confirm independent verification, provide notes, and check source documents reviewed
+* *[Override Severity]* opens modal requiring justification text (logged to audit trail)
+* *[Escalate to Manager]* transitions finding to `escalated` status with required rationale
+* *[Approve Finding >>]* creates `human_approval` audit event with full provenance chain
+* *Confidence scores* panel shows all three layers with color badges
+* *AI Provenance* link opens modal showing: model_id, model_version, prompt_template_version, input_context_hash, token_counts, data_handling_flags
+
+'''
+
+[[wf-escalation]]
+=== WF-13: Manager Escalation
+
+*Purpose:* Manager reviews escalated findings, identifies patterns, and resolves with documented rationale.
+Supports pattern detection across multiple findings for systemic issue identification.
+
+*Roles:* Manager, Audit Lead, Compliance Officer.
+
+*Flowbite components:* Table, Form, Modal, Badge, Alert, Card.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Escalated Findings</b>
+  { Home > Findings > Escalated }
+  ===
+  {+
+    <b>Escalation Summary</b>
+    {#
+      <b>Total Escalated</b> | <b>Pending Resolution</b> | <b>Resolved This Week</b> | <b>Avg Resolution Time</b>
+      14 | 6 | 8 | 2.3 days
+    }
+  }
+  ---
+  {#
+    <b>Finding</b> | <b>Audit</b> | <b>Severity</b> | <b>Escalated By</b> | <b>Reason</b> | <b>Age</b> | <b>Actions</b>
+    F-002 | AUD-2026-001 | <color:Red>Critical</color> | Jane Smith | Pattern: Action Taken errors | <color:Red>3d</color> | [Resolve] [Reassign]
+    F-011 | AUD-2026-001 | <color:Red>Critical</color> | Jane Smith | Same pattern as F-002 | <color:Red>3d</color> | [Resolve] [Reassign]
+    F-019 | AUD-2026-002 | <color:Orange>High</color> | Bob Johnson | Confidence dispute | 1d | [Resolve] [Reassign]
+  }
+  ---
+  {+
+    <b>Resolve: F-002 — Action Taken Code Wrong</b>
+    ---
+    <b>Pattern Analysis:</b>
+    {+
+      3 findings share the same pattern: Action Taken code
+      discrepancies in Loans 10045, 10051, 10063.
+      Potential systemic data entry issue in origination system.
+    }
+    ---
+    {
+      Resolution Type:  | ^Systemic Issue — Corrective Action Required^
+      Resolution Notes: | "                                                     "
+      .                 | "                                                     "
+      Assign To:        | ^Compliance Team                                ^
+      Target Date:      | "2026-03-10  "
+      .
+      [X] Link related findings (F-002, F-011, F-019)
+      [] Escalate to Compliance Officer
+      [] Create regulatory notification
+    }
+    ---
+    { [Cancel] | . | . | [Save Draft] | [Resolve Escalation] }
+  }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Pattern Analysis* card shows system-detected patterns across findings (same rule, same field, multiple records)
+* *Resolution Type* dropdown: Isolated Issue, Systemic Issue, False Positive, Requires Investigation
+* *[Link related findings]* groups findings for batch resolution
+* *[Escalate to Compliance Officer]* sends notification and creates compliance workflow
+* *[Resolve Escalation]* transitions all linked findings to `remediation_assigned` with documented rationale
+* Manager cannot resolve their own escalations (segregation of duties)
+
+'''
+
+[[wf-remediation]]
+=== WF-14: Remediation Tracking
+
+*Purpose:* Track corrective actions across all findings in remediation.
+Shows assignment, due dates, evidence uploads, and SLA compliance.
+
+*Roles:* Reviewer (remediation owner), Senior Reviewer, Manager.
+
+*Flowbite components:* Table, Badge, Progress Bar, Form, Button, DatePicker.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Remediation Tracking</b>
+  { Home > Findings > Remediation }
+  ===
+  {+
+    <b>Remediation Summary</b>
+    {#
+      <b>Assigned</b> | <b>In Progress</b> | <b>Corrected (Pending Retest)</b> | <b>Retest Failed</b> | <b>Overdue</b>
+      12 | 7 | 3 | 1 | <color:Red><b>2</b></color>
+    }
+  }
+  ---
+  { ^Owner: All^ | ^Severity: All^ | ^Status: All^ | "Search...           " [Search] }
+  ---
+  {#
+    <b>Finding</b> | <b>Severity</b> | <b>Owner</b> | <b>Corrective Action</b> | <b>Due Date</b> | <b>Status</b> | <b>Evidence</b> | <b>Actions</b>
+    F-001 | <color:Red>Critical</color> | Jane Smith | Update HMDA LAR | <color:Red>2026-03-05</color> | <color:Orange>In Progress</color> | 0 files | [Update] [Upload]
+    F-003 | <color:Orange>High</color> | Bob Johnson | Verify rate | 2026-03-08 | <color:Orange>In Progress</color> | 1 file | [Update] [Upload]
+    F-007 | <color:Gold>Medium</color> | Jane Smith | Fix address format | 2026-03-12 | <color:Green>Corrected</color> | 2 files | [Request Retest]
+    F-010 | <color:Orange>High</color> | Bob Johnson | Re-extract data | 2026-03-06 | <color:Red>Retest Failed</color> | 1 file | [Update] [Upload]
+  }
+  ---
+  { [Export Corrective Action Log] | . | [Bulk Assign] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Due Date* turns red when past SLA: Critical 1 day, High 3 days, Medium 7 days, Low 14 days
+* *[Update]* opens inline form for corrective action description and status change
+* *[Upload]* opens file picker for evidence attachment (linked to finding)
+* *[Request Retest]* transitions finding to `retest_pending`; retester must differ from remediation owner
+* *[Export Corrective Action Log]* generates CSV per exam-ready bundle format (<<sect-exam-ready-bundle>>)
+* *[Bulk Assign]* opens modal to reassign multiple findings to a different owner
+
+'''
+
+[[wf-aging]]
+=== WF-15: Aging Dashboard
+
+*Purpose:* Monitor findings that exceed SLA thresholds.
+Auto-escalation alerts for untriaged findings, overdue remediations, and stalled retests.
+
+*Roles:* Manager, Audit Lead, Compliance Officer.
+
+*Flowbite components:* Alert, Table, Badge, Card, Chart.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Aging Dashboard</b>
+  { Home > Findings > Aging }
+  ===
+  <color:Red><b>! 5 findings exceed SLA thresholds</b></color>
+  ===
+  {+
+    <b>SLA Violations by Severity</b>
+    {#
+      <b>Severity</b> | <b>SLA</b> | <b>Violations</b> | <b>Oldest</b>
+      Critical | Triage within 1 day | <color:Red><b>2</b></color> | 3 days old
+      High | Triage within 3 days | <color:Red><b>1</b></color> | 5 days old
+      Medium | Triage within 7 days | <color:Orange><b>2</b></color> | 9 days old
+      Low | Triage within 14 days | 0 | —
+    }
+  }
+  ---
+  {+
+    <b>Overdue Findings</b>
+    {#
+      <b>Finding</b> | <b>Audit</b> | <b>Severity</b> | <b>Status</b> | <b>Age</b> | <b>SLA Breach</b> | <b>Owner</b> | <b>Actions</b>
+      F-002 | AUD-2026-001 | <color:Red>Critical</color> | Identified | 3d | <color:Red>+2d over</color> | Unassigned | [Triage Now] [Escalate]
+      F-011 | AUD-2026-001 | <color:Red>Critical</color> | Identified | 3d | <color:Red>+2d over</color> | Unassigned | [Triage Now] [Escalate]
+      F-019 | AUD-2026-002 | <color:Orange>High</color> | Triaged | 5d | <color:Red>+2d over</color> | Bob Johnson | [Follow Up] [Escalate]
+      F-025 | AUD-2026-001 | <color:Gold>Medium</color> | Remediation | 9d | <color:Orange>+2d over</color> | Jane Smith | [Follow Up]
+      F-028 | AUD-2026-002 | <color:Gold>Medium</color> | Remediation | 9d | <color:Orange>+2d over</color> | Bob Johnson | [Follow Up]
+    }
+  }
+  ---
+  {+
+    <b>Remediation Overdue</b>
+    {#
+      <b>Finding</b> | <b>Owner</b> | <b>Due Date</b> | <b>Days Overdue</b> | <b>Actions</b>
+      F-001 | Jane Smith | 2026-03-05 | <color:Red>1 day</color> | [Send Reminder] [Reassign]
+    }
+  }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Alert banner* shows total SLA violations; updates in real-time
+* *[Triage Now]* opens finding detail with triage section pre-expanded
+* *[Escalate]* transitions finding to `escalated` status and notifies designated manager
+* *[Send Reminder]* sends email/notification to remediation owner
+* *[Follow Up]* opens inline comment for manager to add follow-up notes
+* SLA thresholds per severity defined in <<sect-glossary, Canonical Glossary>>: Critical 1d, High 3d, Medium 7d, Low 14d
+
 '''
 
 ==== Epic 7: Evidence / Attachments + Document Control
@@ -798,6 +1588,215 @@ See <<sect-exam-ready-bundle>> for the complete specification.
 *AI governance for narratives:* AI-generated report narratives carry mandatory disclaimer "AI-generated draft — requires approval" and cannot be included in finalized reports without explicit Manager-role approval.
 See <<sect-ai-governance>>.
 
+
+'''
+
+[[wf-report-gen]]
+=== WF-16: Report Generation
+
+*Purpose:* Configure and generate audit summary reports.
+Select report template, customize sections, review AI-generated narratives, and export in multiple formats.
+
+*Roles:* Manager, Audit Lead.
+
+*Flowbite components:* Form, Checkbox Group, Select, Preview Panel, Button, Badge.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Generate Report: AUD-2026-001</b>
+  { Home > Audits > AUD-2026-001 > Reports > Generate }
+  ===
+  {
+    {+
+      <b>Report Configuration</b>
+      ---
+      {
+        Report Template | ^hmda-audit-report-v1             ^
+        Report Title    | "HMDA Q1 2026 Origination Audit Report  "
+        Format          | [X] PDF  [] XLSX  [] CSV  [] JSON
+      }
+      ---
+      <b>Sections to Include:</b>
+      {
+        [X] Cover Page (audit period, pack, auditor, signatures)
+        [X] Executive Summary (pass/fail, key metrics)
+        [X] Detailed Findings Table (all findings with status)
+        [X] Confidence Score Summary (distribution by tier)
+        [X] Remediation Status (corrective actions, owners)
+        [X] Audit Trail Summary (key events, timestamps)
+        [X] Sampling Methodology (population, method, strata)
+        [X] Attestation (digital signature block)
+        [] AI Model Provenance Appendix (all AI calls)
+      }
+      ---
+      <b>AI-Generated Sections:</b>
+      {#
+        <b>Section</b> | <b>Status</b> | <b>Action</b>
+        Executive Summary Narrative | <color:Orange>Pending Approval</color> | [Review]
+        Findings Trend Analysis | <color:Green>Approved</color> | [View]
+        Recommendations | <color:Orange>Pending Approval</color> | [Review]
+      }
+    }
+    |
+    {+
+      <b>Report Preview</b>
+      ---
+      {+
+        .
+        <b>HMDA Q1 2026 Origination</b>
+        <b>Audit Report</b>
+        .
+        Audit Period: Jan 1 – Mar 31, 2026
+        Pack: hmda-origination v1.0
+        Records Audited: 50
+        .
+        <b>Results Summary:</b>
+        Total Findings: 47
+        Critical: 3  |  High: 8
+        Medium: 15  |  Low: 12
+        Informational: 9
+        .
+        Overall Assessment:
+        <color:Orange>PASS WITH OBSERVATIONS</color>
+        .
+        (Full report preview continues...)
+        .
+      }
+    }
+  }
+  ===
+  { [Cancel] | [Save Draft] | . | [Approve AI Sections] | [Generate Report >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Report Template* dropdown loads pack-specific templates with predefined sections
+* *Sections* checklist allows customization; some sections mandatory (Cover Page, Findings Table, Attestation)
+* *AI-Generated Sections* table shows approval status; all AI sections require Manager approval before report generation
+* *Report Preview* panel (right side) shows live preview that updates as options change
+* *[Generate Report >>]* validates all AI sections approved, then generates PDF/CSV/XLSX
+* Assessment is auto-calculated: Pass (0 Critical, 0 High), Pass with Observations (>0 High, 0 Critical), Fail (>0 Critical)
+
+'''
+
+[[wf-bundle-export]]
+=== WF-17: Exam-Ready Bundle Export
+
+*Purpose:* Generate and download the exam-ready bundle — a structured ZIP containing all audit artifacts for regulatory examination.
+Shows bundle manifest, file contents with checksums, and integrity verification.
+
+*Roles:* Manager, Audit Lead.
+
+*Flowbite components:* Checklist, Card, Button, Badge, Code Block, Alert.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Exam-Ready Bundle: AUD-2026-001</b>
+  { Home > Audits > AUD-2026-001 > Bundle }
+  ===
+  {+
+    <b>Bundle Manifest</b>
+    {#
+      Bundle ID | BDL-2026-001-v1
+      Audit | HMDA Q1 2026 Origination (AUD-2026-001)
+      Pack | hmda-origination v1.0
+      Organization | Acme Federal Credit Union
+      Audit Period | 2026-01-01 to 2026-03-31
+      Created By | Jane Smith (Manager)
+    }
+  }
+  ---
+  {+
+    <b>Bundle Contents</b>
+    {#
+      <b>[X]</b> | <b>File</b> | <b>Size</b> | <b>SHA-256</b> | <b>Status</b>
+      [X] | audit_summary_report.pdf | 2.4 MB | a3f8c2e1... | <color:Green>Ready</color>
+      [X] | findings_register.csv | 145 KB | b7d4f1a2... | <color:Green>Ready</color>
+      [X] | findings_register.pdf | 890 KB | c9e2d3b4... | <color:Green>Ready</color>
+      [X] | corrective_action_log.csv | 42 KB | d1f5e6c7... | <color:Green>Ready</color>
+      [X] | audit_trail_excerpt.json | 1.2 MB | e3g7h8i9... | <color:Green>Ready (PII Redacted)</color>
+      [X] | source_document_index.json | 28 KB | f4j1k2l3... | <color:Green>Ready</color>
+      [X] | pack_configuration.json | 156 KB | g5m2n3o4... | <color:Green>Ready</color>
+      [X] | sampling_methodology.md | 8 KB | h6p3q4r5... | <color:Green>Ready</color>
+      [X] | reproducibility_attestation.json | 12 KB | i7s4t5u6... | <color:Green>Ready</color>
+      [X] | bundle_manifest.json | 4 KB | (computed at export) | —
+    }
+  }
+  ---
+  {+
+    <b>Integrity Verification</b>
+    {
+      Bundle Hash (SHA-256): | <color:Green>j8v5w6x7y8z9a0b1c2d3e4f5...</color> [Copy]
+      Hash Chain Verified:   | <color:Green>PASS — 342 events, no gaps</color>
+      PII Redaction Status:  | <color:Green>PASS — audit trail redacted</color>
+      All AI Content Approved: | <color:Green>PASS — 8/8 narratives approved</color>
+    }
+  }
+  ===
+  { [Cancel] | [Verify Bundle Integrity] | . | [Download Bundle (ZIP)] | [Email Bundle] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Bundle Contents* checklist shows all files with SHA-256 checksums; all checked by default
+* *Integrity Verification* section runs automated checks: hash chain continuity, PII redaction completeness, AI content approval
+* *[Download Bundle (ZIP)]* generates and downloads the structured ZIP (<<sect-exam-ready-bundle>>)
+* *[Verify Bundle Integrity]* re-runs all hash verifications and displays pass/fail
+* *[Copy]* copies bundle hash to clipboard for examiner verification
+* *[Email Bundle]* opens email composition with bundle attached (requires confirmation)
+* Bundle cannot be generated if any AI narratives are unapproved or Critical findings are untriaged
+
+'''
+
+[[wf-findings-register]]
+=== WF-18: Findings Register
+
+*Purpose:* Comprehensive findings table for review, export, and regulatory submission.
+Full-featured data table with all finding fields, export capabilities, and audit trail links.
+
+*Roles:* All roles (filtered by RBAC).
+
+*Flowbite components:* Table, Filter, Sort, Export, Badge, Pagination.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Findings Register: AUD-2026-001</b>
+  { Home > Audits > AUD-2026-001 > Findings Register }
+  ===
+  { ^Severity: All^ | ^Status: All^ | ^Confidence: All^ | ^Rule: All^ | "Search...       " [Search] | . | [Export CSV] [Export PDF] }
+  ---
+  {#
+    <b>Finding</b> | <b>Record</b> | <b>Rule</b> | <b>Field</b> | <b>Target</b> | <b>Source</b> | <b>Sev</b> | <b>Conf</b> | <b>Status</b> | <b>Approver</b> | <b>Date</b>
+    F-001 | 10045 | HMDA-R001 | Loan Amt | $250,000 | $251,500 | <color:Red>Crit</color> | <color:Green>.92</color> | Triaged | — | 03-03
+    F-002 | 10045 | HMDA-R015 | Action | 1 | 6 | <color:Red>Crit</color> | <color:Orange>.78</color> | Escalated | — | 03-03
+    F-003 | 10046 | HMDA-R008 | Rate | 6.25% | 6.50% | <color:Orange>High</color> | <color:Green>.91</color> | Closed | J. Smith | 03-04
+    F-004 | 10047 | HMDA-R022 | Addr | 123 Main | 123 Main St | <color:Gold>Med</color> | <color:Orange>.67</color> | Triaged | — | 03-03
+    F-005 | 10045 | HMDA-R031 | Close Dt | 02/15/26 | 02/15/26 | <color:RoyalBlue>Low</color> | <color:Green>.88</color> | Closed | B. Jones | 03-05
+  }
+  ---
+  { Showing 1–5 of 47 | [< Prev] [1] [2] [3] [Next >] | . | Columns: [Customize] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *[Export CSV]* generates findings register in exam-ready bundle format: finding_id, rule_id, rule_name, target_record_id, severity, confidence scores (3 layers + combined), evidence_ids, narrative, approver_id, approval_date, status
+* *[Export PDF]* generates formatted PDF version of the register
+* *[Customize]* columns modal allows showing/hiding columns (all available by default)
+* All columns sortable; multi-column sort supported (shift+click)
+* Clicking a finding ID navigates to <<wf-finding-detail>>
+
 '''
 
 ==== Epic 9: Admin / RBAC / Tenancy
@@ -873,6 +1872,131 @@ IT Admin role provides searchable, filterable, exportable access to the complete
 *SSO:* SAML 2.0 and OIDC integration.
 No AuditIQ-specific passwords.
 Session management: 30-minute idle timeout, 8-hour absolute timeout.
+
+'''
+
+[[wf-user-mgmt]]
+=== WF-22: User Management
+
+*Purpose:* Manage users, role assignments, and access control.
+RBAC configuration with role-based permissions per the AuditIQ access control model.
+
+*Roles:* IT Admin.
+
+*Flowbite components:* Table, Form, Modal, Badge, Select, Button.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>User Management</b>
+  { Home > Admin > Users }
+  ===
+  { "Search users...                " [Search] | . | ^Role: All^ | ^Status: All^ | [+ Add User] }
+  ---
+  {#
+    <b>Name</b> | <b>Email</b> | <b>Role</b> | <b>Status</b> | <b>Last Login</b> | <b>Actions</b>
+    Jane Smith | jane@acme.com | <color:RoyalBlue>Manager</color> | <color:Green>Active</color> | 2026-03-05 09:15 | [Edit] [Deactivate]
+    Bob Johnson | bob@acme.com | <color:Teal>Senior Reviewer</color> | <color:Green>Active</color> | 2026-03-05 08:30 | [Edit] [Deactivate]
+    Alice Chen | alice@acme.com | <color:Gray>Reviewer</color> | <color:Green>Active</color> | 2026-03-04 16:45 | [Edit] [Deactivate]
+    Tom Wilson | tom@acme.com | <color:Purple>Audit Lead</color> | <color:Green>Active</color> | 2026-03-03 14:00 | [Edit] [Deactivate]
+    Sarah Lee | sarah@acme.com | <color:Gold>Executive</color> | <color:Orange>Inactive</color> | 2026-01-15 10:00 | [Edit] [Activate]
+  }
+  ---
+  { Showing 1–5 of 12 users | [< Prev] [1] [2] [Next >] }
+  ---
+  {+
+    <b>Role Permissions Summary</b>
+    {#
+      <b>Role</b> | <b>Create Audit</b> | <b>Review Findings</b> | <b>Approve</b> | <b>Close</b> | <b>Reports</b> | <b>Admin</b>
+      Reviewer | — | Yes | — | — | — | —
+      Senior Reviewer | — | Yes | Yes | — | — | —
+      Manager | Yes | Yes | Yes | Yes | Yes | —
+      Audit Lead | Yes | Yes | Yes | Yes | Yes | —
+      Executive | — | View Only | — | — | View | —
+      IT Admin | — | — | — | — | — | Yes
+    }
+  }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *[+ Add User]* opens modal with: Name, Email, Role (dropdown), Send invitation email (checkbox)
+* *[Edit]* opens modal to change role or update user details
+* *[Deactivate]* soft-deactivates user (preserves audit trail); requires confirmation modal
+* *Role* badges color-coded by permission level
+* SSO/SAML integration: users auto-provisioned on first login; role assigned by admin afterward
+* Segregation of duties enforced: user cannot hold both "Reviewer" and "Manager" roles
+
+'''
+
+[[wf-system-settings]]
+=== WF-25: System Settings
+
+*Purpose:* Configure tenant-level settings: confidence thresholds, notification rules, integration endpoints, and display preferences.
+
+*Roles:* IT Admin, Manager.
+
+*Flowbite components:* Tabs, Form, Toggle, Input, Select, Button.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>System Settings</b>
+  { Home > Admin > Settings }
+  ===
+  {/ <b>Thresholds</b> | <b>Notifications</b> | <b>Integrations</b> | <b>Display</b> }
+  ===
+  {+
+    <b>Confidence Thresholds</b>
+    ---
+    {
+      <b>AFC Routing</b>
+      Auto-confirm threshold | "0.85    "
+      Human review threshold | "0.50    "
+      .
+      <b>Schema Mapping Routing</b>
+      Auto-accept threshold  | "0.95    "
+      Human review threshold | "0.70    "
+      .
+      <b>Combined Confidence</b>
+      Auto-confirm threshold | "0.85    "
+      Reject threshold       | "0.50    "
+    }
+    ---
+    <b>SLA Timelines (days)</b>
+    {
+      Critical finding triage | "1   "
+      High finding triage     | "3   "
+      Medium finding triage   | "7   "
+      Low finding triage      | "14  "
+    }
+    ---
+    <b>Review Parameters</b>
+    {
+      Default second review % | "15  "
+      Auto-escalate Critical  | (X) Enabled () Disabled
+      Cloud OCR fallback      | (X) Enabled () Disabled
+    }
+  }
+  ===
+  { [Reset to Defaults] | . | . | [Save Settings] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Tabs:* Thresholds (confidence routing, SLAs), Notifications (email alerts, escalation rules), Integrations (API endpoints, SSO), Display (branding, date format)
+* Threshold values validate against Canonical Glossary ranges; warnings if values diverge from recommended defaults
+* *[Reset to Defaults]* restores all settings to system defaults (requires confirmation)
+* Changes logged to audit trail with before/after values
+* Threshold changes require Manager or IT Admin role
+
+'''
 
 === Non-Functional Requirements
 

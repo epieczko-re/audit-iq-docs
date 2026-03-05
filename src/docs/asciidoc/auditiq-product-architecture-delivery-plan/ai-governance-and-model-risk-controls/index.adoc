@@ -446,3 +446,138 @@ Per Interagency Guidance on Third-Party Relationships (OCC 2023-17 / FDIC FIL-29
 * <<sect-ai-governance, UI Labeling>>: UI labeling and transparency requirements
 * *<<sect-model-registry, Model Registry>>:* Schema, API contract, lifecycle governance, and validation requirements for all AI model artifacts referenced by provenance fields
 * AI Regulatory Acceptance Report: Full regulatory analysis, risk exposure assessment, and recommended controls
+
+'''
+
+[[wf-ai-narrative]]
+=== WF-12: AI Narrative Approval
+
+*Purpose:* Dedicated screen for batch approval of AI-generated narratives across multiple findings.
+Manager reviews all pending AI narratives, approves or rejects each, and can edit before approval.
+
+*Roles:* Manager (required approver for AI narratives per <<sect-ai-governance>>).
+
+*Flowbite components:* Card, Alert, Button, Diff View, Badge, Modal.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>AI Narrative Approval Queue</b>
+  { Home > Audits > AUD-2026-001 > AI Narratives }
+  ===
+  <color:Orange><b>! AI-generated content may contain inaccuracies.</b></color>
+  <color:Orange><b>  Manager is responsible for verifying accuracy before approval.</b></color>
+  ===
+  {+
+    <b>Pending Approval: 8 narratives</b>
+    {#
+      <b>#</b> | <b>Finding</b> | <b>Severity</b> | <b>Model</b> | <b>Confidence</b> | <b>Status</b>
+      1 | F-001: Loan Amount mismatch | <color:Red>Critical</color> | gpt-4-turbo | <color:Green>0.92</color> | <color:Orange>Pending</color>
+      2 | F-002: Action Taken code wrong | <color:Red>Critical</color> | gpt-4-turbo | <color:Orange>0.78</color> | <color:Orange>Pending</color>
+      3 | F-003: Interest Rate discrepancy | <color:Orange>High</color> | gpt-4-turbo | <color:Green>0.91</color> | <color:Orange>Pending</color>
+    }
+  }
+  ---
+  {+
+    <b>Review: F-001 — Loan Amount Mismatch</b>
+    ---
+    <b>AI-Generated Narrative:</b>
+    {+
+      "Loan amount of $251,500 extracted from the Closing
+      Disclosure (page 1, Section A) does not match the
+      HMDA LAR target record value of $250,000. The $1,500
+      discrepancy exceeds the exact-match threshold.
+      Reporting under 12 CFR 1003.4(a)(7) may be affected.
+      Extraction confidence: 0.94 (high)."
+    }
+    ---
+    <b>Provenance:</b> gpt-4-turbo (2024-04-09) | narrative_finding v1.2 | hmda_rules_v2 (2026-01-15)
+    <b>Citations:</b> CD page 1, Section A | 12 CFR 1003.4(a)(7)
+    ---
+    Approval Notes: "                                                     "
+    ---
+    { [Approve] | [Edit & Approve] | [Reject — Request Rewrite] | [Skip >>] }
+  }
+  ===
+  { Approved: 0/8 | [Approve All Remaining] | [Save Progress] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Alert banner* at top is mandatory per AI governance red lines (<<sect-ai-governance>>)
+* Queue shows all findings with pending AI narratives; sorted by severity then confidence
+* *[Approve]* marks narrative as approved; adds "Reviewed and approved by [name] on [date]" footer
+* *[Edit & Approve]* opens inline editor; system captures diff for audit trail
+* *[Reject — Request Rewrite]* sends finding back to reviewer for manual narrative
+* *[Approve All Remaining]* bulk approval with confirmation modal (requires notes)
+* Each approved narrative gets `human_approval` audit event with manager's user_id
+* *Provenance* line shows model version, prompt template, and RAG corpus — traceable to model registry
+
+'''
+
+[[wf-drift-monitor]]
+=== WF-21: Drift Monitoring (Phase 2)
+
+*Purpose:* Monitor AI model confidence score calibration over time.
+Detect drift in extraction accuracy, mapping quality, and rule application confidence.
+Triggers model deprecation/retirement when calibration thresholds are breached.
+
+*Roles:* Manager, ML Engineer, IT Admin.
+
+*Flowbite components:* Chart, Table, Alert, Badge, Card.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Drift Monitoring Dashboard</b>
+  { Home > Admin > Drift Monitoring }
+  ===
+  {+
+    <b>Calibration Status</b>
+    {#
+      <b>Model</b> | <b>Version</b> | <b>Calibration Error</b> | <b>Threshold</b> | <b>Status</b>
+      gpt-4-turbo | 2024-04-09 | 3.2% | < 5% | <color:Green>OK</color>
+      hybrid_heuristic_matcher | v1.0 | 4.8% | < 5% | <color:Orange>Warning</color>
+      hmda_rules_v2 (corpus) | 2026-01-15 | 1.1% | < 5% | <color:Green>OK</color>
+    }
+  }
+  ---
+  {+
+    <b>Confidence vs. Human Agreement (Last 30 Days)</b>
+    ---
+    (Scatter plot: X = AI confidence score, Y = % human agreed)
+    (Perfect calibration = diagonal line)
+    (Points above line = AI underconfident)
+    (Points below line = AI overconfident)
+    (Alert zone: points where gap > 5%)
+  }
+  ---
+  {+
+    <b>Override Rate Trends</b>
+    {#
+      <b>Component</b> | <b>This Week</b> | <b>Last Week</b> | <b>Trend</b> | <b>Threshold</b>
+      Schema Mapping | 18% | 15% | <color:Orange>+3%</color> | < 25%
+      Extraction (AFC) | 6% | 7% | <color:Green>-1%</color> | < 10%
+      Finding Narrative | 12% | 10% | <color:Orange>+2%</color> | < 15%
+    }
+  }
+  ---
+  <color:Orange><b>! hybrid_heuristic_matcher approaching calibration threshold (4.8% / 5.0%)</b></color>
+  ---
+  { [View Full Calibration Report] | [Trigger Re-Calibration] | [View Model Registry] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Calibration Status* table shows real-time calibration error per model component
+* *Confidence vs. Human Agreement* chart visualizes calibration quality; deviations from diagonal indicate miscalibration
+* *Override Rate Trends* tracks how often humans override AI suggestions; rising trends indicate potential drift
+* *Alert* at bottom triggers when any metric approaches threshold (within 80% of limit)
+* *[Trigger Re-Calibration]* initiates recalibration job (Phase 2 — temperature scaling or isotonic regression)
+* Cross-references: <<sect-confidence-calibration>>, <<sect-ai-governance, Drift Monitoring>>
