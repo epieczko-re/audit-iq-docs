@@ -51,8 +51,11 @@ jobs:
 
       - name: Install additional dependencies
         run: |
-          # Install pandoc for DOCX conversion and curl for health checks
-          apk add --no-cache pandoc curl
+          # pandoc: DOCX conversion
+          # curl: health checks
+          # rsvg-convert: SVG→PDF/DOCX image conversion (used by pandoc)
+          # font-noto: system fonts so SVG text renders correctly
+          apk add --no-cache pandoc curl librsvg font-noto
 
       - name: Wait for Kroki service
         run: |
@@ -113,6 +116,7 @@ jobs:
             -r asciidoctor-mathematical \
             -a kroki-server-url=${{ env.KROKI_SERVER_URL }} \
             -a kroki-fetch-diagram \
+            -a kroki-default-format=png \
             -a imagesoutdir="$DOC_DIR" \
             -a pdf-theme=src/docs/resources/themes/riskexec-theme.yml \
             -a pdf-fontsdir=src/docs/resources/fonts \
