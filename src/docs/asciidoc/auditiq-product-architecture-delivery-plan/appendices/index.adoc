@@ -282,27 +282,3 @@ Internal the primary competitor Pricing Study – Proprietary pricing intelligen
 
 '''
 
-=== Appendix F: CEO Memo (Carry Forward from v0.1)
-
-*TO:* AuditIQ Steering Committee *FROM:* CEO *DATE:* February 2026 *RE:* Q2 2026 MVP Launch Commitment
-
-We are committed to launching AuditIQ MVP by June 30, 2026.
-The specification in this document reflects our product vision and delivery plan.
-
-*Key Commitments:*
-1. *Go/No-Go decision:* June 15, 2026 (hard deadline)
-2. *MVP Scope:* Sections 1–12 represent MVP feature set; Sections 14–22 provide roadmap and governance framework
-3. *Team:* 9–10 FTE allocated; external security & compliance support contracted
-4. *Customer Readiness:* 3–5 beta customers onboarded by June 1
-
-*Success Criteria:*
-
-* Docling extraction >85% accuracy (Phase 0 gate)
-* Schema matcher >80% precision (Phase 1b gate)
-* Zero critical security issues (Phase 1c gate)
-* 3+ beta customers sign off on core workflows
-
-We will communicate progress weekly to the board and escalate blockers immediately.
-
-'''
-
