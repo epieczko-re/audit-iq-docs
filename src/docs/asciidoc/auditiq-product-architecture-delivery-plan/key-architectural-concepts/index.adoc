@@ -11,6 +11,66 @@ Pre-built by RiskExec. +
 Pre-built by RiskExec. +
 *Future:* Client-customizable packs, potentially a third-party pack marketplace.
 
+[[sect-target-source-schemas]]
+=== Target vs. Source: Schema Definitions
+
+AuditIQ distinguishes two data domains throughout the audit workflow.
+Understanding this distinction is critical for every downstream component — ingestion, mapping, comparison, and findings.
+
+*Target dataset* (also: "target data", "target records")::
+The structured loan records under audit.
+These are the institution's own data — the records they filed, originated, or reported.
++
+--
+* *Format:* Structured tabular data (CSV upload, API endpoint, or cross-module transfer from existing RiskExec modules such as HMDA or CRA).
+* *Schema:* Defined by the audit pack (e.g., the HMDA LAR schema specifies required fields like `loan_amount`, `action_taken`, `property_address`).
+* *Example:* A 5,000-record HMDA LAR CSV exported from the institution's Loan Origination System (LOS).
+* *Determinism:* Target data is validated deterministically during ingestion — no AI is involved.
+--
+
+*Source documents* (also: "source data", "evidence documents")::
+The evidence documents against which target records are compared.
+These are the original loan file artifacts — the documents that prove (or disprove) the accuracy of the target data.
++
+--
+* *Format:* Unstructured or semi-structured documents (PDF, TIFF, JPEG, PNG) — or, in record-to-record audits, a second structured dataset.
+* *Schema:* No predefined schema.
+The Document Processing Service (Docling) extracts text, tables, and key-value pairs from source documents.
+The Schema Mapping Service then maps extracted fields to the target schema.
+* *Example:* A Closing Disclosure PDF, a Loan Estimate image, a URLA form.
+* *Confidence:* Extraction from source documents produces confidence scores (AFC) because OCR and layout parsing introduce uncertainty.
+--
+
+*How they relate in the audit workflow:*
+
+[cols="20%,40%,40%",options="header"]
+|===
+|Stage |Target Data |Source Data
+
+|*Ingestion*
+|Validated against pack schema (deterministic)
+|Stored in Document Store; classified by document type
+
+|*Extraction*
+|N/A (already structured)
+|Docling extracts values with extraction confidence (AFC)
+
+|*Schema Mapping*
+|Pack defines the canonical field names
+|Extracted fields are mapped to target schema fields with mapping confidence
+
+|*Comparison*
+|Target value is the "expected" value
+|Source value (extracted or manual) is the "actual" value
+
+|*Finding*
+|Discrepancy between target and source produces a finding
+|Source document is linked as evidence
+|===
+
+*Record-to-record audits* (e.g., HMDA LAR vs. LOS database extract): both target and source are structured datasets.
+In this case, extraction confidence defaults to 1.0 (no OCR uncertainty) and the audit focuses on mapping and rule confidence.
+
 === Three-Layer Confidence Scoring
 
 AuditIQ applies confidence scoring at three independent layers:
