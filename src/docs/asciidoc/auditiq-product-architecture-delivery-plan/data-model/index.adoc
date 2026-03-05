@@ -21,27 +21,36 @@ field_mappings (one) ---> (many) mapping_versions
 [[sect-mismo-alignment]]
 === MISMO Alignment Strategy
 
-*Design Principle:* AuditIQ’s canonical data model adopts MISMO (Mortgage Industry Standards Maintenance Organization) Reference Model naming conventions and field definitions for all loan-level attributes. This alignment reduces translation friction when ingesting data from LOS, servicing, and origination systems — most of which already export MISMO-formatted data — and increases credibility with examiners who recognize MISMO field names.
+*Design Principle:* AuditIQ’s canonical data model adopts MISMO (Mortgage Industry Standards Maintenance Organization) Reference Model naming conventions and field definitions for all loan-level attributes.
+This alignment reduces translation friction when ingesting data from LOS, servicing, and origination systems — most of which already export MISMO-formatted data — and increases credibility with examiners who recognize MISMO field names.
 
 *Scope of MISMO Adoption:*
 
-* *Canonical loan data fields:* All loan-level attributes stored in `staging_datasets` and referenced in `findings` use MISMO Reference Model v3.x naming where a corresponding MISMO data point exists. Examples: `LoanIdentifier`, `BorrowerMailingAddress`, `PropertyValuationAmount`, `ActionTaken` (HMDA), `RateSpreadPercent`.
+* *Canonical loan data fields:* All loan-level attributes stored in `staging_datasets` and referenced in `findings` use MISMO Reference Model v3.x naming where a corresponding MISMO data point exists.
+Examples: `LoanIdentifier`, `BorrowerMailingAddress`, `PropertyValuationAmount`, `ActionTaken` (HMDA), `RateSpreadPercent`.
 * *Document classification:* Evidence documents are classified using the MISMO Document Custodian taxonomy (e.g., `BorrowerAuthorization`, `CreditReport`, `AppraisalReport`) for consistent naming across packs and evidence uploads.
-* *HMDA Reporting Dataset:* Phase 1 HMDA packs map directly to the MISMO HMDA Reporting Dataset, which provides a well-defined field set for LAR data. This covers all fields required for HMDA compliance auditing.
-* *Audit Pack field references:* Pack `field_mappings` definitions reference MISMO canonical names as the target schema. Source fields (from customer uploads) are mapped _to_ MISMO names by the schema mapping engine.
+* *HMDA Reporting Dataset:* Phase 1 HMDA packs map directly to the MISMO HMDA Reporting Dataset, which provides a well-defined field set for LAR data.
+This covers all fields required for HMDA compliance auditing.
+* *Audit Pack field references:* Pack `field_mappings` definitions reference MISMO canonical names as the target schema.
+Source fields (from customer uploads) are mapped _to_ MISMO names by the schema mapping engine.
 
 *What is NOT MISMO-aligned:*
 
-* *Audit operational tables:* `audit_runs`, `findings`, `field_mappings`, `evidence`, and `audit_trail.events` use AuditIQ-native schemas. These are operational/workflow constructs with no MISMO equivalent.
-* *Pack configuration schema:* Audit Packs remain proprietary JSON (<<sect-audit-pack-spec>>). Packs _reference_ MISMO field names in their rules, but the pack format itself is not a MISMO construct.
+* *Audit operational tables:* `audit_runs`, `findings`, `field_mappings`, `evidence`, and `audit_trail.events` use AuditIQ-native schemas.
+These are operational/workflow constructs with no MISMO equivalent.
+* *Pack configuration schema:* Audit Packs remain proprietary JSON (<<sect-audit-pack-spec>>).
+Packs _reference_ MISMO field names in their rules, but the pack format itself is not a MISMO construct.
 * *AI/ML metadata:* Confidence scores, provenance metadata, and model evaluation data are AuditIQ-specific.
 
 *Implementation Approach — Flattened Subset:*
 
-MISMO’s full XML schema is deeply nested and verbose (thousands of data points). AuditIQ adopts a *flattened subset* relevant to each audit domain:
+MISMO’s full XML schema is deeply nested and verbose (thousands of data points).
+AuditIQ adopts a *flattened subset* relevant to each audit domain:
 
-* *Phase 1 (HMDA):* ~80 MISMO data points from the HMDA Reporting Dataset, flattened into a single-level JSON structure stored in `staging_datasets.payload`. Field names match MISMO exactly (e.g., `ActionTakenType`, `LienStatusType`, `LoanPurposeType`).
-* *Phase 2+ (additional regulations):* Each new Audit Pack defines its MISMO subset in the pack manifest under `canonical_schema.mismo_fields[]`. The schema mapping engine validates that all referenced MISMO fields exist in the MISMO Reference Model dictionary.
+* *Phase 1 (HMDA):* ~80 MISMO data points from the HMDA Reporting Dataset, flattened into a single-level JSON structure stored in `staging_datasets.payload`.
+Field names match MISMO exactly (e.g., `ActionTakenType`, `LienStatusType`, `LoanPurposeType`).
+* *Phase 2+ (additional regulations):* Each new Audit Pack defines its MISMO subset in the pack manifest under `canonical_schema.mismo_fields[]`.
+The schema mapping engine validates that all referenced MISMO fields exist in the MISMO Reference Model dictionary.
 * *Unmapped fields:* Fields that have no MISMO equivalent (custom institution fields, derived metrics) use a `custom:` namespace prefix (e.g., `custom:InternalRiskScore`) to clearly distinguish them from MISMO-standard fields.
 
 *MISMO Reference Model Dictionary:*
@@ -357,7 +366,8 @@ CREATE TABLE schema_migrations (
 
 === Analytics Storage (Separate Read-Only Replica)
 
-*Rationale:* Aggregation queries (dashboards, trend reports) impact operational DB. A read-only replica is cheaper and doesn’t contend with transactional workload.
+*Rationale:* Aggregation queries (dashboards, trend reports) impact operational DB.
+A read-only replica is cheaper and doesn’t contend with transactional workload.
 
 *Approach:* Stream findings, status transitions, and metrics to a separate analytics database (Aurora or Redshift) via Change Data Capture or nightly batch export.
 

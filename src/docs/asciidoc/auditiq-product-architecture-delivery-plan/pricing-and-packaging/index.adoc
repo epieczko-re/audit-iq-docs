@@ -3,7 +3,8 @@
 
 === Market Context: Competitive Pricing Intelligence
 
-Based on internal competitive analysis of ~141 primary competitor customers (circa 2023 data). See <<sect-primary-competitor, Primary Competitor Analysis>> for full tier-by-tier breakdown.
+Based on internal competitive analysis of ~141 primary competitor customers (circa 2023 data).
+See <<sect-primary-competitor, Primary Competitor Analysis>> for full tier-by-tier breakdown.
 
 [cols="40%,60%",options="header"]
 |===
@@ -37,7 +38,10 @@ Based on internal competitive analysis of ~141 primary competitor customers (cir
 |Number of packs purchased × audit volume tier
 |===
 
-*Key competitive insight:* The primary competitor prices each audit type (Origination, Servicing, Consumer, HMDA) as a separate subscription. Customers buying multiple packs at high volume drive the $135K average ACV. Banks average $167K because they buy more pack types. AuditIQ's pack architecture is a natural fit for the same per-pack pricing model — but with AI governance controls included at no surcharge.
+*Key competitive insight:* The primary competitor prices each audit type (Origination, Servicing, Consumer, HMDA) as a separate subscription.
+Customers buying multiple packs at high volume drive the $135K average ACV.
+Banks average $167K because they buy more pack types.
+AuditIQ's pack architecture is a natural fit for the same per-pack pricing model — but with AI governance controls included at no surcharge.
 
 === RiskExec Baseline & AuditIQ Uplift Strategy
 
@@ -94,7 +98,9 @@ This mirrors the primary competitor's proven model while adding value through in
 
 ==== Pack Subscriptions (Per Pack, Tiered by Volume)
 
-Each audit pack is licensed as a separate monthly subscription with included audit volume and per-audit excess fees. Customers select a tier based on expected monthly audit volume. Annual contracts required; monthly billing.
+Each audit pack is licensed as a separate monthly subscription with included audit volume and per-audit excess fees.
+Customers select a tier based on expected monthly audit volume.
+Annual contracts required; monthly billing.
 
 *HMDA Audit Pack (Phase 1 — launch pack):*
 
@@ -254,7 +260,9 @@ NOTE: HMDA pricing deliberately undercuts the primary competitor by 17–20% to 
 
 ==== Multi-Pack Discount
 
-Customers purchasing 2+ packs simultaneously receive a *10% discount on pack subscription fees* (platform fee unchanged). Customers purchasing 4+ packs receive *15% discount*. This encourages multi-pack adoption and drives ACV toward the $100K+ range that competes with the primary competitor.
+Customers purchasing 2+ packs simultaneously receive a *10% discount on pack subscription fees* (platform fee unchanged).
+Customers purchasing 4+ packs receive *15% discount*.
+This encourages multi-pack adoption and drives ACV toward the $100K+ range that competes with the primary competitor.
 
 [cols="30%,35%,35%",options="header"]
 |===

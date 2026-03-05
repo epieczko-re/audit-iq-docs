@@ -3,7 +3,9 @@
 == Canonical Glossary of Confidence Scores, Thresholds, and Severity Definitions
 
 ____
-*Purpose.* This glossary is the *single source of truth* for every confidence metric, routing threshold, and severity level used in AuditIQ. All other sections reference these definitions; if a value in another section conflicts with this glossary, this glossary governs. When thresholds are tuned, update *this file first*, then propagate.
+*Purpose.* This glossary is the *single source of truth* for every confidence metric, routing threshold, and severity level used in AuditIQ.
+All other sections reference these definitions; if a value in another section conflicts with this glossary, this glossary governs.
+When thresholds are tuned, update *this file first*, then propagate.
 ____
 
 === Confidence Metrics
@@ -122,7 +124,8 @@ ____
 
 === Severity Definitions
 
-*Severity measures regulatory importance. It is orthogonal to confidence.*
+*Severity measures regulatory importance.
+It is orthogonal to confidence.*
 
 [cols="13%,17%,16%,27%,27%",options="header"]
 |===
@@ -159,7 +162,8 @@ ____
 |Informational only
 |===
 
-Severity is assigned by: (1) pack rule definition (default), (2) optionally overridden by Reviewer with justification, (3) may be escalated by Manager if pattern detected. Severity is immutable once finding is triaged unless explicitly re-scored by Manager with audit trail event.
+Severity is assigned by: (1) pack rule definition (default), (2) optionally overridden by Reviewer with justification, (3) may be escalated by Manager if pattern detected.
+Severity is immutable once finding is triaged unless explicitly re-scored by Manager with audit trail event.
 
 === Calibration & Go/Kill Criteria
 

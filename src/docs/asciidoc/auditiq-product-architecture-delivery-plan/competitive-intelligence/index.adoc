@@ -45,11 +45,16 @@ AuditIQ enters this market with structural advantages that are difficult to repl
 |1
 |===
 
-*Key insight:* The primary competitor's ACV is heavily driven by multi-pack purchases. Banks buy Origination + Servicing + HMDA + Consumer packs and land at $167K. Mortgage lenders buying fewer packs land at $124K. Top logos buying all packs at high volume exceed $500K.
+*Key insight:* The primary competitor's ACV is heavily driven by multi-pack purchases.
+Banks buy Origination + Servicing + HMDA + Consumer packs and land at $167K.
+Mortgage lenders buying fewer packs land at $124K.
+Top logos buying all packs at high volume exceed $500K.
 
 ==== Primary Competitor Pricing Model (Detailed)
 
-*Model:* Subscription — flat monthly fee per audit pack with minimum audit quantities, plus per-audit fees for overages. Each pack priced independently. Multi-pack discount available (specifics unknown).
+*Model:* Subscription — flat monthly fee per audit pack with minimum audit quantities, plus per-audit fees for overages.
+Each pack priced independently.
+Multi-pack discount available (specifics unknown).
 
 *Annual Minimum Quantities (AMQs):* $2,000/yr for Origination/Servicing; $500/yr for Consumer/HMDA.
 

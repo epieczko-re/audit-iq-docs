@@ -141,7 +141,11 @@ Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
 
 === Critical Path & Dependencies
 
-*Critical Path (longest dependency chain):* 1. Phase 0: Docling integration + LLM setup (Week 1–2) 2. Phase 1a: Document processing pipeline (Week 2–4) 3. Phase 1b: Schema matcher quality + LLM narratives (Week 5–8) 4. Phase 1c: Performance tuning & security review (Week 9–12)
+*Critical Path (longest dependency chain):* 1.
+Phase 0: Docling integration + LLM setup (Week 1–2) 2.
+Phase 1a: Document processing pipeline (Week 2–4) 3.
+Phase 1b: Schema matcher quality + LLM narratives (Week 5–8) 4.
+Phase 1c: Performance tuning & security review (Week 9–12)
 
 *Parallel workstreams:*
 

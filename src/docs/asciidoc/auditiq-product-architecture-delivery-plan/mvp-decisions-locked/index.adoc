@@ -3,7 +3,8 @@
 
 === Purpose & Authority
 
-*These five decisions are locked for MVP (Sections 1–12). They must not be reopened without explicit override decision by Product Lead + Compliance SME + CEO.*
+*These five decisions are locked for MVP (Sections 1–12).
+They must not be reopened without explicit override decision by Product Lead + Compliance SME + CEO.*
 
 Each decision includes:
 1. *Decision statement* – What is being decided
@@ -23,7 +24,10 @@ Each decision includes:
 *Chosen Default:* *Docling-Graph pipeline (Docling + Docling-Graph, MIT-licensed) + deterministic AuditIQ Field Confidence (AFC v2 with graph_corrob_score) layer + LLM extraction via LiteLLM / self-hosted Mistral/vLLM + Azure cloud OCR (page-level fallback for degraded documents only)*
 
 ____
-*Critical clarification (per Docling Technical Validation Report):* Docling is a _document conversion and layout understanding_ engine, NOT a field-level extraction engine with per-field confidence scores. Docling’s native confidence scores are _conversion-quality indicators_ (POOR/FAIR/GOOD/EXCELLENT), not extraction probabilities. AuditIQ must build a *deterministic field extractor layer* on top of Docling output, and produce its own per-field confidence via the *AuditIQ Field Confidence (AFC)* composite score. See <<sect-doc-processing>> for full AFC design.
+*Critical clarification (per Docling Technical Validation Report):* Docling is a _document conversion and layout understanding_ engine, NOT a field-level extraction engine with per-field confidence scores.
+Docling’s native confidence scores are _conversion-quality indicators_ (POOR/FAIR/GOOD/EXCELLENT), not extraction probabilities.
+AuditIQ must build a *deterministic field extractor layer* on top of Docling output, and produce its own per-field confidence via the *AuditIQ Field Confidence (AFC)* composite score.
+See <<sect-doc-processing>> for full AFC design.
 ____
 
 *Alternatives Considered:*
@@ -53,7 +57,9 @@ ____
 * *Mitigation:* Phase 0 POC test plan (<<sect-poc-test-plan>>) with explicit go/kill criteria; sample HMDA corpus (≥200 loans, 5+ lenders) 2. *Cloud OCR fallback rate too high:* If >40% of pages require cloud OCR fallback, cost model breaks ($0.20–$0.50+ per document) and latency degrades
 * *Mitigation:* Page-level fallback routing (not document-level); usage monitoring; cost cap per customer per month 3. *Latency issues:* Docling <2s/page target; cloud OCR adds 3–5s per page for API calls + network roundtrips
 * *Mitigation:* Async processing; queue-based fallback (not blocking); fallback pages processed in parallel 4. *GPL licensing contamination:* `docling-surya` wraps SuryaOCR under GPL — if adopted, may require open-sourcing AuditIQ or create legal exposure for commercial SaaS
-* *Mitigation:* Do NOT use `docling-surya` in any build. Stick to MIT-licensed Docling core. If OCR accuracy requires SuryaOCR-class models, use cloud OCR fallback instead. 5. *Docling beta extraction API instability:* Docling’s extraction API is marked beta and may change between releases, breaking field extractor logic
+* *Mitigation:* Do NOT use `docling-surya` in any build.
+Stick to MIT-licensed Docling core.
+If OCR accuracy requires SuryaOCR-class models, use cloud OCR fallback instead. 5. *Docling beta extraction API instability:* Docling’s extraction API is marked beta and may change between releases, breaking field extractor logic
 * *Mitigation:* Pin Docling version; wrap in abstraction layer; use conversion + layout API only (not beta extraction API)
 
 *Go/Kill Criteria (Phase 0 POC — see <<sect-poc-test-plan>>):*
@@ -85,7 +91,9 @@ ____
 *Chosen Default:* *Hybrid heuristic matcher v1 (string similarity + type compatibility + document-section context + curated HMDA/CD synonym dictionary + human-in-the-loop) with two-layer confidence design*
 
 ____
-*Critical clarification (per Schema Mapping Strategy Report):* Closing Disclosure (CD) documents alone cover only ~10–20% of the 110 HMDA fields at ≥0.85 auto-mappable confidence. Full HMDA coverage requires multi-document extraction (1003/URLA, CD, appraisal, title) in later phases. MVP must clearly demarcate CD-supported fields vs. fields requiring manual entry or additional document types.
+*Critical clarification (per Schema Mapping Strategy Report):* Closing Disclosure (CD) documents alone cover only ~10–20% of the 110 HMDA fields at ≥0.85 auto-mappable confidence.
+Full HMDA coverage requires multi-document extraction (1003/URLA, CD, appraisal, title) in later phases.
+MVP must clearly demarcate CD-supported fields vs. fields requiring manual entry or additional document types.
 ____
 
 *Alternatives Considered:*
@@ -171,7 +179,9 @@ ____
 *Chosen Default:* *Append-only event log with RFC 8785 canonical JSON serialization + SHA-256 hash chaining + global monotonic sequence IDs + cryptographic anchor points + periodic snapshots + immutability rules per artifact type (<<sect-immutability>>)*
 
 ____
-*Critical clarification (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient for defensibility. An attacker with database write access can rewrite the chain and recompute all subsequent hashes. The design MUST include: (1) RFC 8785 canonical JSON for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points (signed checkpoints or WORM-stored anchors) that cannot be silently rewritten.
+*Critical clarification (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient for defensibility.
+An attacker with database write access can rewrite the chain and recompute all subsequent hashes.
+The design MUST include: (1) RFC 8785 canonical JSON for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points (signed checkpoints or WORM-stored anchors) that cannot be silently rewritten.
 ____
 
 *Per-Artifact Immutability Rules:*
@@ -273,7 +283,8 @@ ____
 * Community pack marketplace (Phase 3) must be secure; declarative packs are safer for distribution
 
 * *Risks of This Choice:* 1. *Customers demand executable logic:* Custom pack requirements include complex conditional rules (e.g., “if loan_type == `ARM' AND rate > 5%, then find TRID violations”).
-* *Mitigation:* JSON rule schema supports nested conditions & weights; covers 90% of use cases. For remaining 10%, Phase 2 DSL or API-based custom rules 2. *Declarative JSON becomes unwieldy:* As pack complexity grows (50+ rules), JSON becomes hard to maintain.
+* *Mitigation:* JSON rule schema supports nested conditions & weights; covers 90% of use cases.
+For remaining 10%, Phase 2 DSL or API-based custom rules 2. *Declarative JSON becomes unwieldy:* As pack complexity grows (50+ rules), JSON becomes hard to maintain.
 * *Mitigation:* Pack authoring UI (Phase 2); validation + linting tools; versioning support 3. *Performance: Interpreting JSON rules slower than compiled code*
 * *Mitigation:* Rule evaluation is fast (<100ms per rule); not a bottleneck in MVP
 

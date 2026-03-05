@@ -28,7 +28,9 @@ graph LR
 
 === Overview
 
-An audit pack is a versioned, declarative configuration artifact that encapsulates everything needed to audit a specific regulatory domain or business process. The platform interprets the pack—it does not execute code embedded in the pack. This ensures safety, reproducibility, and extensibility.
+An audit pack is a versioned, declarative configuration artifact that encapsulates everything needed to audit a specific regulatory domain or business process.
+The platform interprets the pack—it does not execute code embedded in the pack.
+This ensures safety, reproducibility, and extensibility.
 
 *Pack components:*
 
@@ -40,7 +42,8 @@ An audit pack is a versioned, declarative configuration artifact that encapsulat
 * Report templates (how to format findings into reports)
 * Test cases (reference data for validation harness)
 
-*DECISION LOCKED:* Declarative JSON v1 — no executable logic. See <<sect-decision-d4, Decision D4>>.
+*DECISION LOCKED:* Declarative JSON v1 — no executable logic.
+See <<sect-decision-d4, Decision D4>>.
 
 [[sect-pack-manifest-schema]]
 === Pack Manifest JSON Schema
@@ -370,9 +373,13 @@ An audit pack is a versioned, declarative configuration artifact that encapsulat
 
 *Pack lifecycle:*
 1. *Draft:* Created by pack author, not available to audit runs.
-2. *Published:* Available for new audit runs. Existing runs remain pinned to their original version.
-3. *Deprecated:* Marked for removal with migration path. No new runs can be created. Existing runs continue.
-4. *Retired:* No longer available. Existing runs can reference archived pack version (read-only).
+2. *Published:* Available for new audit runs.
+Existing runs remain pinned to their original version.
+3. *Deprecated:* Marked for removal with migration path.
+No new runs can be created.
+Existing runs continue.
+4. *Retired:* No longer available.
+Existing runs can reference archived pack version (read-only).
 
 *Distribution channel:*
 
@@ -435,4 +442,5 @@ interface AuditPackContract {
 }
 ----
 
-*Immutability guarantee:* For a given (packId, packVersion, targetRecord, sourceData, mappings), the output of executeComparisons() is always identical. All non-deterministic outputs (AI narratives) are explicitly generated separately and labeled.
+*Immutability guarantee:* For a given (packId, packVersion, targetRecord, sourceData, mappings), the output of executeComparisons() is always identical.
+All non-deterministic outputs (AI narratives) are explicitly generated separately and labeled.

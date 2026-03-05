@@ -39,32 +39,61 @@
 |===
 
 ____
-*v0.2 Addition — Report-Sourced Risks:* R23 sourced from Docling Technical Validation Report (GPL licensing). R24 sourced from Audit Trail Defensibility Report (canonical JSON). R25 sourced from Schema Mapping Strategy Report (confidence calibration). R26 sourced from AI Regulatory Acceptance Report (automation bias). R27 sourced from Schema Mapping Strategy Report (coverage gap). R28 sourced from AI Regulatory Acceptance Report (exam access).
+*v0.2 Addition — Report-Sourced Risks:* R23 sourced from Docling Technical Validation Report (GPL licensing).
+R24 sourced from Audit Trail Defensibility Report (canonical JSON).
+R25 sourced from Schema Mapping Strategy Report (confidence calibration).
+R26 sourced from AI Regulatory Acceptance Report (automation bias).
+R27 sourced from Schema Mapping Strategy Report (coverage gap).
+R28 sourced from AI Regulatory Acceptance Report (exam access).
 ____
 
 === Constraints
 
 *Technical Constraints:*
 
-* *RiskExec integration dependency:* AuditIQ cannot launch without stable RiskExec API connectivity. Legacy API may not support all required fields (e.g., HMDA loan purpose, loan age). Mitigation: Mock/fallback data pipeline; early API contract review.
-* *Extraction accuracy floor:* Docling + OCR must achieve >85% extraction accuracy on HMDA documents to avoid overwhelming manual review. Below 80% makes product unusable. Mitigation: Curated training corpus; cloud OCR fallback.
-* *State machine complexity:* Audit workflow state transitions must be acyclic and immutable post-finalization to maintain regulator trust. No rollback or branching allowed. Mitigation: Append-only event log (<<sect-immutability>>); compensating events for corrections.
+* *RiskExec integration dependency:* AuditIQ cannot launch without stable RiskExec API connectivity.
+Legacy API may not support all required fields (e.g., HMDA loan purpose, loan age).
+Mitigation: Mock/fallback data pipeline; early API contract review.
+* *Extraction accuracy floor:* Docling + OCR must achieve >85% extraction accuracy on HMDA documents to avoid overwhelming manual review.
+Below 80% makes product unusable.
+Mitigation: Curated training corpus; cloud OCR fallback.
+* *State machine complexity:* Audit workflow state transitions must be acyclic and immutable post-finalization to maintain regulator trust.
+No rollback or branching allowed.
+Mitigation: Append-only event log (<<sect-immutability>>); compensating events for corrections.
 
 *Regulatory Constraints:*
 
-* *AI explainability requirement:* Every AI-generated finding or narrative must be explainable by human-readable rules or citations. “Black box” model outputs violate examiner expectations. Mitigation: Rules-based + LLM hybrid; citation verification.
-* *Immutable audit trail:* All audit events, findings, and approvals must be append-only and tamper-proof. Regulators expect to reconstruct entire audit history. Mitigation: Cryptographic event log with RFC 8785 canonical JSON; immutability rules per artifact (<<sect-immutability>>); WORM anchor storage (<<sect-audit-trail-event-store>>).
-* *Tenant isolation:* Multi-tenant data architecture must meet PCI-DSS or equivalent controls. Row-level security insufficient; additional encryption & access logs required. Mitigation: DB-level RLS + encrypted PII; audit trail per tenant.
-* *Data residency:* Customer data (especially HMDA) may not leave jurisdiction (e.g., EU data must stay in EU). LLM calls may violate residency. Mitigation: Data redaction before LLM calls; residency agreement with API provider.
-* *AI governance — SR 11-7 / OCC 2011-12 alignment (v0.2):* Any model or AI component used in audit workflow must comply with model risk management expectations: effective challenge, independent validation, ongoing monitoring. Mitigation: AI Governance Framework (<<sect-ai-governance>>); conditional acceptability standard; go-to-market positioning as “AI-assisted documentation” not “AI-powered decisions.”
-* *Third-party AI provider exam access (v0.2):* Regulators may require examination access to third-party AI providers under Interagency Third-Party Risk Management Guidance. Contractual exam access clause is mandatory. Mitigation: Vendor requirements (<<sect-ai-governance>>); alternative vendor pre-qualification.
+* *AI explainability requirement:* Every AI-generated finding or narrative must be explainable by human-readable rules or citations. “Black box” model outputs violate examiner expectations.
+Mitigation: Rules-based + LLM hybrid; citation verification.
+* *Immutable audit trail:* All audit events, findings, and approvals must be append-only and tamper-proof.
+Regulators expect to reconstruct entire audit history.
+Mitigation: Cryptographic event log with RFC 8785 canonical JSON; immutability rules per artifact (<<sect-immutability>>); WORM anchor storage (<<sect-audit-trail-event-store>>).
+* *Tenant isolation:* Multi-tenant data architecture must meet PCI-DSS or equivalent controls.
+Row-level security insufficient; additional encryption & access logs required.
+Mitigation: DB-level RLS + encrypted PII; audit trail per tenant.
+* *Data residency:* Customer data (especially HMDA) may not leave jurisdiction (e.g., EU data must stay in EU).
+LLM calls may violate residency.
+Mitigation: Data redaction before LLM calls; residency agreement with API provider.
+* *AI governance — SR 11-7 / OCC 2011-12 alignment (v0.2):* Any model or AI component used in audit workflow must comply with model risk management expectations: effective challenge, independent validation, ongoing monitoring.
+Mitigation: AI Governance Framework (<<sect-ai-governance>>); conditional acceptability standard; go-to-market positioning as “AI-assisted documentation” not “AI-powered decisions.”
+* *Third-party AI provider exam access (v0.2):* Regulators may require examination access to third-party AI providers under Interagency Third-Party Risk Management Guidance.
+Contractual exam access clause is mandatory.
+Mitigation: Vendor requirements (<<sect-ai-governance>>); alternative vendor pre-qualification.
 
 *Timeline Constraints:*
 
-* *Q2 2026 hard deadline:* Product must launch by June 30 to align with bank audit cycles (FY-end) and board commitments. No extension possible without strategic replanning. Mitigation: MVP scope locked; feature triage; buffer time in Phase 1c.
-* *Regulatory approval window:* If regulator sign-off required for pack deployment, approval process typically takes 60–90 days. Must initiate before Apr 1 to launch by Jun 30. Mitigation: Early engagement; provisional approval pathway.
+* *Q2 2026 hard deadline:* Product must launch by June 30 to align with bank audit cycles (FY-end) and board commitments.
+No extension possible without strategic replanning.
+Mitigation: MVP scope locked; feature triage; buffer time in Phase 1c.
+* *Regulatory approval window:* If regulator sign-off required for pack deployment, approval process typically takes 60–90 days.
+Must initiate before Apr 1 to launch by Jun 30.
+Mitigation: Early engagement; provisional approval pathway.
 
 *Data Constraints:*
 
-* *HMDA sample corpus availability:* Docling training requires real HMDA documents from lenders. Licensing or privacy concerns may delay access. Mitigation: Synthetic data generation; early procurement; fallback to generic PDF training.
-* *Test data volume:* Performance testing requires 1000+ concurrent audit runs. Generating realistic test data is labor-intensive. Mitigation: Fixture library; parameterized test generation; third-party data provider.
+* *HMDA sample corpus availability:* Docling training requires real HMDA documents from lenders.
+Licensing or privacy concerns may delay access.
+Mitigation: Synthetic data generation; early procurement; fallback to generic PDF training.
+* *Test data volume:* Performance testing requires 1000+ concurrent audit runs.
+Generating realistic test data is labor-intensive.
+Mitigation: Fixture library; parameterized test generation; third-party data provider.

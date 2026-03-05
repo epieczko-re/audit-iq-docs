@@ -26,11 +26,14 @@ a|*Acceptance Criteria (FR-1.1 — Ingestion performance):*
 |FR-1.5 |System shall enforce maximum file size limits: 100MB per single file, 1GB per batch upload. |Given a file exceeding 100MB, when upload is attempted, then system rejects with clear size limit message before upload begins (client-side validation). |P0
 |===
 
-*Deterministic boundary:* All ingestion operations are deterministic. The same input file always produces the same validated output. No AI is involved in ingestion.
+*Deterministic boundary:* All ingestion operations are deterministic.
+The same input file always produces the same validated output.
+No AI is involved in ingestion.
 
 ===== Ingestion Workflow
 
-The ingestion workflow covers audit setup, dataset upload, and schema validation. These are the first steps in both manual and OCR-assisted audit modes (see <<sect-concept-of-operations>>).
+The ingestion workflow covers audit setup, dataset upload, and schema validation.
+These are the first steps in both manual and OCR-assisted audit modes (see <<sect-concept-of-operations>>).
 
 [mermaid]
 ----
@@ -120,13 +123,17 @@ interface ValidationResult {
 |FR-2.5 |System shall execute a 3-tier extraction fallback chain: (1) Docling-Graph VLM extraction, (2) Docling-Graph LLM extraction via LiteLLM/self-hosted Mistral, (3) cloud OCR (Azure AI Document Intelligence or equivalent). Fallback from tier 1→2 triggers when AFC < 0.50 for the extracted page; fallback from tier 2→3 triggers when AFC remains < 0.50 after LLM re-extraction or when >30% of key fields on a document remain below 0.50. |Given a low-quality scanned document where Docling-Graph VLM extraction produces AFC < 0.50 on key fields, when fallback triggers, then system attempts LLM extraction via LiteLLM/Mistral first; if still below threshold, re-processes with cloud OCR; each fallback event is logged with `extraction_method` provenance (see <<sect-ai-provenance>>). |P1
 |===
 
-*Deterministic boundary:* OCR extraction is deterministic for a given model version and input. The same document processed with the same model version always produces the same extraction. Model version is logged as provenance metadata.
+*Deterministic boundary:* OCR extraction is deterministic for a given model version and input.
+The same document processed with the same model version always produces the same extraction.
+Model version is logged as provenance metadata.
 
-*DECISION LOCKED:* Docling-Graph pipeline as baseline extraction engine (MIT-licensed); self-hosted Mistral via LiteLLM as LLM extraction backend; cloud OCR as page-level fallback. See <<sect-decision-d1, Decision D1>>.
+*DECISION LOCKED:* Docling-Graph pipeline as baseline extraction engine (MIT-licensed); self-hosted Mistral via LiteLLM as LLM extraction backend; cloud OCR as page-level fallback.
+See <<sect-decision-d1, Decision D1>>.
 
 ===== Document Extraction Workflow
 
-This workflow covers the complete document processing pipeline from upload through field-level confidence routing. See also <<sect-ui-workflows, Workflow 2>> for the detailed UI flowchart.
+This workflow covers the complete document processing pipeline from upload through field-level confidence routing.
+See also <<sect-ui-workflows, Workflow 2>> for the detailed UI flowchart.
 
 *Actors:* Auditor (upload), System (Docling, OCR, AFC), Reviewer (validation)
 
@@ -223,7 +230,9 @@ end
 |5 |Non-standard document templates |Field extractor patterns don't match |Pattern library per document type; fallback to manual
 |===
 
-*Performance targets:* ~175,000 pages/day on single 8-vCPU / 32GB instance. Per-page: ~0.5–2s (standard), ~3–8s (VLM). Cloud OCR fallback adds 1–3s/page.
+*Performance targets:* ~175,000 pages/day on single 8-vCPU / 32GB instance.
+Per-page: ~0.5–2s (standard), ~3–8s (VLM).
+Cloud OCR fallback adds 1–3s/page.
 
 '''
 
@@ -238,13 +247,16 @@ end
 |FR-3.4 |Approved mappings shall be versioned and reusable across audit runs within the same audit pack. |Given an approved mapping set for HMDA pack v1.0, when a new audit run uses the same pack version, then the approved mappings are pre-loaded and do not require re-approval. |P0
 |===
 
-*Deterministic boundary:* Schema mapping suggestions are deterministic for a given matcher version and input schemas. The same inputs always produce the same suggestions.
+*Deterministic boundary:* Schema mapping suggestions are deterministic for a given matcher version and input schemas.
+The same inputs always produce the same suggestions.
 
-*DECISION LOCKED:* Simple confidence-scored matcher for v1; LogMap prototype as parallel track. See <<sect-decision-d1, Decision D1>>.
+*DECISION LOCKED:* Simple confidence-scored matcher for v1; LogMap prototype as parallel track.
+See <<sect-decision-d1, Decision D1>>.
 
 ===== Schema Mapping Workflow
 
-This workflow details how extracted fields are mapped to the HMDA/MISMO target schema with AI assistance and human oversight. See also <<sect-ui-workflows, Workflow 3>> for the detailed UI flowchart.
+This workflow details how extracted fields are mapped to the HMDA/MISMO target schema with AI assistance and human oversight.
+See also <<sect-ui-workflows, Workflow 3>> for the detailed UI flowchart.
 
 *Actors:* System (matcher), AI (calibration), Reviewer (approval)
 
@@ -343,11 +355,14 @@ flowchart TD
 |FR-4.5 |Comparison engine shall process ≥500 records/minute for automated pre-scan against structured source data. |Given 5,000 HMDA records with structured source data, when automated pre-scan runs, then completion time is ≤10 minutes. |P1
 |===
 
-*Deterministic boundary:* The comparison engine is fully deterministic. Given identical normalized inputs and pack rules, it always produces identical findings. AI-generated narratives, suggestions, and advisory outputs are explicitly non-deterministic and always labeled.
+*Deterministic boundary:* The comparison engine is fully deterministic.
+Given identical normalized inputs and pack rules, it always produces identical findings.
+AI-generated narratives, suggestions, and advisory outputs are explicitly non-deterministic and always labeled.
 
 ===== Audit Execution Workflow
 
-This workflow covers both OCR-assisted and automated pre-scan ("record-to-record") execution modes. See <<sect-concept-of-operations>> for full operational context.
+This workflow covers both OCR-assisted and automated pre-scan ("record-to-record") execution modes.
+See <<sect-concept-of-operations>> for full operational context.
 
 *OCR-Assisted Execution:*
 
@@ -493,7 +508,8 @@ stateDiagram-v2
 
 *Component:* Audit Pack Manager (<<sect-audit-pack-spec>>)
 
-*Pack contents:* A declarative JSON specification defining rules, scoring weights, evidence requirements, field normalizations, sampling methodology, and report templates for a compliance audit category. Not executable code — the platform interprets the pack to drive ingestion validation, schema mapping, comparison rules, scoring, and report generation.
+*Pack contents:* A declarative JSON specification defining rules, scoring weights, evidence requirements, field normalizations, sampling methodology, and report templates for a compliance audit category.
+Not executable code — the platform interprets the pack to drive ingestion validation, schema mapping, comparison rules, scoring, and report generation.
 
 *Phase 1:* One pack — HMDA Origination QC (pre-built by RiskExec). *Phase 2:* CRA, SBL (Section 1071). *Future:* Client-customizable packs.
 
@@ -520,7 +536,8 @@ See <<sect-pack-manifest-schema>> for the full Pack Manifest JSON Schema and <<s
 
 ===== Findings Review Workflow
 
-This workflow details the human oversight process for AI-generated findings, enforcing the AI governance red lines from <<sect-ai-governance>>. See also <<sect-ui-workflows, Workflow 4>> for the detailed UI flowchart.
+This workflow details the human oversight process for AI-generated findings, enforcing the AI governance red lines from <<sect-ai-governance>>.
+See also <<sect-ui-workflows, Workflow 4>> for the detailed UI flowchart.
 
 *Actors:* Rules Engine, AI (LLM), Reviewer (effective challenge), Manager
 
@@ -700,7 +717,8 @@ interface EvidenceRecord {
 }
 ----
 
-*Append-only semantics:* When a user "replaces" an evidence file, the system: (1) stores the new file with a new evidence_id, (2) creates a "supersedes" link from new to old, (3) marks the original as visible in history (never deleted), (4) audit trail records both the original and the replacement. See <<sect-immutability>> for the full immutability/correctability specification.
+*Append-only semantics:* When a user "replaces" an evidence file, the system: (1) stores the new file with a new evidence_id, (2) creates a "supersedes" link from new to old, (3) marks the original as visible in history (never deleted), (4) audit trail records both the original and the replacement.
+See <<sect-immutability>> for the full immutability/correctability specification.
 
 '''
 
@@ -774,9 +792,11 @@ Attachments:
   - Sampling methodology documentation
 ....
 
-*Exam-ready bundle:* Single exportable ZIP package containing all reports, evidence files, audit trail, pack configuration, and manifest with SHA-256 hash verification. See <<sect-exam-ready-bundle>> for the complete specification.
+*Exam-ready bundle:* Single exportable ZIP package containing all reports, evidence files, audit trail, pack configuration, and manifest with SHA-256 hash verification.
+See <<sect-exam-ready-bundle>> for the complete specification.
 
-*AI governance for narratives:* AI-generated report narratives carry mandatory disclaimer "AI-generated draft — requires approval" and cannot be included in finalized reports without explicit Manager-role approval. See <<sect-ai-governance>>.
+*AI governance for narratives:* AI-generated report narratives carry mandatory disclaimer "AI-generated draft — requires approval" and cannot be included in finalized reports without explicit Manager-role approval.
+See <<sect-ai-governance>>.
 
 '''
 
@@ -792,7 +812,8 @@ Attachments:
 |FR-9.5 |Audit log access for IT administrators: searchable, filterable, exportable. |Given an IT Admin, when they access the audit log, then they can filter by user, action type, date range, and entity, and export results as CSV. |P1
 |===
 
-*DECISION LOCKED:* Row-level security for Phase 1 tenant isolation. See <<sect-decision-d5, Decision D5>>.
+*DECISION LOCKED:* Row-level security for Phase 1 tenant isolation.
+See <<sect-decision-d5, Decision D5>>.
 
 ===== RBAC & Tenancy Workflow
 
@@ -840,13 +861,18 @@ flowchart TD
 
 *Components:* Auth & RBAC Service, PostgreSQL Row-Level Security (<<sect-component-design>>)
 
-*Roles:* Reviewer, Senior Reviewer, Manager, Audit Lead, Executive, IT Admin. See <<sect-rbac-permission-matrix>> for the full permission matrix.
+*Roles:* Reviewer, Senior Reviewer, Manager, Audit Lead, Executive, IT Admin.
+See <<sect-rbac-permission-matrix>> for the full permission matrix.
 
-*Multi-tenant isolation:* PostgreSQL Row-Level Security (RLS) ensures that every query is automatically filtered by the authenticated user's `tenant_id`. Cross-tenant data access is architecturally impossible at the database level.
+*Multi-tenant isolation:* PostgreSQL Row-Level Security (RLS) ensures that every query is automatically filtered by the authenticated user's `tenant_id`.
+Cross-tenant data access is architecturally impossible at the database level.
 
-*Audit trail integration:* Every access control decision — grants, denials, and segregation-of-duty violations — is recorded as an immutable audit event (<<sect-audit-trail-event-store>>). IT Admin role provides searchable, filterable, exportable access to the complete audit log.
+*Audit trail integration:* Every access control decision — grants, denials, and segregation-of-duty violations — is recorded as an immutable audit event (<<sect-audit-trail-event-store>>).
+IT Admin role provides searchable, filterable, exportable access to the complete audit log.
 
-*SSO:* SAML 2.0 and OIDC integration. No AuditIQ-specific passwords. Session management: 30-minute idle timeout, 8-hour absolute timeout.
+*SSO:* SAML 2.0 and OIDC integration.
+No AuditIQ-specific passwords.
+Session management: 30-minute idle timeout, 8-hour absolute timeout.
 
 === Non-Functional Requirements
 
@@ -877,4 +903,5 @@ flowchart TD
 
 === Acceptance Criteria Summary
 
-See individual epics above for detailed acceptance criteria per functional requirement. The companion document AuditIQ_MVP_Cutline_v0.2.md defines which requirements are must-have (P0), should-have (P1), and nice-to-have (P2) for MVP.
+See individual epics above for detailed acceptance criteria per functional requirement.
+The companion document AuditIQ_MVP_Cutline_v0.2.md defines which requirements are must-have (P0), should-have (P1), and nice-to-have (P2) for MVP.
