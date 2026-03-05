@@ -2,15 +2,15 @@
 
 AuditIQ is a new module for the RiskExec platform that transforms how financial institutions perform lending quality control and compliance audits. It replaces manual “stare-and-compare” audit workflows — where reviewers tediously compare loan data fields against source documents using spreadsheets and email — with a structured, confidence-scored, evidence-managed platform that serves all three lines of defense (QC, compliance, and audit) in a single system.
 
-*Why now:* Over 20% of existing RiskExec clients are already performing audit functions inside the platform using user-defined fields — a clear signal of unmet demand. The Board has directed the team to validate AuditIQ with 8–10 design partners and publish credible launch timelines. (Source: 2026_02.10 - CEO Letter)
+*Why now:* Over 20% of existing RiskExec clients are already performing audit functions inside the platform using user-defined fields — a clear signal of unmet demand. The team is validating AuditIQ with 8–10 design partners and publishing credible launch timelines.
 
-*What makes it different from ACES (primary competitor):*
+*What makes it different from the primary competitor:*
 
 * Three-layer confidence scoring (mapping, extraction, rule application) gives reviewers quantified trust signals, not binary pass/fail.
 * Audit pack architecture makes the platform extensible by domain — each regulation gets a modular “pack” rather than hard-coded logic.
 * Governance-first AI: every AI output is advisory, explainable, human-approved, and immutably logged.
-* Three-lines-of-defense support in one system, vs. ACES’s QC-only focus.
+* Three-lines-of-defense support in one system, vs. the primary competitor’s QC-only focus.
 
 *Phase 1 MVP scope:* HMDA origination audit. Manual and OCR-assisted review modes. Findings management with remediation tracking. Manager dashboards. AI-assisted reporting. Exam-ready export bundle. Target: June 30, 2026.
 
-*Revenue opportunity:* $3–4M incremental ARR within 24 months at base-case 40 customers and $90K average ACV. Pricing model (Section 13) mirrors ACES’s proven per-pack subscription tiers at 15–20% below ACES rates, with AI governance controls included. ACES’s 141 customers average $135K ACV (banks: $167K; top logos: $481K–$934K); AuditIQ targets the same ACV range with superior value. (Sources: 5 Audit-IQ - RiskExec New Product Brief.pdf, Internal ACES Pricing Study)
+*Revenue opportunity:* $3–4M incremental ARR within 24 months at base-case 40 customers and $90K average ACV. Pricing model (Section 13) mirrors the primary competitor’s proven per-pack subscription tiers at 15–20% below incumbent rates, with AI governance controls included. The primary competitor’s ~141 customers average $135K ACV (banks: $167K; top logos: $481K–$934K); AuditIQ targets the same ACV range with superior value.

@@ -19,4 +19,4 @@ Regulators increasingly expect financial institutions to demonstrate a coordinat
 
 === The Competitive Landscape Gap
 
-ACES Quality Management dominates the lending QC software market with ~141 customers and a defensibility rating of MEDIUM-HIGH. (Source: ACES_Competitive Analysis_vF.pdf) However, ACES has critical limitations: it serves primarily first-line QC teams (not three lines of defense), its AI capabilities were added via partnerships in September 2025 (not native), its documentation is criticized as incomplete, and its legacy architecture makes it difficult to retrofit governance-first AI controls.
+The primary competitor dominates the lending QC software market with ~141 customers and a defensibility rating of MEDIUM-HIGH. However, it has critical limitations: it serves primarily first-line QC teams (not three lines of defense), its AI capabilities were added via partnerships in September 2025 (not native), its documentation is criticized as incomplete, and its legacy architecture makes it difficult to retrofit governance-first AI controls.

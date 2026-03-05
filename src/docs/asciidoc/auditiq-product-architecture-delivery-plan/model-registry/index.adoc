@@ -22,7 +22,7 @@ Under SR 11-7, a model is any quantitative method, system, or approach that appl
 |Model Type |Example |Owner |Risk Tier
 
 |*LLM (third-party)*
-|GPT-4 Turbo, Claude 3 Opus
+|GPT-4 Turbo, Gemini 1.5 Pro
 |ML Engineer
 |High — generates audit narratives
 
@@ -67,7 +67,7 @@ CREATE TABLE ai.model_registry (
                                            -- 'schema_matcher', 'calibrator', 'rag_corpus'
   model_name VARCHAR(255) NOT NULL,        -- e.g., 'gpt-4-turbo', 'narrative_finding'
   model_version VARCHAR(100) NOT NULL,     -- e.g., '2024-04-09', 'v1.2'
-  provider VARCHAR(100),                   -- e.g., 'openai', 'anthropic', 'self-hosted', 'internal'
+  provider VARCHAR(100),                   -- e.g., 'openai', 'mistral', 'self-hosted', 'internal'
 
   -- Governance
   status VARCHAR(50) NOT NULL DEFAULT 'draft',

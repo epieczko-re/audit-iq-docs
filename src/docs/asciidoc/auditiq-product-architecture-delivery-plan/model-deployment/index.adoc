@@ -86,7 +86,7 @@ rectangle "Docling Conversion\nOCR/Layout/Tables" as A
 rectangle "Docling-Graph\nChunking + Contracts" as B
 rectangle "LiteLLM Router\nPolicy + Allowlist" as C
 rectangle "vLLM Service\nOpenAI-compatible" as D
-rectangle "Cloud Fallback\n(OpenAI/Anthropic/Mistral API)" as E
+rectangle "Cloud Fallback\n(OpenAI/Mistral API)" as E
 rectangle "JSON Validation + Repair\nResponseHandler" as F
 database "Provenance Store" as G
 

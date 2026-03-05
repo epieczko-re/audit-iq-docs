@@ -1,5 +1,29 @@
 == AI Governance & Model Risk Controls
 
+.AI & Human-in-Loop Decision Flow
+[mermaid]
+----
+graph TD
+  A[Extracted Data] -->|LLM Call| B{Confidence > 0.70?}
+  B -->|Yes| C[Auto-Narrative]
+  B -->|No| D[Manual Narrative]
+  C -->|Confidence| E[Finding]
+  D -->|Manual| E
+  E -->|Severity=Critical?| F{Manager Review}
+  F -->|Approved| G[Finalized]
+  F -->|Rejected| H[Revision]
+  H -->|Resubmit| F
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#4A6FA5,color:#fff,stroke:#2B4570
+----
+
 === Purpose & Regulatory Context
 
 AuditIQ uses AI (LLMs, schema matchers, scoring models) to extract data, suggest mappings, and generate narratives. *Regulators increasingly scrutinize AI in regulated products.* This section defines operational controls to manage AI risk, ensure transparency, and maintain audit trail.
@@ -14,7 +38,7 @@ ____
 * *NIST AI RMF 1.0 (Govern / Map / Measure / Manage):* Provides trustworthiness characteristics framework; AuditIQ maps to Govern (policy + oversight), Map (risk identification), Measure (metrics + monitoring), Manage (controls + response).
 * *NIST GenAI Profile (AI 600-1):* Requires content provenance, pre-deployment testing, incident disclosure, and confabulation management — all implemented in Sections 22.3–22.5.
 * *CFPB Circular 2022-03:* No AI exemption for adverse action notice requirements. If AuditIQ findings influence credit decisions, the human reviewer (not AI) must be the decision-maker.
-* *Interagency Third-Party Relationships Guidance:* Third-party AI providers (OpenAI, Anthropic) must be managed as critical service providers with contractual exam access.
+* *Interagency Third-Party Relationships Guidance:* Third-party AI providers (OpenAI, Mistral) must be managed as critical service providers with contractual exam access.
 
 *Key principle:* Every AI output is traceable to its input, model, and version. Humans are in the loop for all critical decisions. AI is positioned as “documentation and review acceleration” — NOT as the decision-maker.
 
@@ -92,7 +116,7 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 
 *Data NOT used for training:*
 
-* Explicit contractual clause with LLM provider (OpenAI, Anthropic, etc.): “Do not use customer data for model training.”
+* Explicit contractual clause with LLM provider (OpenAI, Mistral, etc.): “Do not use customer data for model training.”
 * Verified in API contract before Phase 1a launch
 
 === Provenance: Every AI Output is Traceable
@@ -109,8 +133,8 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 |1 |`tenant_id` |string |Multi-tenant isolation
 |2 |`audit_id` |string |Links AI output to specific audit
 |3 |`finding_id` |string |Links AI output to specific finding
-|4 |`ai_provider` |string |e.g., “openai”, “anthropic”, “self-hosted”
-|5 |`model_name` |string |e.g., “gpt-4-turbo”, “claude-3-opus”
+|4 |`ai_provider` |string |e.g., “openai”, “mistral”, “self-hosted”
+|5 |`model_name` |string |e.g., “gpt-4-turbo”, “gemini-1.5-pro”
 |6 |`model_version` |string |e.g., “2024-04-09”
 |7 |`prompt_template_id` |string |Versioned template identifier
 |8 |`prompt_template_version` |string |e.g., “narrative_template_v1.2”

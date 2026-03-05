@@ -8,10 +8,10 @@ Make every financial institution always exam-ready by providing a unified audit 
 
 AuditIQ is positioned as:
 
-* *Not an AI product* — it is a governance and workflow platform that uses AI as an accelerant.
+* *Governance-first AI* — AI is a core capability, not a bolt-on; every AI output is governed, traceable, and human-approved.
 * *Additive, not replacement* — it extends RiskExec’s existing compliance platform, increasing deal size by 20–30%.
 * *Examiner-friendly* — designed to produce the evidence packages and audit trails that regulators want to see.
-* *AI opt-out, not opt-in* — per Board directive, AI capabilities are available by default but can be fully disabled. (Source: 2026_02.10 - CEO Letter)
+* *AI-native* — AI is embedded throughout the audit workflow, powering extraction, confidence scoring, findings drafting, and narrative generation as core platform capabilities.
 
 === Target Users
 
@@ -27,4 +27,4 @@ AuditIQ is positioned as:
 
 === Interested Clients (Design Partner Candidates)
 
-Commerce Bank, Ally Financial, Truist, Citizens Financial Group, and SoFi have expressed interest. (Source: 5 Audit-IQ - RiskExec New Product Brief.pdf) Board directive requires validation with 8–10 design partners. (Source: 2026_02.10 - CEO Letter)
+Commerce Bank, Ally Financial, Truist, Citizens Financial Group, and SoFi have expressed interest. The team is targeting validation with 8–10 design partners.

@@ -1,8 +1,8 @@
 == Pricing and Packaging
 
-=== Market Context: ACES Pricing Intelligence
+=== Market Context: Competitive Pricing Intelligence
 
-Based on internal competitive analysis of ~141 ACES customers (circa 2023 data). See Section 4.1 for full tier-by-tier breakdown.
+Based on internal competitive analysis of ~141 primary competitor customers (circa 2023 data). See Section 4.1 for full tier-by-tier breakdown.
 
 [cols="40%,60%",options="header"]
 |===
@@ -36,7 +36,7 @@ Based on internal competitive analysis of ~141 ACES customers (circa 2023 data).
 |Number of packs purchased × audit volume tier
 |===
 
-*Key competitive insight:* ACES prices each audit type (Origination, Servicing, Consumer, HMDA) as a separate subscription. Customers buying multiple packs at high volume drive the $135K average ACV. Banks average $167K because they buy more pack types. AuditIQ's pack architecture is a natural fit for the same per-pack pricing model — but with AI governance controls included at no surcharge.
+*Key competitive insight:* The primary competitor prices each audit type (Origination, Servicing, Consumer, HMDA) as a separate subscription. Customers buying multiple packs at high volume drive the $135K average ACV. Banks average $167K because they buy more pack types. AuditIQ's pack architecture is a natural fit for the same per-pack pricing model — but with AI governance controls included at no surcharge.
 
 === RiskExec Baseline & AuditIQ Uplift Strategy
 
@@ -49,12 +49,12 @@ Based on internal competitive analysis of ~141 ACES customers (circa 2023 data).
 *AuditIQ dual positioning:*
 
 * *RiskExec add-on:* 20–30% ACV uplift for existing customers adopting audit automation → target $8K–$12K/yr for single-pack entry, scaling to $50K–$120K/yr for multi-pack enterprise
-* *Standalone product:* For audit-first prospects (e.g., ACES displacement), AuditIQ competes directly at $40K–$150K ACV with full pack portfolio
+* *Standalone product:* For audit-first prospects (e.g., incumbent displacement), AuditIQ competes directly at $40K–$150K ACV with full pack portfolio
 * *Rationale:* Reduces audit labor cost by ~40% per engagement; enables higher audit frequency; consolidates 3 lines of defense into one system
 
 === Pricing Model
 
-*DECISION PROPOSED (D6):* Platform + Pack subscription model, mirroring the ACES tiered structure that the market understands, with AI governance controls included as a competitive differentiator.
+*DECISION PROPOSED (D6):* Platform + Pack subscription model, mirroring the primary competitor's tiered structure that the market understands, with AI governance controls included as a competitive differentiator.
 
 ==== Pricing Architecture
 
@@ -65,7 +65,7 @@ AuditIQ pricing consists of three components:
 . *Pack subscriptions* (per pack, tiered by monthly audit volume) — each regulatory pack priced independently with volume tiers
 . *Add-ons* (optional) — AI Copilot, custom pack development, professional services
 
-This mirrors ACES's proven model while adding value through included AI governance features.
+This mirrors the primary competitor's proven model while adding value through included AI governance features.
 
 ==== Platform Access Fee
 
@@ -99,161 +99,161 @@ Each audit pack is licensed as a separate monthly subscription with included aud
 
 [cols="14%,18%,18%,18%,16%,16%",options="header"]
 |===
-|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
+|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. primary competitor
 
 |Tier 1
 |$900
 |200
 |$4.50
 |$10,800
-|−18% vs. ACES Tier 1
+|−18% vs. primary competitor Tier 1
 
 |Tier 2
 |$1,500
 |500
 |$3.00
 |$18,000
-|−17% vs. ACES Tier 2
+|−17% vs. primary competitor Tier 2
 
 |Tier 3
 |$2,800
 |1,500
 |$1.50
 |$33,600
-|−20% vs. ACES Tier 3
+|−20% vs. primary competitor Tier 3
 
 |Enterprise
 |$3,500
 |3,000
 |$0.75
 |$42,000
-|−17% vs. ACES Enterprise
+|−17% vs. primary competitor Enterprise
 |===
 
-NOTE: HMDA pricing deliberately undercuts ACES by 17–20% to drive Phase 1 adoption. AuditIQ HMDA includes AI-assisted field extraction and confidence scoring at no surcharge — features ACES does not offer at any tier.
+NOTE: HMDA pricing deliberately undercuts the primary competitor by 17–20% to drive Phase 1 adoption. AuditIQ HMDA includes AI-assisted field extraction and confidence scoring at no surcharge — features the primary competitor does not offer at any tier.
 
 *Origination Audit Pack (Phase 2):*
 
 [cols="14%,18%,18%,18%,16%,16%",options="header"]
 |===
-|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
+|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. primary competitor
 
 |Tier 1
 |$2,800
 |100
 |$24.00
 |$33,600
-|−15% vs. ACES Tier 1
+|−15% vs. primary competitor Tier 1
 
 |Tier 2
 |$4,700
 |200
 |$19.00
 |$56,400
-|−15% vs. ACES Tier 2
+|−15% vs. primary competitor Tier 2
 
 |Tier 3
 |$9,400
 |500
 |$14.50
 |$112,800
-|−15% vs. ACES Tier 3
+|−15% vs. primary competitor Tier 3
 
 |Tier 4
 |$11,600
 |800
 |$10.00
 |$139,200
-|−15% vs. ACES Tier 4
+|−15% vs. primary competitor Tier 4
 
 |Tier 5
 |$14,000
 |1,500
 |$7.50
 |$168,000
-|−15% vs. ACES Tier 5
+|−15% vs. primary competitor Tier 5
 
 |Enterprise
 |$23,400
 |5,000
 |$3.50
 |$280,800
-|−15% vs. ACES Enterprise
+|−15% vs. primary competitor Enterprise
 |===
 
 *Servicing Audit Pack (Phase 2):*
 
 [cols="14%,18%,18%,18%,16%,16%",options="header"]
 |===
-|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
+|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. primary competitor
 
 |Tier 1
 |$2,700
 |150
 |$18.00
 |$32,400
-|−16% vs. ACES Tier 1
+|−16% vs. primary competitor Tier 1
 
 |Tier 2
 |$4,500
 |300
 |$14.50
 |$54,000
-|−15% vs. ACES Tier 2
+|−15% vs. primary competitor Tier 2
 
 |Tier 3
 |$9,000
 |750
 |$12.00
 |$108,000
-|−15% vs. ACES Tier 3
+|−15% vs. primary competitor Tier 3
 
 |Enterprise
 |$22,400
 |5,000
 |$3.50
 |$268,800
-|−15% vs. ACES Enterprise
+|−15% vs. primary competitor Enterprise
 |===
 
 *Consumer Audit Pack (Phase 3):*
 
 [cols="14%,18%,18%,18%,16%,16%",options="header"]
 |===
-|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. ACES
+|Tier |Monthly Fee |Audits/mo |Excess Rate |Annualized |vs. primary competitor
 
 |Tier 1
 |$1,800
 |200
 |$9.00
 |$21,600
-|−14% vs. ACES Tier 1
+|−14% vs. primary competitor Tier 1
 
 |Tier 2
 |$3,000
 |400
 |$7.50
 |$36,000
-|−14% vs. ACES Tier 2
+|−14% vs. primary competitor Tier 2
 
 |Tier 3
 |$6,000
 |1,000
 |$6.00
 |$72,000
-|−14% vs. ACES Tier 3
+|−14% vs. primary competitor Tier 3
 
 |Enterprise
 |$9,000
 |3,000
 |$3.00
 |$108,000
-|−14% vs. ACES Enterprise
+|−14% vs. primary competitor Enterprise
 |===
 
 ==== Multi-Pack Discount
 
-Customers purchasing 2+ packs simultaneously receive a *10% discount on pack subscription fees* (platform fee unchanged). Customers purchasing 4+ packs receive *15% discount*. This encourages multi-pack adoption and drives ACV toward the $100K+ range that competes with ACES.
+Customers purchasing 2+ packs simultaneously receive a *10% discount on pack subscription fees* (platform fee unchanged). Customers purchasing 4+ packs receive *15% discount*. This encourages multi-pack adoption and drives ACV toward the $100K+ range that competes with the primary competitor.
 
 [cols="30%,35%,35%",options="header"]
 |===
@@ -265,7 +265,7 @@ Customers purchasing 2+ packs simultaneously receive a *10% discount on pack sub
 
 |2–3 packs
 |10%
-|Encourages cross-sell; matches inferred ACES behavior
+|Encourages cross-sell; matches inferred competitor behavior
 
 |4+ packs
 |15%
@@ -287,7 +287,7 @@ Customers purchasing 2+ packs simultaneously receive a *10% discount on pack sub
 |Organization-specific model fine-tuning for custom terminology, pack-specific patterns, and institution-specific field naming conventions. Enterprise tier only.
 |===
 
-NOTE: Including AI Copilot in Professional tier (free) is a key competitive differentiator. ACES charges separately for AI features via bolt-on partnerships. AuditIQ's governance-first AI is a core value proposition, not an upsell.
+NOTE: Including AI Copilot in Professional tier (free) is a key competitive differentiator. The primary competitor charges separately for AI features via bolt-on partnerships. AuditIQ's governance-first AI is a core value proposition, not an upsell.
 
 ==== Professional Services
 
@@ -336,13 +336,13 @@ NOTE: Including AI Copilot in Professional tier (free) is a key competitive diff
 |50
 |$120,000
 |$6,000,000
-|ACES displacement wins; 3–4 packs; Enterprise tier; top logos at $200K+
+|Incumbent displacement wins; 3–4 packs; Enterprise tier; top logos at $200K+
 
 |*Whale scenario*
 |5 whales + 30 base
 |$175K whales / $70K base
 |$2,975,000
-|Pursue top-10 mortgage lenders and top-tier banks per ACES logo analysis
+|Pursue top-10 mortgage lenders and top-tier banks per competitive logo analysis
 |===
 
 *ACV buildup example — Regional bank, Professional tier, 3 packs:*
@@ -376,7 +376,7 @@ NOTE: Including AI Copilot in Professional tier (free) is a key competitive diff
 |*$132,120*
 |===
 
-This $132K ACV is competitive with ACES's $135K average and $167K bank average, while including AI governance features that ACES charges extra for.
+This $132K ACV is competitive with the primary competitor's $135K average and $167K bank average, while including AI governance features that the primary competitor charges extra for.
 
 === Contract Terms
 
@@ -420,12 +420,12 @@ The following are *not* included in AuditIQ pricing and are procured separately:
 |1
 |*Tier structure:* Platform fee + per-pack subscription with volume tiers
 |☑ PROPOSED
-|Mirrors ACES model that market understands; allows granular upsell
+|Mirrors the primary competitor's model that market understands; allows granular upsell
 
 |2
 |*Pack licensing:* Per-pack subscription, tiered by audit volume
 |☑ PROPOSED
-|Matches ACES's proven per-pack model; drives ACV through multi-pack adoption
+|Matches the primary competitor's proven per-pack model; drives ACV through multi-pack adoption
 
 |3
 |*AI premium:* Included in Professional/Enterprise platform tiers; add-on for Essentials

@@ -71,6 +71,29 @@ interface ValidationError {
 
 === Document Processing Service (Docling + OCR)
 
+.Document Processing Pipeline
+[mermaid]
+----
+graph LR
+  A[Upload PDF] -->|Scan| B{Malware Check}
+  B -->|Clean| C[Docling Extract]
+  B -->|Infected| D[Quarantine]
+  C -->|Text + Tables| E[Schema Mapper]
+  E -->|Confidence| F[Extracted Record]
+  F -->|Event| G[Audit Trail]
+  C -->|OCR Failed?| H[Cloud OCR Fallback]
+  H -->|Re-extract| E
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#C0392B,color:#fff,stroke:#922B21
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#4A6FA5,color:#fff,stroke:#2B4570
+----
+
 *Responsibilities:*
 
 * Process source documents through Docling (document conversion + layout understanding substrate)
@@ -106,7 +129,7 @@ Docling (document conversion & VLM)
 * Trace/debug exports for provenance and troubleshooting
 * *MIT-licensed* — lower licensing risk than GPL-linked alternatives
 
-_(Source: Docling-Graph README, https://github.com/docling-project/docling-graph)_
+_See: Docling-Graph README (https://github.com/docling-project/docling-graph)_
 
 *LLM Integration (LiteLLM / Mistral):* Docling-Graph integrates with *LiteLLM* — a single interface to local and remote LLM runtimes (vLLM, Ollama) and cloud providers (Mistral, OpenAI). For Phase 1 the recommended LLM inference path is *self-hosted Mistral* using vLLM or Ollama orchestrated via LiteLLM, with `provider_override` set to `mistral` in Docling-Graph configs. This provides high throughput, lower per-call cost at scale, and improved data residency controls while preserving the option to use cloud LLMs during early validation. See Section 25 (Model Deployment: Mistral Self-Hosted) for hardware and operational guidance.
 

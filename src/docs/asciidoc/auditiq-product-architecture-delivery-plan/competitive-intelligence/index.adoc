@@ -1,10 +1,10 @@
 == Competitive Intelligence
 
-=== ACES Quality Management (Primary Competitor)
+=== Primary Competitor Analysis
 
 ==== Market Position & ACV Analysis
 
-*Source: Internal ACES Pricing Study (circa 2023 data).*
+*Based on internal competitive pricing study (circa 2023 data).*
 
 [cols="40%,30%,30%",options="header"]
 |===
@@ -39,9 +39,9 @@
 |1
 |===
 
-*Key insight:* ACES' ACV is heavily driven by multi-pack purchases. Banks buy Origination + Servicing + HMDA + Consumer packs and land at $167K. Mortgage lenders buying fewer packs land at $124K. Top logos buying all packs at high volume exceed $500K.
+*Key insight:* The primary competitor's ACV is heavily driven by multi-pack purchases. Banks buy Origination + Servicing + HMDA + Consumer packs and land at $167K. Mortgage lenders buying fewer packs land at $124K. Top logos buying all packs at high volume exceed $500K.
 
-==== ACES Pricing Model (Detailed)
+==== Primary Competitor Pricing Model (Detailed)
 
 *Model:* Subscription — flat monthly fee per audit pack with minimum audit quantities, plus per-audit fees for overages. Each pack priced independently. Multi-pack discount available (specifics unknown).
 
@@ -100,9 +100,9 @@
 |Enterprise |$4,200 |3,000 |$1.00 |$50,400
 |===
 
-==== ACES Strategic Assessment
+==== Primary Competitor Strategic Assessment
 
-* *Defensibility:* MEDIUM-HIGH. Deep enterprise relationships and switching costs, but aging architecture and bolt-on AI. (Source: ACES_Competitive Analysis_vF.pdf)
+* *Defensibility:* MEDIUM-HIGH. Deep enterprise relationships and switching costs, but aging architecture and bolt-on AI.
 * *AI strategy:* Introduced AI features via partnerships (not native) in September 2025. Cannot easily retrofit governance-first AI controls.
 * *Weaknesses:* QC-only (not three lines of defense), documentation quality criticized, limited OCR/document extraction capabilities.
 * *Pricing vulnerability:* Per-pack pricing without AI features means customers pay more for less intelligence. AuditIQ can include AI governance controls at competitive pricing and win on value.
