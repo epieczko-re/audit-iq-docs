@@ -9,6 +9,7 @@ on:
       - 'Makefile'
       - 'Dockerfile'
       - '.github/workflows/build-docs.yml'
+      - 'scripts/**'
   pull_request:
     branches: [main, master]
     paths:
@@ -17,6 +18,7 @@ on:
       - 'Makefile'
       - 'Dockerfile'
       - '.github/workflows/build-docs.yml'
+      - 'scripts/**'
   workflow_dispatch:
     inputs:
       formats:
@@ -30,7 +32,17 @@ env:
   KROKI_SERVER_URL: http://kroki:8000
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Lint one-sentence-per-line
+        run: bash scripts/lint-one-sentence-per-line.sh src/docs
+
   build:
+    needs: lint
     runs-on: ubuntu-latest
     container:
       image: docker://asciidoctor/docker-asciidoctor:latest

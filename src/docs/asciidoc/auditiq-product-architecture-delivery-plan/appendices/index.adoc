@@ -39,11 +39,21 @@
 
 *Snapshot:* Immutable record of audit state at a point in time (used for reproducibility & rollback to prior version without re-running extraction). See <<sect-immutability>>.
 
-*SOC 2:* Service Organization Control audit; certifies security, availability, and confidentiality controls. AuditIQ target compliance by Jun 30.
+*Source Documents (Source Data):* The evidence documents against which target records are compared — original loan file artifacts (PDFs, images, or a second structured dataset in record-to-record audits).
+Extraction from source documents produces confidence scores (AFC) because OCR and layout parsing introduce uncertainty.
+See <<sect-target-source-schemas>>.
+
+*SOC 2:* Service Organization Control audit; certifies security, availability, and confidentiality controls.
+AuditIQ target compliance by Jun 30.
+
+*Target Dataset (Target Data):* The structured loan records under audit — the institution's own data as filed, originated, or reported.
+Validated deterministically during ingestion against the audit pack schema.
+See <<sect-target-source-schemas>>.
 
 *Tenant:* A customer organization in the multi-tenant AuditIQ system; data isolated by row-level security + encryption.
 
-*Audit Trail / Audit Log:* Complete record of all events (extractions, approvals, corrections) for an audit. Append-only; forms basis of regulatory compliance proof.
+*Audit Trail / Audit Log:* Complete record of all events (extractions, approvals, corrections) for an audit.
+Append-only; forms basis of regulatory compliance proof.
 
 '''
 

@@ -6,10 +6,13 @@
 [arabic]
 . *Separation of concerns:* Ingestion → Processing → AI → Storage → Reporting.
 . *Immutable audit trail:* Every state change is recorded as an event; events are append-only and hash-chained.
-. *Declarative configuration:* Packs are JSON, not code. The platform interprets them.
+. *Declarative configuration:* Packs are JSON, not code.
+The platform interprets them.
 . *Confidence scoring:* Every output carries a quantified confidence score (extraction, mapping, rule application).
 . *Human-in-loop by default:* AI outputs are advisory and non-finalized until explicitly approved by a human with the right role.
-. *Multi-tenancy:* Row-level security at the database level. No cross-tenant data leakage. See diagram below.
+. *Multi-tenancy:* Row-level security at the database level.
+No cross-tenant data leakage.
+See diagram below.
 
 .Multi-Tenant Data Isolation
 [mermaid]
@@ -32,62 +35,395 @@ graph TD
   style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
   style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
+[start=7]
 . *Reproducibility:* Identical inputs + pack version + configuration = identical deterministic outputs.
 
 === Component Architecture (Deep Dive)
 
 *Logical layers:*
 
+For detailed component specifications including API contracts, input/output interfaces, and error handling, see <<sect-component-design, Component-Level Design>>.
+
 ==== Client Layer
 
-* Web UI (React/Angular)
-* API Gateway (authentication, rate limiting, request routing)
+* *Web UI (React):* Single-page application for audit workflows, dashboards, and admin.
+See <<sect-ui-workflows, UI Workflows & User Journeys>>.
+* *API Gateway (Azure APIM):* Authentication, rate limiting, request routing, TLS termination.
+See <<sect-api-gateway>>.
 
 ==== Core Platform Services
 
-* *Auth & RBAC Service:* SSO, session management, permission checks
-* *Audit Orchestration Service:* Manages audit lifecycle, state machine, pack loading
-* *Audit Pack Manager:* Pack versioning, distribution, validation harness
-* *Workflow Engine:* State machine enforcement, event publishing
+* *Auth & RBAC Service:* SSO via Azure AD, session management, permission enforcement via RLS.
+See <<sect-rbac-permission-matrix>>.
+* *Audit Orchestration Service:* Manages audit lifecycle, state machine, pack loading, concurrency limits.
+See <<sect-audit-orchestration>>.
+* *Audit Pack Manager:* Pack versioning, distribution, validation harness.
+See <<sect-audit-pack-spec>>.
+* *Workflow Engine:* State machine enforcement, event publishing, retry/compensation.
 
 ==== Data Pipeline Services
 
-* *Ingestion Service:* CSV/API validation, document receipt, format conversion
-* *Document Processing Service:* Docling-based OCR, cloud OCR fallback, text extraction
-* *Schema Mapping Service:* Field matching, confidence scoring, mapping UI data
-* *Normalization Engine:* Value standardization, type coercion, formatting
-* *Comparison & Rules Engine:* Pack rule execution, finding generation
+* *Ingestion Service:* CSV/API validation, document receipt, format conversion.
+See <<sect-component-design, Ingestion Service>>.
+* *Document Processing Service:* Docling-Graph VLM/LLM extraction, cloud OCR fallback, AFC scoring.
+See <<sect-doc-processing>>.
+* *Schema Mapping Service:* Field matching, confidence scoring, mapping UI data.
+See <<sect-schema-mapping-service>>.
+* *Normalization Engine:* Value standardization, type coercion, formatting.
+* *Comparison & Rules Engine:* Pack rule execution, finding generation.
 
 ==== Intelligence Layer
 
-* *AI Rule Generation (TBD Phase 2):* Auto-generate new rules from discovered patterns
-* *AI Reporting Assistant:* Draft audit narratives, executive summaries
-* *Confidence & Severity Scoring:* Apply pack scoring rules, compute combined confidence
-* *Regulatory Citation Engine:* Link findings to specific regulation sections
+* *Regulatory Citation Engine:* Semantic search over CFR corpus, Qdrant vector DB, open-source embeddings.
+See <<sect-regulatory-citation-engine>>.
+* *AI Reporting Assistant:* Draft audit narratives, executive summaries.
+* *Confidence & Severity Scoring:* Apply pack scoring rules, compute combined confidence.
+See <<sect-scoring-framework>>.
+* *AI Rule Generation (Phase 2):* Auto-generate new rules from discovered patterns.
+See <<sect-ai-rule-generation>>.
 
 ==== Data & Storage Layer
 
-* *Primary Database (PostgreSQL):* Findings, mappings, configurations, user data
-* *Document Store (Azure Blob Storage):* Source documents, evidence, audit reports
-* *Search Index (Elasticsearch):* Full-text search on findings, evidence, audit trail
-* *Event Store (Append-only log):* Audit trail, immutable event history, hash-chained
+* *Primary Database (PostgreSQL):* Findings, mappings, configurations, user data, event store (append-only).
+See <<sect-data-model>>.
+* *Document Store (Azure Blob Storage):* Source documents, evidence, audit reports.
+7-year retention with CMK encryption.
+See <<sect-document-store>>.
+* *Search Index (Azure Elasticsearch):* Full-text search on findings, evidence, audit trail, regulations.
+See <<sect-search-index>>.
+* *Vector Store (Qdrant):* Regulation text embeddings for semantic citation search.
+See <<sect-regulatory-citation-engine>>.
 
 === Deployment Architecture
 
-*Phase 1 Deployment:*
+==== Infrastructure Diagram
 
-* Single-region cloud deployment (Azure)
-* Multi-AZ within region for high availability
-* RDS PostgreSQL (Multi-AZ, automated backups, read replicas)
-* Azure Blob Storage for document storage (versioning enabled, cross-region replication optional)
-* Elasticsearch cluster (3 nodes, auto-sharding)
-* Event store (PostgreSQL append-only table with triggers)
+.AuditIQ Azure Deployment Architecture
+[mermaid]
+----
+graph TB
+  subgraph Internet
+    USERS["Users / API Consumers"]
+  end
 
-*Scaling considerations:*
+  subgraph AzureRegion["Azure East US 2"]
+    subgraph VNet["Virtual Network (10.0.0.0/16)"]
+      subgraph PublicSubnet["Public Subnet (10.0.1.0/24)"]
+        APIM["Azure API Management<br/>(Standard v2)"]
+        WAF["Azure Front Door<br/>(WAF + CDN)"]
+      end
 
-* Stateless microservices: Ingestion, Mapping, Comparison can scale horizontally
-* Stateful services (Workflow, Orchestration): Single instance per tenant (Phase 1)
-* Database: RDS read replicas for query-heavy dashboards
-* Document storage: Azure Blob Storage auto-scales; no configuration needed
+      subgraph AKSSubnet["AKS Subnet (10.0.4.0/20)"]
+        AKS["Azure Kubernetes Service"]
+        subgraph CorePods["Core Services"]
+          ORCH_POD["Orchestration"]
+          AUTH_POD["Auth & RBAC"]
+          WF_POD["Workflow Engine"]
+          PACK_POD["Pack Manager"]
+        end
+        subgraph PipelinePods["Data Pipeline"]
+          ING_POD["Ingestion"]
+          DOC_POD["Document Processing"]
+          MAP_POD["Schema Mapping"]
+          RULES_POD["Comparison Engine"]
+        end
+        subgraph IntelPods["Intelligence"]
+          REPORT_POD["AI Reporting"]
+          CITE_POD["Citation Engine"]
+          SCORE_POD["Scoring"]
+        end
+        subgraph InfraPods["Infrastructure"]
+          QDRANT_POD["Qdrant"]
+          ES_POD["Elasticsearch"]
+          REDIS_POD["Redis Cache"]
+        end
+      end
 
-*TODO:* Publish Terraform/CloudFormation templates for infrastructure-as-code deployment.
+      subgraph DataSubnet["Data Subnet (10.0.32.0/20)"]
+        PG["Azure Database for<br/>PostgreSQL Flexible Server<br/>(Multi-AZ, 99.99% SLA)"]
+        BLOB["Azure Blob Storage<br/>(CMK, Immutable)"]
+      end
+    end
+
+    AAD["Azure Active Directory"]
+    KV["Azure Key Vault<br/>(CMK + Secrets)"]
+    MONITOR["Azure Monitor<br/>+ Application Insights"]
+  end
+
+  USERS -->|HTTPS| WAF
+  WAF --> APIM
+  APIM -->|OAuth 2.0| AAD
+  APIM --> AKS
+  AKS --> PG
+  AKS --> BLOB
+  KV -.->|Managed Identity| PG
+  KV -.->|CMK| BLOB
+  AKS -.->|Telemetry| MONITOR
+
+  style USERS fill:#888,color:#fff
+  style WAF fill:#4A6FA5,color:#fff
+  style APIM fill:#4A6FA5,color:#fff
+  style AAD fill:#FF7E2D,color:#fff
+  style KV fill:#FF7E2D,color:#fff
+  style MONITOR fill:#2E8B57,color:#fff
+  style PG fill:#6C3483,color:#fff
+  style BLOB fill:#6C3483,color:#fff
+----
+
+==== Phase 1 Deployment (East US 2)
+
+*Hosting model:* RiskExec-hosted multi-tenant SaaS.
+All infrastructure runs in RiskExec's Azure subscription.
+Tenant isolation is enforced via PostgreSQL Row-Level Security (RLS), per-tenant Blob containers, and per-tenant Elasticsearch indices.
+
+*Compute:*
+
+* *AKS cluster:* Azure Kubernetes Service (Standard tier).
+3 node pools:
+** *System pool:* 3× Standard_D4s_v5 (4 vCPU, 16 GB) — core services, orchestration, auth.
+** *Pipeline pool:* 3–6× Standard_D8s_v5 (8 vCPU, 32 GB) — document processing, schema mapping, comparison engine.
+Autoscales based on queue depth.
+** *Infrastructure pool:* 3× Standard_D4s_v5 — Elasticsearch, Qdrant, Redis.
+
+*Database:*
+
+* *Azure Database for PostgreSQL Flexible Server:* General Purpose tier, 8 vCPU, 64 GB RAM.
+* Multi-AZ deployment with automatic failover.
+* Automated backups: daily full, continuous WAL archiving.
+Point-in-time recovery up to 35 days.
+* Read replicas: 1 replica for dashboard queries and search indexing.
+
+*Networking:*
+
+* All services deployed within a single VNet.
+* AKS, PostgreSQL, and Blob Storage communicate over Private Endpoints (no public internet).
+* Azure API Management is the only publicly accessible endpoint.
+* Azure Front Door provides WAF, DDoS protection, and TLS termination.
+* Network Security Groups (NSGs) restrict traffic between subnets.
+
+*Region:* Azure East US 2 (Virginia).
+US data residency guaranteed — no data leaves US Azure regions.
+
+==== Non-Functional Requirements
+
+[cols="25%,25%,25%,25%",options="header"]
+|===
+|Category |Requirement |Target |Measurement
+
+|*Availability*
+|Platform uptime SLA
+|99.95% (≤ 4.4 hours downtime/year)
+|Azure Monitor availability metric, monthly
+
+|*Recovery Point Objective (RPO)*
+|Maximum data loss on failure
+|< 15 minutes
+|WAL archiving lag to Azure Blob
+
+|*Recovery Time Objective (RTO)*
+|Time to restore service after failure
+|< 1 hour
+|DR drill quarterly; automated failover for DB
+
+|*Latency — API*
+|P95 API response time
+|< 500ms (CRUD operations)
+|Application Insights, per-endpoint
+
+|*Latency — Document Processing*
+|Per-page extraction time
+|< 2 seconds (standard pipeline)
+|Custom metric, per-document
+
+|*Latency — Search*
+|P95 search response time
+|< 500ms
+|Elasticsearch metrics
+
+|*Throughput — Ingestion*
+|Records per minute (structured data)
+|≥ 5,000 records/minute
+|Load test, quarterly
+
+|*Throughput — Document Processing*
+|Pages per day (single AKS node)
+|≥ 175,000 pages/day
+|Benchmark, per pipeline pool node
+
+|*Concurrent Users*
+|Simultaneous active users
+|500 per AKS cluster
+|Load test, quarterly
+
+|*Concurrent Audits*
+|Active audits across all tenants
+|1,000+
+|Database query, real-time dashboard
+
+|*Storage — Document Retention*
+|Regulatory retention period
+|7 years (hot → cool → archive)
+|Azure Blob lifecycle policy
+
+|*Storage — Event Retention*
+|Audit trail retention
+|7 years (PostgreSQL + Elasticsearch)
+|ILM policy + DB retention trigger
+|===
+
+==== Security Architecture
+
+*Authentication & Identity:*
+
+* Azure Active Directory (AAD) as the identity provider.
+* OAuth 2.0 / OIDC for all user authentication.
+* Service-to-service: Managed Identity (no stored credentials).
+* MFA enforced for all human users via AAD Conditional Access.
+
+*Encryption:*
+
+[cols="30%,30%,40%",options="header"]
+|===
+|Scope |Method |Key Management
+
+|Data in transit
+|TLS 1.2+ (enforced; TLS 1.0/1.1 disabled)
+|Azure-managed certificates via Front Door
+
+|Data at rest (database)
+|AES-256, Transparent Data Encryption (TDE)
+|Customer-Managed Keys (CMK) in Azure Key Vault
+
+|Data at rest (blob storage)
+|AES-256, Storage Service Encryption (SSE)
+|Customer-Managed Keys (CMK) in Azure Key Vault
+
+|Data at rest (search index)
+|AES-256
+|Azure-managed keys (Phase 1); CMK (Phase 2)
+
+|Secrets & credentials
+|Azure Key Vault
+|RBAC-scoped access; auto-rotation for DB credentials
+|===
+
+*Network security:*
+
+* All data-plane traffic stays within the VNet via Private Endpoints.
+* No database or storage account has a public IP.
+* Azure Front Door WAF protects against OWASP Top 10 (SQL injection, XSS, etc.).
+* DDoS Protection Standard enabled on the VNet.
+* NSG rules: deny-all default; explicit allow for service-to-service traffic.
+
+*Tenant isolation:*
+
+* *Database:* PostgreSQL Row-Level Security (RLS) policies on every table.
+Every query is scoped to `current_setting('app.tenant_id')`.
+* *Blob Storage:* Per-tenant containers with SAS token scoping.
+* *Search:* Per-tenant Elasticsearch indices.
+* *API:* Tenant ID extracted from JWT and injected into every backend request by the API Gateway.
+
+*Compliance targets:*
+
+* *SOC 2 Type II:* Target readiness by June 30, 2026.
+* *PCI DSS:* Not applicable (no payment card data processed).
+* *GLBA / Regulation P:* Customer PII handled with encryption and access controls per GLBA requirements.
+
+*Threat model (STRIDE summary):*
+
+[cols="20%,40%,40%",options="header"]
+|===
+|Threat |Risk |Mitigation
+
+|Spoofing
+|Attacker impersonates user or service
+|AAD + OAuth 2.0; Managed Identity for services; MFA
+
+|Tampering
+|Attacker modifies audit data
+|Immutable event store (hash-chained); WORM storage for anchors; CMK encryption
+
+|Repudiation
+|Actor denies performing action
+|Append-only audit trail; actor_id on every event; digital signatures on finalized reports
+
+|Information Disclosure
+|Cross-tenant data leakage
+|RLS; per-tenant containers; NSG isolation; Private Endpoints; no public DB access
+
+|Denial of Service
+|Platform unavailability
+|DDoS Protection Standard; rate limiting at APIM; AKS autoscaling; multi-AZ
+
+|Elevation of Privilege
+|User accesses resources beyond their role
+|RBAC enforcement at API Gateway; segregation of duties; least-privilege Managed Identity
+|===
+
+==== Disaster Recovery
+
+*Strategy:* Multi-AZ within East US 2 (primary), with async replication to West US 2 (secondary) for PostgreSQL and Blob Storage.
+
+*Failover procedure:*
+
+[arabic]
+. Azure Monitor detects primary region failure (automated alert).
+. PostgreSQL Flexible Server automatic failover to standby replica (< 60 seconds).
+. AKS pods auto-restart on healthy nodes within the AZ (< 5 minutes).
+. If full-region failure: manual failover to West US 2 secondary.
+DNS update via Azure Traffic Manager (RTO: < 1 hour).
+
+*Backup schedule:*
+
+[cols="25%,25%,25%,25%",options="header"]
+|===
+|Component |Backup Type |Frequency |Retention
+
+|PostgreSQL
+|Full + continuous WAL
+|Daily full, continuous incremental
+|35 days (PITR)
+
+|Blob Storage
+|Soft delete + versioning
+|Continuous
+|7 years (lifecycle policy)
+
+|Elasticsearch
+|Snapshot to Azure Blob
+|Daily
+|90 days
+
+|Qdrant
+|Snapshot to Azure Blob
+|Daily
+|30 days
+
+|AKS Config
+|GitOps (Flux/ArgoCD)
+|On every merge to main
+|Git history (permanent)
+|===
+
+*DR drills:* Quarterly simulated failover.
+Results documented and reviewed by Engineering Lead and DevOps.
+
+==== Scaling Considerations
+
+* *Stateless microservices* (Ingestion, Mapping, Comparison, Reporting): Horizontal pod autoscaler (HPA) based on CPU and custom metrics (queue depth, request latency).
+* *Stateful services* (Workflow, Orchestration): Single active instance per tenant with leader election.
+Phase 2: partitioned by tenant group for scale.
+* *Database:* Vertical scaling (Phase 1).
+Read replicas for dashboard queries.
+Connection pooling via PgBouncer.
+Phase 2: consider Citus for horizontal sharding if > 100 tenants.
+* *Document Processing:* Most compute-intensive pipeline.
+Dedicated node pool with autoscaling (3–6 nodes).
+GPU nodes optional for VLM inference (Phase 2).
+* *Document Storage:* Azure Blob auto-scales.
+No configuration needed.
+* *Search:* Elasticsearch auto-sharding.
+ILM policies manage index lifecycle.
+
+*TODO:* Publish Terraform modules for infrastructure-as-code deployment.
+Target: Phase 0 completion (March 31, 2026).

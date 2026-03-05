@@ -1,6 +1,114 @@
 [[sect-component-design]]
 == Component-Level Design
 
+The diagram below shows how all components connect — from the API Gateway through the data pipeline to storage and intelligence services.
+Each component is specified in detail in the subsections that follow.
+
+.AuditIQ Component Integration Map
+[mermaid]
+----
+graph TB
+  subgraph Client["Client Layer"]
+    UI["Web Application<br/>(React)"]
+    APIM["Azure API Management<br/>Gateway"]
+  end
+
+  subgraph Core["Core Platform Services"]
+    AUTH["Auth & RBAC<br/>(Azure AD + RLS)"]
+    ORCH["Audit Orchestration<br/>Service"]
+    PACK["Audit Pack<br/>Manager"]
+    WF["Workflow Engine<br/>(State Machine)"]
+  end
+
+  subgraph Pipeline["Data Pipeline"]
+    ING["Ingestion<br/>Service"]
+    DOCPROC["Document Processing<br/>(Docling-Graph)"]
+    MAPPER["Schema Mapping<br/>Service"]
+    NORM["Normalization<br/>Engine"]
+    RULES["Comparison &<br/>Rules Engine"]
+    FINDINGS["Findings<br/>Management"]
+    EVIDENCE["Evidence &<br/>Attachments"]
+  end
+
+  subgraph Intelligence["Intelligence Layer"]
+    SCORING["Confidence &<br/>Severity Scoring"]
+    CITATIONS["Regulatory Citation<br/>Engine (Qdrant)"]
+    REPORT["AI Reporting<br/>Assistant"]
+    AIRULES["AI Rule Generation<br/>(Phase 2)"]
+  end
+
+  subgraph Storage["Data & Storage Layer"]
+    PG[("PostgreSQL<br/>(RLS + Events)")]
+    BLOB[("Azure Blob<br/>Storage (CMK)")]
+    ES[("Elasticsearch<br/>(Azure Managed)")]
+    QDRANT[("Qdrant<br/>Vector DB")]
+  end
+
+  %% Client → Core
+  UI -->|HTTPS| APIM
+  APIM -->|JWT + Tenant ID| AUTH
+  APIM -->|GraphQL| ORCH
+
+  %% Core orchestration
+  ORCH --> PACK
+  ORCH --> WF
+  ORCH --> ING
+  ORCH --> REPORT
+
+  %% Data pipeline flow
+  ING -->|Target dataset| MAPPER
+  ING -->|Source documents| DOCPROC
+  DOCPROC -->|Extracted fields + AFC| MAPPER
+  MAPPER -->|Mapped fields| NORM
+  NORM -->|Normalized values| RULES
+  RULES -->|Findings| FINDINGS
+  RULES -->|Scores| SCORING
+  FINDINGS --> EVIDENCE
+
+  %% Intelligence connections
+  SCORING -->|Combined confidence| FINDINGS
+  PACK --> RULES
+  PACK --> AIRULES
+  FINDINGS -->|Context| CITATIONS
+  CITATIONS -->|Ranked citations| REPORT
+
+  %% Storage connections
+  ORCH --> PG
+  FINDINGS --> PG
+  WF -->|Events| PG
+  DOCPROC --> BLOB
+  EVIDENCE --> BLOB
+  REPORT --> BLOB
+  ING --> ES
+  FINDINGS --> ES
+  CITATIONS --> QDRANT
+
+  %% Styling
+  style UI fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style APIM fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style AUTH fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style ORCH fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style PACK fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style WF fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style ING fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style DOCPROC fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style MAPPER fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style NORM fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style RULES fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style FINDINGS fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style EVIDENCE fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style SCORING fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style CITATIONS fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style REPORT fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style AIRULES fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style PG fill:#6C3483,color:#fff,stroke:#4A235A
+  style BLOB fill:#6C3483,color:#fff,stroke:#4A235A
+  style ES fill:#6C3483,color:#fff,stroke:#4A235A
+  style QDRANT fill:#6C3483,color:#fff,stroke:#4A235A
+----
+
+*Color legend:* [blue]#Blue# = Client & Data Pipeline | [orange]#Orange# = Core Platform | [green]#Green# = Intelligence | [purple]#Purple# = Storage
+
 === Ingestion Service
 
 *Responsibilities:*
@@ -104,9 +212,13 @@ graph LR
 * Fall back to cloud OCR for pages graded POOR or FAIR by Docling
 * Store extracted text, AFC metadata, and Docling page-level confidence grades
 
-____
-*Critical Architecture Clarification (per Docling Technical Validation Report v1):* Docling is a *document conversion + layout understanding engine*, not a per-field extraction system. Its confidence scores (`layout_score`, `ocr_score`, `parse_score`) are *conversion-quality indicators* (POOR/FAIR/GOOD/EXCELLENT) that grade how well the page was converted—they are NOT per-field extraction confidence. AuditIQ must build its own *deterministic field extractor* that consumes Docling’s `DoclingDocument` output and produces per-field AFC scores. Do not use Docling’s numeric scores directly for field-level gating.
-____
+[IMPORTANT]
+====
+*Critical Architecture Clarification (per Docling Technical Validation Report v1):* Docling is a *document conversion + layout understanding engine*, not a per-field extraction system.
+Its confidence scores (`layout_score`, `ocr_score`, `parse_score`) are *conversion-quality indicators* (POOR/FAIR/GOOD/EXCELLENT) that grade how well the page was converted — they are NOT per-field extraction confidence.
+AuditIQ must build its own *deterministic field extractor* that consumes Docling’s `DoclingDocument` output and produces per-field AFC scores.
+Do not use Docling’s numeric scores directly for field-level gating.
+====
 
 ==== Docling-Graph Integration
 
@@ -327,11 +439,16 @@ Based on Docling validation report benchmarks:
 
 ==== Licensing Warning
 
-____
-*GPL Risk:* The `docling-surya` integration package wraps SuryaOCR, which is licensed under GPL. If AuditIQ links or imports `docling-surya`, the entire application may be subject to GPL copyleft obligations. *For commercial SaaS deployment, either (a) ensure Docling is used WITHOUT `docling-surya` (use EasyOCR or Tesseract OCR backends instead), or (b) obtain legal review of GPL implications before Phase 1a.*
+[WARNING]
+====
+*GPL Risk:* The `docling-surya` integration package wraps SuryaOCR, which is licensed under GPL.
+If AuditIQ links or imports `docling-surya`, the entire application may be subject to GPL copyleft obligations.
+*For commercial SaaS deployment, either (a) ensure Docling is used WITHOUT `docling-surya` (use EasyOCR or Tesseract OCR backends instead), or (b) obtain legal review of GPL implications before Phase 1a.*
 
-*Docling-Graph (MIT):* Docling-Graph is MIT-licensed and represents a lower-risk integration option than GPL-linked adapters such as `docling-surya`. Where possible prefer Docling-Graph for production deployments to avoid GPL copyleft risk. If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms before Phase 1a.
-____
+*Docling-Graph (MIT):* Docling-Graph is MIT-licensed and represents a lower-risk integration option than GPL-linked adapters such as `docling-surya`.
+Where possible prefer Docling-Graph for production deployments to avoid GPL copyleft risk.
+If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms before Phase 1a.
+====
 
 [[sect-poc-test-plan]]
 ==== POC Test Plan (Phase 0)
@@ -367,9 +484,12 @@ ____
 * Provide UI for human review and override with confidence-based routing
 * Version and store approved mappings; feed override data back into calibration
 
-____
-*Scope constraint (per Schema Mapping Strategy Report):* HMDA LAR spans 48 data points → ~110 fields, with 37 “key HMDA data fields” (Fed CA Letter 18-9). Closing Disclosure (CD) documents alone cover only ~10–20% of these at ≥0.85 auto-mappable confidence. MVP must explicitly label fields as “CD-supported,” “requires 1003/URLA,” “requires appraisal,” or “manual entry required.”
-____
+[IMPORTANT]
+====
+*Scope constraint (per Schema Mapping Strategy Report):* HMDA LAR spans 48 data points → ~110 fields, with 37 “key HMDA data fields” (Fed CA Letter 18-9).
+Closing Disclosure (CD) documents alone cover only ~10–20% of these at ≥0.85 auto-mappable confidence.
+MVP must explicitly label fields as “CD-supported,” “requires 1003/URLA,” “requires appraisal,” or “manual entry required.”
+====
 
 [[sect-matching-algorithm]]
 ==== Matching Algorithm (Phase 1 — Hybrid Heuristic)
@@ -782,9 +902,13 @@ interface EvidenceRecord {
 * Enable audit replay for investigations and regulator exam response
 * Support litigation defensibility via FRE Rule 902(13)/(14) self-authentication
 
-____
-*Critical design requirement (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient. An attacker with database write access can rewrite the entire chain. This design adds three mandatory layers: (1) RFC 8785 canonical JSON serialization for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points that cannot be silently rewritten. See <<sect-decision-d3, Decision D3>> for design tier rationale.
-____
+[IMPORTANT]
+====
+*Critical design requirement (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient.
+An attacker with database write access can rewrite the entire chain.
+This design adds three mandatory layers: (1) RFC 8785 canonical JSON serialization for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points that cannot be silently rewritten.
+See <<sect-decision-d3, Decision D3>> for design tier rationale.
+====
 
 ==== Event Schema
 
@@ -1083,4 +1207,795 @@ interface AIOutputApprovalAction {
 }
 ----
 
-*Immutability:* Once approved, the AI output is frozen (cannot be modified). If a Manager rejects and requests revision, the system generates a new output with a new output_id, creating an audit trail of iterations.
+*Immutability:* Once approved, the AI output is frozen (cannot be modified).
+If a Manager rejects and requests revision, the system generates a new output with a new output_id, creating an audit trail of iterations.
+
+[[sect-api-gateway]]
+=== API Gateway
+
+*Technology:* Azure API Management (APIM) — managed service, Azure-native.
+Selected for integration with Azure AD, built-in rate limiting, and operational simplicity.
+
+*Responsibilities:*
+
+* Authenticate and authorize every inbound request (OAuth 2.0 / OIDC via Azure AD)
+* Enforce rate limiting per tenant and per user
+* Route requests to backend microservices
+* Terminate TLS and enforce HTTPS-only
+* Apply request/response transformation policies (header injection, CORS)
+* Emit request telemetry to Azure Monitor / Application Insights
+
+*Authentication flow:*
+
+[mermaid]
+----
+sequenceDiagram
+  participant Client as Web UI / API Consumer
+  participant APIM as Azure API Management
+  participant AAD as Azure Active Directory
+  participant Backend as Backend Services
+
+  Client->>AAD: Authenticate (OAuth 2.0 / OIDC)
+  AAD-->>Client: Access token (JWT) + refresh token
+  Client->>APIM: API request + Bearer token
+  APIM->>APIM: Validate JWT (signature, expiry, audience, tenant claim)
+  APIM->>APIM: Check rate limit (tenant_id + user_id)
+  alt Rate limit exceeded
+    APIM-->>Client: 429 Too Many Requests (Retry-After header)
+  else Valid request
+    APIM->>Backend: Forward request + X-Tenant-ID + X-User-ID headers
+    Backend-->>APIM: Response
+    APIM-->>Client: Response
+  end
+----
+
+*Rate limiting policy:*
+
+[cols="25%,25%,25%,25%",options="header"]
+|===
+|Scope |Limit |Window |Burst
+
+|Per tenant
+|10,000 requests
+|1 minute
+|500 requests/second
+
+|Per user
+|1,000 requests
+|1 minute
+|100 requests/second
+
+|Document upload
+|50 requests
+|1 minute
+|10 requests/second
+
+|AI narrative generation
+|20 requests
+|1 minute
+|5 requests/second
+|===
+
+*API versioning:* URL-path versioning (`/api/v1/...`).
+Breaking changes require a new version; old versions supported for 6 months minimum.
+
+*Input contracts:*
+
+[source,typescript]
+----
+// Headers injected by APIM into backend requests
+interface GatewayHeaders {
+  'X-Tenant-ID': string;       // Extracted from JWT tenant claim
+  'X-User-ID': string;         // Extracted from JWT sub claim
+  'X-User-Roles': string[];    // Extracted from JWT roles claim
+  'X-Request-ID': string;      // Correlation ID (UUID, generated by APIM)
+  'X-Forwarded-For': string;   // Client IP (for audit logging)
+}
+----
+
+*CORS policy:*
+
+* Allowed origins: configured per environment (production: app domain only)
+* Allowed methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+* Allowed headers: Authorization, Content-Type, X-Request-ID
+* Max age: 3600 seconds
+
+*Health check endpoint:* `GET /health` — bypasses authentication, returns `200 OK` with service status.
+
+*Error responses:*
+
+[cols="15%,40%,45%",options="header"]
+|===
+|Code |Condition |Response Body
+
+|401
+|Missing or invalid JWT
+|`{"error": "unauthorized", "message": "Invalid or expired access token"}`
+
+|403
+|Valid JWT but insufficient role
+|`{"error": "forbidden", "message": "Insufficient permissions for this resource"}`
+
+|429
+|Rate limit exceeded
+|`{"error": "rate_limited", "message": "Rate limit exceeded", "retry_after": <seconds>}`
+
+|502
+|Backend service unavailable
+|`{"error": "service_unavailable", "message": "Backend service temporarily unavailable"}`
+|===
+
+*Monitoring:* All requests logged to Azure Monitor with: request_id, tenant_id, user_id, method, path, status_code, latency_ms, response_size.
+Alerts configured for: >1% 5xx rate, P95 latency >2s, rate limit hit rate >10%.
+
+'''
+
+[[sect-audit-orchestration]]
+=== Audit Orchestration Service
+
+*Responsibilities:*
+
+* Manage the complete audit lifecycle from creation to finalization
+* Load and validate audit pack versions
+* Enforce state transition rules (authoritative state machine)
+* Emit audit events for every state change
+* Coordinate between Ingestion, Document Processing, Comparison, and Reporting services
+* Enforce concurrent audit limits per tenant
+
+*Authoritative state machine:*
+
+The state machine defined in <<sect-key-concepts, Diagram 1>> is the single source of truth.
+The Orchestration Service enforces all transitions.
+
+[cols="25%,25%,25%,25%",options="header"]
+|===
+|From State |To State |Trigger |Preconditions
+
+|`Created`
+|`Ingesting`
+|`startIngestion` mutation
+|Audit pack loaded and validated; tenant has available audit slot
+
+|`Ingesting`
+|`Validating`
+|Automatic (on dataset receipt)
+|Dataset uploaded and received by Ingestion Service
+
+|`Validating`
+|`Ready`
+|Automatic (on validation pass)
+|Zero critical validation errors
+
+|`Validating`
+|`ValidationFailed`
+|Automatic (on validation failure)
+|One or more critical validation errors
+
+|`ValidationFailed`
+|`Ingesting`
+|`reuploadDataset` mutation
+|Admin uploads corrected dataset
+
+|`Ready`
+|`InProgress`
+|`startAudit` mutation
+|At least one reviewer assigned
+
+|`InProgress`
+|`PreScanRunning`
+|`launchPreScan` mutation
+|Source documents uploaded and processed; schema mappings approved
+
+|`PreScanRunning`
+|`ReviewReady`
+|Automatic (on pre-scan completion)
+|All pack rules executed; findings generated
+
+|`InProgress`
+|`ReviewReady`
+|`skipPreScan` mutation
+|Manual mode selected; no pre-scan required
+
+|`ReviewReady`
+|`UnderReview`
+|`assignReviewers` mutation
+|At least one reviewer assigned to record set
+
+|`UnderReview`
+|`SecondReview`
+|`completeReview` mutation
+|Primary review complete; sampling criteria met for second review
+
+|`UnderReview`
+|`ReportGeneration`
+|`completeReview` mutation
+|Primary review complete; no second review required
+
+|`SecondReview`
+|`ReportGeneration`
+|`completeSecondReview` mutation
+|Second review complete
+
+|`ReportGeneration`
+|`PendingApproval`
+|Automatic (on report generation)
+|All report sections generated; AI narratives approved
+
+|`PendingApproval`
+|`Finalized`
+|`approveAudit` mutation
+|Manager approves; zero unresolved Critical findings
+
+|`PendingApproval`
+|`UnderReview`
+|`returnForRework` mutation
+|Manager returns audit with rework comments
+|===
+
+*GraphQL mutations for state transitions:*
+
+[source,graphql]
+----
+type Mutation {
+  # Audit lifecycle
+  createAudit(input: CreateAuditInput!): Audit!
+  startIngestion(auditId: ID!, datasetUpload: Upload!): IngestionResult!
+  reuploadDataset(auditId: ID!, datasetUpload: Upload!): IngestionResult!
+  startAudit(auditId: ID!): Audit!
+  launchPreScan(auditId: ID!): PreScanJob!
+  skipPreScan(auditId: ID!): Audit!
+  assignReviewers(auditId: ID!, assignments: [ReviewerAssignment!]!): Audit!
+  completeReview(auditId: ID!): Audit!
+  completeSecondReview(auditId: ID!): Audit!
+  approveAudit(auditId: ID!, comments: String): Audit!
+  returnForRework(auditId: ID!, comments: String!): Audit!
+
+  # Pack management
+  loadPack(packId: ID!, version: String!): AuditPack!
+  validatePack(packManifest: JSON!): PackValidationResult!
+}
+
+input CreateAuditInput {
+  name: String!
+  packId: ID!
+  packVersion: String!
+  description: String
+  samplingConfig: SamplingConfig
+}
+
+input ReviewerAssignment {
+  userId: ID!
+  recordRange: RecordRange
+  role: ReviewerRole!
+}
+
+type Audit {
+  id: ID!
+  tenantId: ID!
+  name: String!
+  status: AuditStatus!
+  packId: ID!
+  packVersion: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: ID!
+  recordCount: Int
+  findingsCount: Int
+  reviewers: [ReviewerAssignment!]!
+}
+
+enum AuditStatus {
+  CREATED
+  INGESTING
+  VALIDATING
+  VALIDATION_FAILED
+  READY
+  IN_PROGRESS
+  PRE_SCAN_RUNNING
+  REVIEW_READY
+  UNDER_REVIEW
+  SECOND_REVIEW
+  REPORT_GENERATION
+  PENDING_APPROVAL
+  FINALIZED
+}
+----
+
+*Pack loading and versioning:*
+
+* On `createAudit`, the Orchestration Service loads the specified pack version from the Audit Pack Manager.
+* Pack versions are immutable once published.
+If a pack needs changes, a new version is created.
+* An in-progress audit always uses the pack version it was created with — no hot-swapping mid-audit.
+* Pack validation runs on load: schema checks, rule syntax validation, evidence requirement checks.
+If validation fails, audit creation is rejected.
+
+*Concurrent audit limits:*
+
+[cols="30%,30%,40%",options="header"]
+|===
+|Tier |Concurrent Audits |Rationale
+
+|Standard
+|5 active audits per tenant
+|Resource allocation for Phase 1
+
+|Professional
+|20 active audits per tenant
+|Mid-market institutions
+
+|Enterprise
+|Unlimited (soft limit: 100)
+|Large institutions with dedicated resources
+|===
+
+*Retry and compensation for failed transitions:*
+
+* *Transient failures* (network timeout, temporary service unavailability): Retry with exponential backoff (1s, 2s, 4s) up to 3 attempts.
+State remains unchanged until transition succeeds or is abandoned.
+* *Permanent failures* (validation error, business rule violation): No retry.
+Return error to caller with specific failure reason.
+State remains unchanged.
+* *Compensation:* If a multi-step transition partially completes (e.g., pre-scan starts but comparison engine crashes), the Orchestration Service emits a `TransitionFailed` event with partial results and rolls the state back to the prior valid state.
+The operator can retry or manually intervene.
+
+*Event emission contract:*
+
+Every state transition emits an event to the Event Store (<<sect-audit-trail-event-store>>):
+
+[source,typescript]
+----
+interface StateTransitionEvent {
+  event_type: 'audit_state_transition';
+  audit_id: string;
+  tenant_id: string;
+  from_state: AuditStatus;
+  to_state: AuditStatus;
+  triggered_by: userId;
+  trigger_mutation: string; // e.g., 'approveAudit'
+  metadata: Record<string, any>; // Mutation-specific data
+  timestamp: string; // ISO 8601
+}
+----
+
+'''
+
+[[sect-regulatory-citation-engine]]
+=== Regulatory Citation Engine
+
+*Responsibilities:*
+
+* Maintain a searchable corpus of lending regulations (CFR titles, agency guidance, examination procedures)
+* Provide semantic search over regulation text to link findings to specific regulatory paragraphs
+* Return ranked citation results with relevance scores
+* Support pack-defined primary citations and AI-suggested secondary citations
+
+*Architecture:*
+
+[mermaid]
+----
+graph LR
+  subgraph Ingestion
+    REG_TEXT["Regulation Text<br/>(CFR, Agency Guidance)"]
+    CHUNKER["Text Chunker<br/>(paragraph-level)"]
+    EMBED["Embedding Model<br/>(open-source)"]
+  end
+
+  subgraph Storage
+    VECTOR_DB["Vector Database<br/>(Qdrant)"]
+    META_DB["Metadata Store<br/>(PostgreSQL)"]
+  end
+
+  subgraph Query
+    FINDING["Finding Context"]
+    QUERY_EMBED["Query Embedding"]
+    SEARCH["Semantic Search"]
+    RERANK["Re-ranker"]
+    RESULT["Ranked Citations"]
+  end
+
+  REG_TEXT --> CHUNKER
+  CHUNKER --> EMBED
+  EMBED --> VECTOR_DB
+  CHUNKER --> META_DB
+  FINDING --> QUERY_EMBED
+  QUERY_EMBED --> SEARCH
+  VECTOR_DB --> SEARCH
+  SEARCH --> RERANK
+  META_DB --> RERANK
+  RERANK --> RESULT
+----
+
+*Regulation corpus (Phase 1 — broad):*
+
+[cols="30%,40%,30%",options="header"]
+|===
+|Regulation |Source |Scope
+
+|Regulation C (HMDA)
+|12 CFR Part 1003
+|Full text + commentary
+
+|Regulation B (ECOA)
+|12 CFR Part 1002
+|Full text + commentary
+
+|Regulation X (RESPA)
+|12 CFR Part 1024
+|Full text + commentary
+
+|Regulation Z (TILA)
+|12 CFR Part 1026
+|Full text + commentary
+
+|CRA Examination Procedures
+|Federal Reserve, OCC, FDIC publications
+|Current examination procedures
+
+|Section 1071 (Small Business Lending)
+|12 CFR Part 1002 (Subpart B)
+|Final rule + commentary
+
+|HMDA Examination Procedures
+|FFIEC
+|Current examination procedures
+
+|Fair Lending Examination Procedures
+|Interagency guidance
+|Current examination procedures
+|===
+
+*Embedding model:* Open-source embedding model (Nomic Embed v1.5 or BGE-large-en-v1.5).
+Self-hosted on Azure Container Instances for cost predictability and data sovereignty.
+No regulation text leaves the tenant's Azure environment.
+
+*Vector database:* Qdrant (self-hosted on Azure Kubernetes Service).
+Selected for: native multi-tenancy support, payload filtering, and no vendor lock-in.
+
+*Chunking strategy:*
+
+* Regulations are chunked at the paragraph level (typically 100–500 tokens).
+* Each chunk retains metadata: regulation title, CFR part, section number, subsection, effective date, amendment history.
+* Overlapping windows (50-token overlap) to preserve cross-paragraph context.
+
+*Input contracts:*
+
+[source,typescript]
+----
+interface CitationSearchRequest {
+  query: string;         // Natural language query or finding narrative
+  finding_id?: string;   // Optional: auto-extract context from finding
+  rule_id?: string;      // Optional: use pack rule's regulation_citation as seed
+  regulations?: string[]; // Optional: limit search to specific regulations
+  top_k: number;         // Number of results to return (default: 5)
+  min_relevance: number; // Minimum relevance score (0.0–1.0, default: 0.60)
+}
+
+interface CitationResult {
+  citation_id: string;
+  regulation: string;         // e.g., "Regulation C"
+  cfr_reference: string;      // e.g., "12 CFR § 1003.4(a)(1)"
+  section_title: string;
+  paragraph_text: string;     // The matched paragraph
+  relevance_score: number;    // 0.0–1.0 (semantic similarity)
+  citation_type: 'primary' | 'secondary'; // Pack-defined vs. AI-suggested
+  effective_date: string;     // ISO date
+  source_url?: string;        // Link to official source (eCFR)
+}
+----
+
+*Query flow:*
+
+[arabic]
+. Finding context (rule violation narrative + field name + severity) is embedded using the same model.
+. Semantic search retrieves top-k candidate paragraphs from Qdrant.
+. Re-ranker (cross-encoder) re-scores candidates for precision.
+. Pack-defined primary citations are always included and ranked first.
+. AI-suggested secondary citations are labeled `[AI-SUGGESTED]` and require reviewer confirmation before inclusion in reports.
+
+*Corpus update cadence:*
+
+* CFR text updated quarterly (aligned with Federal Register publication cycle).
+* Agency guidance updated within 30 days of publication.
+* Embeddings re-computed on corpus update; old vectors retained for audit reproducibility (versioned by corpus_version).
+
+'''
+
+[[sect-document-store]]
+=== Document Store (Azure Blob Storage)
+
+*Responsibilities:*
+
+* Store all source documents (PDFs, images), evidence files, generated reports, and audit export bundles
+* Enforce encryption at rest and in transit
+* Implement lifecycle policies (hot → cool → archive)
+* Support legal hold and immutability for regulatory compliance
+* Provide tenant-isolated access via Shared Access Signatures (SAS)
+
+*Container structure:*
+
+[cols="25%,35%,40%",options="header"]
+|===
+|Container |Contents |Access Pattern
+
+|`{tenant_id}-documents`
+|Source documents (PDF, TIFF, JPEG, PNG)
+|Write-once on upload; read during review and extraction
+
+|`{tenant_id}-evidence`
+|Evidence files linked to findings
+|Write-once; read during review, reporting, and exam export
+
+|`{tenant_id}-reports`
+|Generated reports (PDF, CSV, XLSX, JSON)
+|Write on generation; read on download and exam export
+
+|`{tenant_id}-exports`
+|Exam-ready bundles (ZIP)
+|Write on export; read on download; archive after 90 days
+
+|`{tenant_id}-quarantine`
+|Files flagged by malware scan
+|Write-once; read by security team only; deleted after investigation
+|===
+
+*Encryption:*
+
+* *At rest:* Azure Storage Service Encryption (SSE) with Customer-Managed Keys (CMK) stored in Azure Key Vault.
+* *In transit:* TLS 1.2+ enforced; HTTP access disabled at the storage account level.
+* *Key rotation:* Automatic annual rotation; manual rotation on-demand via Key Vault policy.
+
+*Retention and lifecycle:*
+
+[cols="20%,20%,20%,20%,20%",options="header"]
+|===
+|Tier |Age |Storage Class |Monthly Cost/TB |Access Latency
+
+|Hot
+|0–12 months
+|Hot
+|~$20
+|Milliseconds
+
+|Cool
+|12–36 months
+|Cool
+|~$10
+|Milliseconds (higher access cost)
+
+|Archive
+|36–84 months (7 years)
+|Archive
+|~$1
+|Hours (rehydration required)
+|===
+
+* Documents in finalized audits are moved to Cool tier 12 months after finalization.
+* Documents are moved to Archive tier 36 months after finalization.
+* Documents are deleted (with compliance confirmation) after 7 years.
+* *Legal hold:* Azure Immutable Blob Storage with legal hold policy.
+When a legal hold is placed on a tenant, all documents in that tenant's containers are protected from modification and deletion regardless of lifecycle policy.
+
+*Malware scanning:*
+
+* All uploaded files are scanned by Microsoft Defender for Storage before being moved from `quarantine` to the target container.
+* Scanning is asynchronous; files are not available for processing until scan completes (typically <30 seconds).
+* Infected files remain in quarantine; an alert is sent to the IT Admin role.
+
+*Access control:*
+
+* No public access — all access via SAS tokens scoped to tenant and container.
+* SAS tokens are short-lived (1 hour) and generated by the API Gateway on authenticated requests.
+* Backend services use Managed Identity (no stored credentials).
+
+*Input contracts:*
+
+[source,typescript]
+----
+interface DocumentUploadRequest {
+  tenant_id: string;
+  audit_id: string;
+  file_name: string;
+  file_size: number;           // bytes (max: 100MB single, 1GB batch)
+  content_type: string;        // MIME type
+  document_type?: string;      // Classification hint (e.g., 'closing_disclosure')
+  sha256_checksum: string;     // Client-computed checksum for integrity verification
+}
+
+interface DocumentUploadResult {
+  document_id: string;         // UUID
+  blob_path: string;           // Full Azure Blob path
+  upload_status: 'quarantined' | 'available' | 'rejected';
+  scan_status: 'pending' | 'clean' | 'infected';
+  classification: string;      // Auto-classified document type
+  stored_at: string;           // ISO 8601 timestamp
+  checksum_verified: boolean;  // Server-side checksum matches client-provided
+}
+
+interface DocumentRetrievalRequest {
+  tenant_id: string;
+  document_id: string;
+  format?: 'original' | 'thumbnail' | 'text_extract';
+}
+----
+
+*Monitoring:*
+
+* Storage metrics: capacity per tenant, upload/download rates, scan queue depth.
+* Alerts: scan queue >100 files, upload failure rate >1%, storage approaching quota.
+
+'''
+
+[[sect-search-index]]
+=== Search Index (Azure Elasticsearch Service)
+
+*Technology:* Azure-managed Elastic Cloud (Elasticsearch).
+Azure-managed for operational simplicity, automatic patching, and integration with Azure Monitor.
+
+*Responsibilities:*
+
+* Full-text search over extracted document content (OCR output, key-value pairs)
+* Finding search and filtering across audits (by severity, status, field, date range)
+* Regulation text search for the Citation Engine (complementary to vector search)
+* Audit trail search (event type, actor, date range)
+* Power dashboard aggregations (finding counts by severity, confidence distribution, audit progress)
+
+*Index architecture:*
+
+[cols="20%,25%,25%,30%",options="header"]
+|===
+|Index |Document Type |Shard Strategy |Retention
+
+|`documents-{tenant_id}`
+|Extracted document content (text, tables, KV pairs)
+|1 primary + 1 replica per tenant; auto-split at 50GB
+|Matches document retention (7 years)
+
+|`findings-{tenant_id}`
+|Finding records with all metadata
+|1 primary + 1 replica; auto-split at 10GB
+|Matches audit retention
+
+|`regulations`
+|Regulation text paragraphs (shared across tenants)
+|3 primaries + 1 replica (static corpus)
+|Updated quarterly with corpus refresh
+
+|`audit-events-{tenant_id}`
+|Audit trail events
+|Time-based indices (monthly rollover)
+|7 years; ILM policy: hot → warm → cold → delete
+
+|`audit-metrics-{tenant_id}`
+|Aggregated metrics for dashboards
+|1 primary + 1 replica
+|Rolling 24-month window
+|===
+
+*Indexing pipeline:*
+
+[mermaid]
+----
+graph LR
+  DOC_PROC["Document Processing<br/>Service"] -->|Extracted text| INGEST["ES Ingest Pipeline"]
+  FINDINGS["Findings Management<br/>Service"] -->|Finding CRUD events| INGEST
+  EVENTS["Event Store"] -->|New events| INGEST
+  INGEST -->|Tokenize, analyze| ES["Elasticsearch Cluster"]
+  ES -->|Search API| API_GW["API Gateway"]
+----
+
+* Documents are indexed asynchronously after extraction completes.
+* Findings are indexed on creation and updated on status changes.
+* Events are indexed in near-real-time (target: <5 second lag).
+
+*Search API contracts:*
+
+[source,typescript]
+----
+interface SearchRequest {
+  tenant_id: string;
+  index: 'documents' | 'findings' | 'regulations' | 'audit-events';
+  query: string;                 // Full-text search query (Elasticsearch query string syntax)
+  filters?: SearchFilter[];      // Structured filters
+  sort?: SortField[];
+  page: number;
+  page_size: number;             // Max: 100
+  highlight?: boolean;           // Return highlighted snippets
+  aggregations?: string[];       // e.g., ['severity', 'status', 'confidence_band']
+}
+
+interface SearchFilter {
+  field: string;
+  operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'range';
+  value: any;
+}
+
+interface SearchResponse {
+  total_hits: number;
+  results: SearchHit[];
+  aggregations?: Record<string, AggregationBucket[]>;
+  took_ms: number;
+}
+
+interface SearchHit {
+  id: string;
+  index: string;
+  score: number;
+  source: Record<string, any>;
+  highlights?: Record<string, string[]>;
+}
+----
+
+*Tenant isolation:*
+
+* Per-tenant indices ensure complete data isolation at the Elasticsearch level.
+* The `regulations` index is shared (read-only for all tenants; no tenant-specific data).
+* API Gateway injects `X-Tenant-ID`; the search service enforces index scoping — a request for tenant A can never query tenant B's indices.
+
+*Performance targets:*
+
+[cols="40%,30%,30%",options="header"]
+|===
+|Query Type |P95 Latency |Throughput
+
+|Full-text document search
+|<500ms
+|100 queries/second
+
+|Finding filter/sort
+|<200ms
+|200 queries/second
+
+|Dashboard aggregation
+|<1s
+|50 queries/second
+
+|Audit event search
+|<300ms
+|100 queries/second
+|===
+
+*Cluster sizing (Phase 1):*
+
+* 3 data nodes (Standard_D4s_v3: 4 vCPU, 16 GB RAM, 128 GB SSD each)
+* 3 master-eligible nodes (Standard_D2s_v3)
+* Estimated index size: ~50 GB per 100 active audits
+
+*Index Lifecycle Management (ILM):*
+
+* *Hot phase:* Current month's indices on SSD-backed nodes.
+* *Warm phase:* After 3 months, move to warm nodes (larger, cheaper storage).
+* *Cold phase:* After 12 months, move to cold storage (frozen tier, searchable snapshots).
+* *Delete phase:* After 7 years, delete indices.
+
+'''
+
+[[sect-ai-rule-generation]]
+=== AI Rule Generation (Phase 2 — Vision)
+
+NOTE: This component is planned for Phase 2.
+This section documents the vision and high-level approach to support future planning.
+Detailed specification will be completed during Phase 2 planning.
+
+*Vision:*
+
+The AI Rule Generation engine will analyze patterns in audit findings, reviewer overrides, and regulation text to suggest new validation rules for audit packs.
+This addresses a key pain point: pack authors currently write rules manually, which is time-consuming and risks missing edge cases that only emerge during live audits.
+
+*Planned capabilities:*
+
+* *Pattern discovery:* Analyze historical findings to identify recurring discrepancy patterns not covered by existing pack rules.
+* *Regulation-to-rule synthesis:* Given new or updated regulation text (from the <<sect-regulatory-citation-engine, Citation Engine>> corpus), generate candidate validation rules with suggested severity, tolerance, and evidence requirements.
+* *Override learning:* When reviewers consistently override a rule's output (e.g., always marking a medium finding as low), suggest rule threshold adjustments.
+
+*Governance requirements:*
+
+* All AI-generated rules are labeled `[AI-SUGGESTED]` and require explicit review and approval by a Pack Author before deployment.
+* Generated rules enter a sandbox environment for testing against historical data before pack inclusion.
+* Every generated rule includes: source regulation citation, training data summary (anonymized), confidence in applicability, and suggested test cases.
+
+*Technology direction:*
+
+* LLM-based rule synthesis (regulation text → structured rule definition) using the same model infrastructure as the AI Reporting Assistant.
+* Rule quality validated against historical audit data (precision/recall on known findings).
+* Human-in-loop approval workflow identical to the AI Governance framework (<<sect-ai-governance>>).

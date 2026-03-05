@@ -8,7 +8,18 @@
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
-|FR-1.1 |System shall accept target datasets via CSV upload, API endpoint, and cross-module transfer from existing RiskExec modules (HMDA, CRA). |Acceptance Criteria (FR-1.1 — Ingestion performance):  - Test dataset: 5,000-record HMDA LAR synthetic dataset (representative value distributions and edge cases; see Appendix X). - Test environment (canonical): 8 vCPU, 32GB RAM, 200GB NVMe storage; managed Postgres with provisioned IOPS=3000; 100 Mbps network, Dockerized service instances. - Given a valid HMDA LAR CSV with 5,000 records uploaded via the CSV endpoint in the canonical test environment, the system must:   * Ingest and validate all records with P95 end-to-end completion time ≤ 60s.   * Report ≤ 0.1% records rejected for transient processing errors; permanently invalid rows reported with line numbers and standard error codes.   * Guarantee 0% silent data corruption: valid records stored exactly as received with per-record SHA-256 checksums logged and verifiable.   * Provide validation summary in the UI and as a JSON/CSV download. |P0
+|FR-1.1
+|System shall accept target datasets via CSV upload, API endpoint, and cross-module transfer from existing RiskExec modules (HMDA, CRA).
+a|*Acceptance Criteria (FR-1.1 — Ingestion performance):*
+
+* *Test dataset:* 5,000-record HMDA LAR synthetic dataset (representative value distributions and edge cases; see <<sect-appendices, Appendix E>>).
+* *Test environment (canonical):* 8 vCPU, 32 GB RAM, 200 GB NVMe storage; managed Postgres with provisioned IOPS=3000; 100 Mbps network, Dockerized service instances.
+* Given a valid HMDA LAR CSV with 5,000 records uploaded via the CSV endpoint in the canonical test environment, the system must:
+** Ingest and validate all records with P95 end-to-end completion time ≤ 60 s.
+** Report ≤ 0.1% records rejected for transient processing errors; permanently invalid rows reported with line numbers and standard error codes.
+** Guarantee 0% silent data corruption: valid records stored exactly as received with per-record SHA-256 checksums logged and verifiable.
+** Provide validation summary in the UI and as a JSON/CSV download.
+|P0
 |FR-1.2 |System shall perform automated completeness and format validation on ingested datasets. |Given a CSV missing required columns, when uploaded, then system rejects with specific error listing missing columns. Given a CSV with malformed date values, when uploaded, then system flags affected rows with line numbers and expected format. |P0
 |FR-1.3 |System shall accept source documents in PDF, TIFF, JPEG, and PNG formats. |Given a multi-page PDF, when uploaded, then document is stored, classified, and available in the document viewer within 10 seconds per page. |P0
 |FR-1.4 |System shall support bulk document upload with batch classification. |Given a ZIP containing 50 mixed-format documents, when uploaded, then all documents are extracted, classified by type (CD, LE, URLA, etc.), and linked to target records via loan number matching. |P1

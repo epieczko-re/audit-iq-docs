@@ -1,6 +1,10 @@
 [[sect-concept-of-operations]]
 == Concept of Operations (ConOps)
 
+AuditIQ supports three distinct audit modes — manual, OCR-assisted, and fully automated pre-scan — because different audits demand different levels of human involvement.
+A reviewer manually comparing a Closing Disclosure against a HMDA LAR record needs a different workflow than a system automatically validating 5,000 structured records against a LOS extract.
+The platform adapts; the reviewer stays in control.
+
 === Audit Workflow State Machine
 
 The following diagram shows the end-to-end state transitions for an audit run, from creation through finalization.
