@@ -19,8 +19,10 @@ ij_editorconfig_spaces_around_assignment_operators = true
 
 [{*.ad,*.adoc,*.asciidoc,.asciidoctorconfig}]
 charset = utf-8
+end_of_line = lf
 trim_trailing_whitespace = true
 insert_final_newline = true
+# One sentence per line — enforced by CI lint (scripts/lint-one-sentence-per-line.sh)
 ij_asciidoc_blank_lines_after_header = 1
 ij_asciidoc_blank_lines_keep_after_header = 1
 ij_asciidoc_formatting_enabled = true

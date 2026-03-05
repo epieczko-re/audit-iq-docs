@@ -5,7 +5,11 @@
 
 An audit pack encapsulates everything needed to audit a specific regulatory domain. It is a versioned, declarative configuration artifact — not executable code. The platform interprets the pack to drive ingestion validation, schema mapping, comparison rules, scoring, and report generation. This makes AuditIQ extensible: adding a new regulation means creating a new pack, not modifying platform code.
 
-*Phase 1:* One pack — HMDA Origination QC. Pre-built by RiskExec. *Phase 2:* CRA, SBL (Section 1071). Pre-built by RiskExec. *Future:* Client-customizable packs, potentially a third-party pack marketplace.
+*Phase 1:* One pack — HMDA Origination QC.
+Pre-built by RiskExec. +
+*Phase 2:* CRA, SBL (Section 1071).
+Pre-built by RiskExec. +
+*Future:* Client-customizable packs, potentially a third-party pack marketplace.
 
 === Three-Layer Confidence Scoring
 

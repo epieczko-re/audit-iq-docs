@@ -8,6 +8,7 @@
 |Version |Date |Author(s) |Changes
 |0.1 |2026-02-27 |Erik Pieczkowski |Initial comprehensive spec — Sections 0–6 full; 7–18 detailed stubs
 |0.2 |2026-02-27 |Erik Pieczkowski |Build-ready spec — all stubs replaced with implementable detail; new sections 19–22 added (MVP Decisions, Immutability, Exam Bundle, AI Governance); MVP Cutline produced
+|0.3 |2026-03-05 |Erik Pieczkowski |Formatting & cross-reference improvements — FR-1.1 acceptance criteria reformatted with bullets; section 7.1 phase timeline split to separate lines; section 1.4 updated with cross-references reflecting reorganized document structure; Appendix X reference corrected; added CLAUDE.md, .editorconfig one-sentence-per-line enforcement, and CI lint step
 |===
 
 === Authors / Owners
@@ -36,11 +37,17 @@
 
 This document serves three audiences simultaneously:
 
-* *Engineering team:* Sprint-plan against Sections 7–12 (Key Architectural Concepts through Data Model), Sections 20–23 (MVP Decisions, Immutability, Exam Bundle, AI Governance), and Sections 24–27 (UI Workflows, Model Registry, Model Deployment, Docling-Graph Integration). Each section contains explicit contracts, schemas, and acceptance criteria that can be decomposed into user stories and tasks. See the companion WBS (AuditIQ_WBS_v0.2.xlsx) for task breakdown.
-* *Product / leadership:* Read Sections 1–6 for context and competitive positioning. Review <<sect-pricing, Pricing and Packaging>>, the Delivery Plan, <<sect-mvp-decisions, MVP Decisions Locked>>, and the MVP Cutline (AuditIQ_MVP_Cutline_v0.2.md) for investment decisions. The Risks, Constraints, and Mitigations section and <<sect-decisions, Decisions and Open Questions>> provide risk and decision context.
-* *Compliance / regulatory stakeholders:* Focus on <<sect-scoring-framework, Scoring Framework>>, <<sect-immutability, Immutability vs. Correctability>>, <<sect-exam-ready-bundle, Exam-Ready Bundle>>, and <<sect-ai-governance, AI Governance & Model Risk Controls>> for regulatory defensibility. <<sect-model-registry, Model Registry>> and the Glossary (<<sect-appendices, Appendices>>) provide supporting reference material.
+* *Engineering team:* Sprint-plan against <<sect-key-concepts, Key Architectural Concepts>>, <<sect-product-requirements, Product Requirements>>, <<sect-audit-pack-spec, Audit Pack Specification>>, <<sect-architecture-overview, Architecture Overview>>, <<sect-component-design, Component-Level Design>>, and <<sect-data-model, Data Model>>.
+Supplementary architecture sections include <<sect-mvp-decisions, MVP Decisions Locked>>, <<sect-immutability, Immutability vs. Correctability>>, <<sect-exam-ready-bundle, Exam-Ready Bundle>>, <<sect-ai-governance, AI Governance & Model Risk Controls>>, <<sect-ui-workflows, UI Workflows & User Journeys>>, <<sect-model-registry, Model Registry>>, <<sect-model-deployment, Model Deployment>>, and <<sect-docling-graph, Docling-Graph Integration>>.
+Each section contains explicit contracts, schemas, and acceptance criteria that can be decomposed into user stories and tasks.
+* *Product / leadership:* Read <<sect-document-control, Document Control>> through <<sect-concept-of-operations, Concept of Operations>> for context and competitive positioning.
+Review <<sect-pricing, Pricing and Packaging>>, <<sect-delivery-plan, Delivery Plan>>, <<sect-mvp-decisions, MVP Decisions Locked>>, and the MVP Cutline for investment decisions.
+<<sect-risks-constraints, Risks, Constraints, and Mitigations>> and <<sect-decisions, Decisions and Open Questions>> provide risk and decision context.
+* *Compliance / regulatory stakeholders:* Focus on <<sect-scoring-framework, Scoring Framework>>, <<sect-immutability, Immutability vs. Correctability>>, <<sect-exam-ready-bundle, Exam-Ready Bundle>>, and <<sect-ai-governance, AI Governance & Model Risk Controls>> for regulatory defensibility.
+<<sect-model-registry, Model Registry>> and the <<sect-appendices, Glossary>> provide supporting reference material.
 
-*Canonical Glossary:* All confidence metrics (AFC, mapping_confidence, extraction_confidence, rule_confidence, combined_confidence), routing thresholds, severity definitions, and calibration criteria are defined in a *single source of truth*: the *Canonical Glossary* (Appendix — Glossary). If a threshold value elsewhere in this document conflicts with the Glossary, the Glossary governs.
+*Canonical Glossary:* All confidence metrics (AFC, mapping_confidence, extraction_confidence, rule_confidence, combined_confidence), routing thresholds, severity definitions, and calibration criteria are defined in a *single source of truth*: the *Canonical Glossary* (<<sect-appendices, Appendix A>>).
+If a threshold value elsewhere in this document conflicts with the Glossary, the Glossary governs.
 
 *Conventions used in this document:*
 
@@ -48,4 +55,4 @@ This document serves three audiences simultaneously:
 * *ASSUMPTION* = a belief stated explicitly; risk if wrong is documented
 * *DECISION NEEDED* = requires stakeholder input before proceeding
 * *DECISION LOCKED* = decided for MVP; revisit criteria documented in <<sect-mvp-decisions>>
-* Reference documents are listed in Appendix D.
+* Reference documents are listed in <<sect-appendices, Appendix E>>.
