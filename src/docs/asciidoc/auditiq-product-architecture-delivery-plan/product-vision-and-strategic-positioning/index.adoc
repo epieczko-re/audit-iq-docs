@@ -1,3 +1,4 @@
+[[sect-product-vision]]
 == Product Vision and Strategic Positioning
 
 === Vision Statement

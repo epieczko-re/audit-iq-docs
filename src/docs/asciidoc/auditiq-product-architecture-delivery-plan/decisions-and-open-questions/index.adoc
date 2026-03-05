@@ -1,18 +1,19 @@
+[[sect-decisions]]
 == Decisions Needed, Open Questions, and Assumptions
 
 === Decision Log – Status Update from v0.1 to v0.2
 
-*DECISIONS LOCKED (refer to Section 19 for full detail):*
+*DECISIONS LOCKED (refer to <<sect-mvp-decisions>> for full detail):*
 
 [cols="13%,27%,22%,30%,8%",options="header"]
 |===
 |ID |Decision |Status |Rationale |Overrideable?
-|*D1* |Document extraction: *Docling baseline + cloud OCR fallback* |LOCKED |Docling provides open-source control + accuracy; cloud OCR (AWS/GCP) is fallback for edge cases (handwritten docs). |Only if Docling accuracy <75% in Phase 0 testing
+|*D1* |Document extraction: *Docling baseline + cloud OCR fallback* |LOCKED |Docling provides open-source control + accuracy; cloud OCR (Azure) is fallback for edge cases (handwritten docs). |Only if Docling accuracy <75% in Phase 0 testing
 |*D2* |Schema mapping: *Simple confidence-scored matcher v1 + LogMap prototype research track* |LOCKED |Simple matcher reduces complexity & time-to-launch; LogMap research runs in parallel, ready for Phase 2 upgrade if promising. |Conditional: If Phase 1b accuracy <80%, escalate LogMap to critical path
-|*D3* |Audit trail: *Append-only event log + periodic snapshots + immutability rules per artifact (Section 20)* |LOCKED |Balances immutability (regulator requirement) + correctability (business need); defined semantics prevent ambiguity. |Only if regulatory guidance changes
+|*D3* |Audit trail: *Append-only event log + periodic snapshots + immutability rules per artifact (<<sect-immutability>>)* |LOCKED |Balances immutability (regulator requirement) + correctability (business need); defined semantics prevent ambiguity. |Only if regulatory guidance changes
 |*D4* |Pack interface: *Declarative JSON v1 (no executable logic)* |LOCKED |Reduces security risk (no code injection); versioning and validation easier; executable packs deferred to Phase 2 research. |Only if pack complexity demands executable rules
 |*D5* |Tenant isolation: *Row-level security for Phase 1; encryption + audit logging in Phase 1c* |LOCKED |RLS provides functional isolation; encryption + audit logging satisfy SOC 2 / regulatory audit requirements. Full encryption of data-at-rest deferred to Phase 2 based on customer demand. |Conditional: If security audit identifies critical gaps, escalate encryption to Phase 1c
-|*D6* |Canonical data schema: *MISMO Reference Model (flattened subset) for all loan-level attributes* |LOCKED |MISMO is the mortgage industry standard; reduces LOS integration friction; recognized by examiners; HMDA Reporting Dataset covers Phase 1 fields. Proprietary `custom:` namespace for non-MISMO fields. See Section 11.2. |If MISMO coverage <60% for a new regulation domain (Phase 2+), evaluate domain-specific alternatives
+|*D6* |Canonical data schema: *MISMO Reference Model (flattened subset) for all loan-level attributes* |LOCKED |MISMO is the mortgage industry standard; reduces LOS integration friction; recognized by examiners; HMDA Reporting Dataset covers Phase 1 fields. Proprietary `custom:` namespace for non-MISMO fields. See <<sect-mismo-alignment>>. |If MISMO coverage <60% for a new regulation domain (Phase 2+), evaluate domain-specific alternatives
 |===
 
 *New Decisions D9–D12 (Phase 1b–1c scope):*
@@ -34,7 +35,7 @@
 |*Q1: Will regulators accept LLM-generated audit narratives as evidence?* |Compliance SME, Legal |High |Beta customer interviews + early regulator engagement (Q1 2026)
 |*Q2: Is data residency for LLM calls strictly required, or can we use US-based cloud APIs?* |Compliance SME, RiskExec |High |Customer data classification review + legal review (Mar 2026)
 |*Q3: Should pack versioning be git-based or database-versioned?* |Full-stack Lead, Data/ML |Medium |Prototype both in Phase 0; choose based on merge conflict frequency
-|*Q4: What is the revenue-optimal pricing tier structure (tiered features vs. usage-based)?* |CEO, Sales |Critical |Pricing model finalization by May 1 (Section 13.4)
+|*Q4: What is the revenue-optimal pricing tier structure (tiered features vs. usage-based)?* |CEO, Sales |Critical |Pricing model finalization by May 1 (<<sect-pricing>>)
 |*Q5: Will existing RiskExec customers adopt AuditIQ without additional incentive (pricing discount)?* |Sales, Product |High |Sales forecast & pilot feedback (Feb–Apr 2026)
 |*Q6: How many custom packs will customers demand in Y1?* |Product, Compliance SME |Medium |Customer interviews + sales pipeline analysis
 |*Q7: Is the immutability constraint achievable without “undo” frustrating reviewers?* |UX, Product |Medium |Phase 1a usability testing with 5+ reviewers

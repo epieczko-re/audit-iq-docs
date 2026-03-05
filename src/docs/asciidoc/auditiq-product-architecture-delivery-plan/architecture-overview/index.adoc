@@ -1,3 +1,4 @@
+[[sect-architecture-overview]]
 == Architecture Overview
 
 === Architectural Principles
@@ -67,7 +68,7 @@ graph TD
 ==== Data & Storage Layer
 
 * *Primary Database (PostgreSQL):* Findings, mappings, configurations, user data
-* *Document Store (S3/Blob):* Source documents, evidence, audit reports
+* *Document Store (Azure Blob Storage):* Source documents, evidence, audit reports
 * *Search Index (Elasticsearch):* Full-text search on findings, evidence, audit trail
 * *Event Store (Append-only log):* Audit trail, immutable event history, hash-chained
 
@@ -75,10 +76,10 @@ graph TD
 
 *Phase 1 Deployment:*
 
-* Single-region cloud deployment (AWS or Azure)
+* Single-region cloud deployment (Azure)
 * Multi-AZ within region for high availability
 * RDS PostgreSQL (Multi-AZ, automated backups, read replicas)
-* S3 for document storage (versioning enabled, cross-region replication optional)
+* Azure Blob Storage for document storage (versioning enabled, cross-region replication optional)
 * Elasticsearch cluster (3 nodes, auto-sharding)
 * Event store (PostgreSQL append-only table with triggers)
 
@@ -87,6 +88,6 @@ graph TD
 * Stateless microservices: Ingestion, Mapping, Comparison can scale horizontally
 * Stateful services (Workflow, Orchestration): Single instance per tenant (Phase 1)
 * Database: RDS read replicas for query-heavy dashboards
-* Document storage: S3 auto-scales; no configuration needed
+* Document storage: Azure Blob Storage auto-scales; no configuration needed
 
 *TODO:* Publish Terraform/CloudFormation templates for infrastructure-as-code deployment.

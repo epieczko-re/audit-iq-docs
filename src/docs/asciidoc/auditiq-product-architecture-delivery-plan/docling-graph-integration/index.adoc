@@ -1,12 +1,13 @@
+[[sect-docling-graph]]
 == Docling-Graph Integration with Schema Mapping
 
 ____
-*v0.2 Addition.* This section documents how the Schema Mapping Service (Section 10.3) consumes Docling-Graph's Pydantic objects and directed knowledge graph, and how Audit Packs must reference Pydantic templates. The graph-aware mapping approach improves determinism and reduces heuristic noise by operating on typed, validated entities and explicit relationships rather than raw OCR text.
+*v0.2 Addition.* This section documents how the Schema Mapping Service (<<sect-schema-mapping-service>>) consumes Docling-Graph's Pydantic objects and directed knowledge graph, and how Audit Packs must reference Pydantic templates. The graph-aware mapping approach improves determinism and reduces heuristic noise by operating on typed, validated entities and explicit relationships rather than raw OCR text.
 ____
 
 === Purpose
 
-With Docling-Graph adopted as the baseline extraction pipeline (Section 10.2.0), the Schema Mapping Service can consume structured graph outputs rather than flat extracted fields. This enables:
+With Docling-Graph adopted as the baseline extraction pipeline (<<sect-doc-processing>>), the Schema Mapping Service can consume structured graph outputs rather than flat extracted fields. This enables:
 
 * *Graph-pattern matching:* Map HMDA target fields to graph node properties rather than raw text positions
 * *Typed validation:* Pydantic objects enforce field types at extraction time — invalid values are rejected before mapping
@@ -55,7 +56,7 @@ class ClosingDisclosure(BaseModel):
 *Template requirements:*
 
 * Every template must include `model_config` with `is_entity: True` and `graph_id_fields` identifying the stable entity key
-* Templates are versioned (e.g., `closing_disclosure_v1.0`) and registered in the Model Registry (Section 24)
+* Templates are versioned (e.g., `closing_disclosure_v1.0`) and registered in the <<sect-model-registry, Model Registry>>
 * Template version is logged in extraction provenance (`pydantic_template_id` + `pydantic_template_version`)
 
 *Phase 1 templates required:*
@@ -85,6 +86,7 @@ class ClosingDisclosure(BaseModel):
 |~5–10 property-related fields
 |===
 
+[[sect-graph-consumption]]
 === Graph Consumption by Schema Mapping Service
 
 *Step 1: Extract entities as graph nodes*
@@ -179,9 +181,9 @@ Audit Pack manifests must be extended to reference Pydantic templates:
 
 === Cross-References
 
-* *Section 10.2.0:* Docling-Graph pipeline design and integration guidance
-* *Section 10.2.1:* AFC v2 formula including `graph_corrob_score`
-* *Section 10.3:* Schema Mapping Service — existing heuristic matcher, now graph-aware
-* *Section 8:* Audit Pack Specification — pack manifest schema
-* *Section 21:* Exam-Ready Bundle — graph exports as evidence artifacts
-* *Section 24:* Model Registry — Pydantic template versions registered as model artifacts
+* *<<sect-doc-processing>>:* Docling-Graph pipeline design and integration guidance
+* *<<sect-doc-processing>>:* AFC v2 formula including `graph_corrob_score`
+* *<<sect-schema-mapping-service>>:* Schema Mapping Service — existing heuristic matcher, now graph-aware
+* *<<sect-audit-pack-spec>>:* Audit Pack Specification — pack manifest schema
+* *<<sect-exam-ready-bundle>>:* Exam-Ready Bundle — graph exports as evidence artifacts
+* *<<sect-model-registry>>:* Model Registry — Pydantic template versions registered as model artifacts

@@ -1,3 +1,4 @@
+[[sect-glossary]]
 [appendix]
 == Canonical Glossary of Confidence Scores, Thresholds, and Severity Definitions
 
@@ -14,42 +15,42 @@ ____
 |*AFC* (AuditIQ Field Confidence)
 |0.0–1.0
 |Per-field composite score measuring extraction reliability. *AFC v2* (with Docling-Graph): computed from 6 weighted signals: `docling_page_grade` (0.12), `ocr_segment_confidence` (0.23), `pattern_validity` (0.20), `layout_anchor_consistency` (0.18), `cross_doc_redundancy` (0.12), `graph_corrob_score` (0.15). AFC v1 (5-signal, without `graph_corrob_score`) remains valid during Phase 0 POC.
-|Section 10.2.1
+|<<sect-doc-processing>>
 
 |*extraction_confidence*
 |0.0–1.0
 |Alias for the AFC score when used as input to combined confidence. Represents how confident the system is in the extracted value from a source document.
-|Section 12.1 (Layer 2)
+|<<sect-scoring-framework>> (Layer 2)
 
 |*mapping_confidence* (`conf_mapping`)
 |0.0–1.0
 |Measures how confident the system is that target field X corresponds to source field Y. Layer 1 raw score from the hybrid heuristic matcher: `name_similarity` (0.30), `synonym_match` (0.25), `type_compatibility` (0.20), `document_section` (0.15), `historical_acceptance` (0.10).
-|Section 10.3.2, Section 12.1 (Layer 1)
+|<<sect-schema-mapping-service>>, <<sect-scoring-framework>> (Layer 1)
 
 |*rule_confidence* (`conf_rule`)
 |0.0–1.0
 |Measures how confidently a validation rule applies to a specific data context. Base confidence from pack rule definition, reduced by 0.7× if precondition not satisfied, 0.5× if normalization failed.
-|Section 12.1 (Layer 3)
+|<<sect-scoring-framework>> (Layer 3)
 
 |*combined_confidence*
 |0.0–1.0
 |`min(mapping_confidence, extraction_confidence, rule_confidence)`. The floor-based composite that drives finding-level routing. If extraction is not applicable, `extraction_confidence` defaults to 1.0.
-|Section 12.1
+|<<sect-scoring-framework>>
 
 |*graph_corrob_score*
 |0.0–1.0
 |Cross-document graph corroboration signal introduced in AFC v2. Computed from the number and strength of corroborating edges in the Docling-Graph knowledge graph (e.g., loan_amount matching across Closing Disclosure and Loan Estimate nodes). Weighted at 0.15 in the AFC v2 formula. Absent (defaults to 0.0) when Docling-Graph is not enabled (AFC v1 mode).
-|Section 10.2.1, Section 26.3
+|<<sect-doc-processing>>, <<sect-docling-graph>>
 
 |*calibrated_score* (Layer 2 mapping)
 |0.0–1.0
 |Calibrated decision score combining `conf_mapping`, `conf_extraction`, and `conf_rule` via temperature scaling (Phase 1) or isotonic regression (Phase 2). Used for schema mapping routing only. ECE must be ≤ 0.05.
-|Section 10.3.2
+|<<sect-schema-mapping-service>>
 |===
 
 === Routing Thresholds
 
-==== AFC Routing (Document Extraction — Section 10.2)
+==== AFC Routing (Document Extraction — <<sect-doc-processing>>)
 
 [cols="25%,25%,50%",options="header"]
 |===
@@ -68,7 +69,7 @@ ____
 |Extraction failure. Routed to manual entry queue; reviewer must type value.
 |===
 
-==== Schema Mapping Routing (Calibrated Score — Section 10.3)
+==== Schema Mapping Routing (Calibrated Score — <<sect-schema-mapping-service>>)
 
 [cols="25%,25%,50%",options="header"]
 |===
@@ -76,7 +77,7 @@ ____
 
 |*Auto-accept*
 |calibrated ≥ 0.95
-|Mapping locked without review (~10s visual confirmation). NOTE: Conservative initial threshold per Decision D2 (Section 19.3); may be lowered to ≥ 0.90 after calibration on ≥ 500 mappings.
+|Mapping locked without review (~10s visual confirmation). NOTE: Conservative initial threshold per <<sect-decision-d2, Decision D2>>; may be lowered to ≥ 0.90 after calibration on ≥ 500 mappings.
 
 |*Human review*
 |0.70 ≤ calibrated < 0.95
@@ -87,7 +88,7 @@ ____
 |No suggestion shown. Reviewer selects from field list.
 |===
 
-==== Combined Confidence Routing (Findings — Section 12.1)
+==== Combined Confidence Routing (Findings — <<sect-scoring-framework>>)
 
 [cols="25%,25%,50%",options="header"]
 |===
@@ -106,7 +107,7 @@ ____
 |Reject finding; flag for manual re-review if critical issue.
 |===
 
-==== Cloud OCR Fallback Trigger (Section 10.2)
+==== Cloud OCR Fallback Trigger (<<sect-doc-processing>>)
 
 [cols="30%,70%",options="header"]
 |===
@@ -168,23 +169,23 @@ Severity is assigned by: (1) pack rule definition (default), (2) optionally over
 
 |*Calibration error alert*
 |> 5% of high-confidence findings where human disagreed
-|Triggers threshold adjustment (Section 12.4)
+|Triggers threshold adjustment (<<sect-confidence-calibration>>)
 
 |*Expected Calibration Error (ECE)*
 |≤ 0.05
-|Required for Phase 2 deployment (Section 10.3.2)
+|Required for Phase 2 deployment (<<sect-schema-mapping-service>>)
 
 |*Phase 0 AFC distribution target*
 |≥ 60% of fields above 0.85 on 50-document sample
-|POC acceptance gate (Section 10.2)
+|POC acceptance gate (<<sect-doc-processing>>)
 
 |*Phase 1a Go/Kill (AFC)*
 |Go: ≥ 85% precision on key HMDA fields at AFC ≥ 0.85. Kill: < 70% precision or fallback rate > 40%.
-|Section 10.2
+|<<sect-doc-processing>>
 
 |*Phase 1b Go/Kill (Mapping)*
 |Go: ≥ 95% precision at conf_mapping ≥ 0.90 on CD-supported fields; override rate ≤ 25%. Kill: > 40% override rate or scores uncalibratable.
-|Decision D2 (Section 19.3)
+|<<sect-decision-d2, Decision D2>>
 |===
 
 === UI Confidence Badge Colors

@@ -1,3 +1,4 @@
+[[sect-audit-pack-spec]]
 == Audit Pack Specification
 
 .Pack Engine Architecture
@@ -39,8 +40,9 @@ An audit pack is a versioned, declarative configuration artifact that encapsulat
 * Report templates (how to format findings into reports)
 * Test cases (reference data for validation harness)
 
-*DECISION LOCKED:* Declarative JSON v1 — no executable logic. See Section 19.3.
+*DECISION LOCKED:* Declarative JSON v1 — no executable logic. See <<sect-decision-d4, Decision D4>>.
 
+[[sect-pack-manifest-schema]]
 === Pack Manifest JSON Schema
 
 [source,json]
@@ -360,7 +362,11 @@ An audit pack is a versioned, declarative configuration artifact that encapsulat
 
 === Pack Versioning and Distribution
 
-*Version format:* Semantic Versioning (MAJOR.MINOR.PATCH) - MAJOR: Breaking changes to schemas or rule logic (requires migration) - MINOR: New rules or schemas added (backward-compatible) - PATCH: Bug fixes, typo corrections (no functional changes)
+*Version format:* Semantic Versioning (MAJOR.MINOR.PATCH)
+
+* *MAJOR:* Breaking changes to schemas or rule logic (requires migration)
+* *MINOR:* New rules or schemas added (backward-compatible)
+* *PATCH:* Bug fixes, typo corrections (no functional changes)
 
 *Pack lifecycle:*
 1. *Draft:* Created by pack author, not available to audit runs.

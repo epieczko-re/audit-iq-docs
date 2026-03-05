@@ -1,3 +1,4 @@
+[[sect-appendices]]
 == Appendices
 
 === Appendix A: Glossary (Expanded from v0.1)
@@ -6,9 +7,9 @@
 
 *Audit Event:* Immutable timestamped record of a change to audit state (e.g., “finding created”, “manager approval”, “report finalized”). See Appendix C.
 
-*Audit Pack (or Pack):* A declarative JSON specification defining rules, scoring weights, evidence requirements, and narratives for a compliance audit category (e.g., HMDA, CRA, ECOA). See Section 8.
+*Audit Pack (or Pack):* A declarative JSON specification defining rules, scoring weights, evidence requirements, and narratives for a compliance audit category (e.g., HMDA, CRA, ECOA). See <<sect-audit-pack-spec>>.
 
-*Calibration:* Process of tuning confidence score thresholds to match historical reviewer decisions. See Section 12.4.
+*Calibration:* Process of tuning confidence score thresholds to match historical reviewer decisions. See <<sect-confidence-calibration>>.
 
 *Confidence Score:* Numeric value (0.0–1.0) representing the AI system’s certainty in a data extraction, schema mapping, or finding. Composed of mapping confidence + extraction confidence + rule confidence.
 
@@ -20,7 +21,7 @@
 
 *Human-in-Loop:* Requirement for human (reviewer or manager) to explicitly approve or correct an AI-generated result before finalization.
 
-*Immutability:* Property that audit events, evidence files, and finalized findings cannot be deleted or retroactively modified. Corrections are recorded as new compensating events (Section 20).
+*Immutability:* Property that audit events, evidence files, and finalized findings cannot be deleted or retroactively modified. Corrections are recorded as new compensating events (<<sect-immutability>>).
 
 *LogMap:* Semantic web ontology matching library; AuditIQ evaluates it as a potential schema matcher replacement in Phase 2.
 
@@ -34,9 +35,9 @@
 
 *Sampling:* Random or stratified selection of records from a population to audit. Pack can define sampling methodology.
 
-*Schema Matcher:* Component that maps extracted HMDA field values to audit pack schema fields with confidence scores. See Section 6.
+*Schema Matcher:* Component that maps extracted HMDA field values to audit pack schema fields with confidence scores. See <<sect-schema-mapping-service>>.
 
-*Snapshot:* Immutable record of audit state at a point in time (used for reproducibility & rollback to prior version without re-running extraction). See Section 20.
+*Snapshot:* Immutable record of audit state at a point in time (used for reproducibility & rollback to prior version without re-running extraction). See <<sect-immutability>>.
 
 *SOC 2:* Service Organization Control audit; certifies security, availability, and confidentiality controls. AuditIQ target compliance by Jun 30.
 
@@ -48,7 +49,7 @@
 
 === Appendix B: Full Pack Manifest JSON Schema
 
-*Reference:* See Section 8 (“Audit Pack Schema & Configuration”) for detailed pack specification.
+*Reference:* See <<sect-audit-pack-spec, Audit Pack Specification>> for detailed pack specification.
 
 *Example Pack Manifest (HMDA Compliance Pack v2.1):*
 
@@ -123,7 +124,7 @@
 
 === Appendix C: Audit Event Schema
 
-*Reference:* See Section 10.8 (“Audit Trail & Event Store (Immutable Log)”) for detailed event design.
+*Reference:* See <<sect-audit-trail-event-store, Audit Trail & Event Store>> for detailed event design.
 
 *Example Audit Events (JSON):*
 

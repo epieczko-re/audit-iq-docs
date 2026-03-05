@@ -1,5 +1,7 @@
+[[sect-scoring-framework]]
 == Scoring Framework
 
+[[sect-confidence-scoring]]
 === Confidence Scoring (Three Layers)
 
 *Layer 1: Mapping Confidence*
@@ -7,7 +9,7 @@
 * Measures: How confident is the system that target field X corresponds to source field Y?
 * Inputs: Field name similarity, data type compatibility, historical acceptance, value distribution
 * Range: 0.0–1.0
-* Formula (v1): `0.30 * name_similarity + 0.25 * synonym_match + 0.20 * type_compat + 0.15 * doc_section_context + 0.10 * historical_acceptance` (5-signal hybrid heuristic; see Section 10.3 for full specification)
+* Formula (v1): `0.30 * name_similarity + 0.25 * synonym_match + 0.20 * type_compat + 0.15 * doc_section_context + 0.10 * historical_acceptance` (5-signal hybrid heuristic; see <<sect-schema-mapping-service>> for full specification)
 * Computed by: Schema Mapping Service during mapping phase
 * Immutable: No, can be corrected via new mapping approval
 
@@ -82,6 +84,7 @@ combined_confidence = min(
 
 *Implementation:* API gateway middleware checks conditions before state transitions. If condition triggers, state change is blocked with error message and audit event is logged.
 
+[[sect-confidence-calibration]]
 === Confidence Calibration & Monitoring
 
 *Calibration rationale:* Confidence scores from Docling, schema matcher, and rules engine are learned/heuristic-based. They must be calibrated against ground truth (human decisions) to remain accurate.

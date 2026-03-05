@@ -1,3 +1,4 @@
+[[sect-immutability]]
 == Immutability vs. Correctability (Regulator-Safe Semantics)
 
 .Immutability & Versioning Flow
@@ -28,7 +29,7 @@ graph TD
 
 *The v0.1 Conflict:* How can we have a truly immutable audit trail while allowing corrections and preventing reviewer frustration?
 
-*Section 20 Resolution:* Define per-artifact-type semantics that satisfy both constraints.
+*Resolution:* Define per-artifact-type semantics that satisfy both constraints.
 
 === Per-Artifact Immutability Rules
 
@@ -102,7 +103,7 @@ No history is lost.
 *Snapshot policy:*
 
 * Create snapshot after each major state transition (finding created, approved, escalated)
-* Compress snapshots (gzip); store in S3 with versioning
+* Compress snapshots (gzip); store in Azure Blob Storage with versioning
 * TTL: Keep all snapshots for 7 years (regulator requirement); archive older than 3 years to cheaper storage
 
 === Immutability Guarantees via Cryptographic Hashing
@@ -111,7 +112,7 @@ ____
 *Design updated per Audit Trail Defensibility Report.* Naive hash chaining is necessary but not sufficient — an attacker with database write access can rewrite the chain and recompute all subsequent hashes. This design adds RFC 8785 canonical serialization, global monotonic sequencing, and cryptographic anchoring.
 ____
 
-*Each audit event includes the following tamper-evidence fields (see Section 10.8 for full schema):*
+*Each audit event includes the following tamper-evidence fields (see <<sect-audit-trail-event-store>> for full schema):*
 
 [source,json]
 ----
@@ -137,7 +138,7 @@ ____
 . *RFC 8785 canonical JSON serialization (MANDATORY):* All events are serialized using RFC 8785 before hashing. This ensures identical logical content always produces identical hashes, regardless of JSON key ordering, whitespace, or number formatting. Without canonical serialization, logically identical events produce different hashes — a critical failure mode rated High likelihood / High impact.
 . *SHA-256 hash chain:* Each event’s `event_hash` is the SHA-256 of its RFC 8785-canonicalized content (excluding hash fields). Each event references `previous_event_hash` from its predecessor (by `sequence_id`). Chain break = tamper or data loss.
 . *Global monotonic sequence IDs:* Per-tenant monotonic `sequence_id` enforced by database UNIQUE constraint. Gaps indicate event loss; duplicates indicate insertion attack; out-of-order = reordering attack. All detectable by verification tool.
-. *Cryptographic anchor points (every N events):* Every 100 events (configurable), an anchor event writes its `event_hash` to *WORM storage* (AWS S3 Object Lock or equivalent). WORM-stored anchors cannot be overwritten during retention period, preventing silent chain rewriting even by database administrators.
+. *Cryptographic anchor points (every N events):* Every 100 events (configurable), an anchor event writes its `event_hash` to *WORM storage* (Azure Immutable Blob Storage or equivalent). WORM-stored anchors cannot be overwritten during retention period, preventing silent chain rewriting even by database administrators.
 . *Digital signatures (Phase 2 — Enterprise-grade tier):* KMS-signed checkpoint events for non-repudiation. Supports litigation under FRE Rule 902(13)/(14) (self-authentication of electronic records via hash values).
 
 *Snapshot integrity:*
@@ -197,6 +198,6 @@ ____
 
 *Cross-references:*
 
-* Section 10.8: Full event schema, hash computation, anchor implementation, operational integrity controls
-* Section 19.4 (Decision D3): Design tier rationale, failure modes, three-tier architecture
+* <<sect-audit-trail-event-store>>: Full event schema, hash computation, anchor implementation, operational integrity controls
+* <<sect-decision-d3, Decision D3>>: Design tier rationale, failure modes, three-tier architecture
 * Audit Trail Defensibility Report: Detailed threat model, risk heat map, and recommended design changes

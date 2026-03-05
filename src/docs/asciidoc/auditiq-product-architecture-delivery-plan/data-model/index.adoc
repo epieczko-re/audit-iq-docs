@@ -1,3 +1,4 @@
+[[sect-data-model]]
 == Data Model
 
 === Entity-Relationship Diagram (Conceptual)
@@ -17,6 +18,7 @@ evidence (one) ---> (many) audit_trail.events
 field_mappings (one) ---> (many) mapping_versions
 ....
 
+[[sect-mismo-alignment]]
 === MISMO Alignment Strategy
 
 *Design Principle:* AuditIQ’s canonical data model adopts MISMO (Mortgage Industry Standards Maintenance Organization) Reference Model naming conventions and field definitions for all loan-level attributes. This alignment reduces translation friction when ingesting data from LOS, servicing, and origination systems — most of which already export MISMO-formatted data — and increases credibility with examiners who recognize MISMO field names.
@@ -31,7 +33,7 @@ field_mappings (one) ---> (many) mapping_versions
 *What is NOT MISMO-aligned:*
 
 * *Audit operational tables:* `audit_runs`, `findings`, `field_mappings`, `evidence`, and `audit_trail.events` use AuditIQ-native schemas. These are operational/workflow constructs with no MISMO equivalent.
-* *Pack configuration schema:* Audit Packs remain proprietary JSON (Section 8). Packs _reference_ MISMO field names in their rules, but the pack format itself is not a MISMO construct.
+* *Pack configuration schema:* Audit Packs remain proprietary JSON (<<sect-audit-pack-spec>>). Packs _reference_ MISMO field names in their rules, but the pack format itself is not a MISMO construct.
 * *AI/ML metadata:* Confidence scores, provenance metadata, and model evaluation data are AuditIQ-specific.
 
 *Implementation Approach — Flattened Subset:*
@@ -248,7 +250,7 @@ CREATE INDEX idx_evidence_hash ON audits.evidence(sha256_hash);
 
 ==== audit_trail.events (Immutable Log)
 
-NOTE: This schema must match the authoritative definition in Section 10.8.6 (Audit Trail & Event Store).
+NOTE: This schema must match the authoritative definition in <<sect-audit-trail-event-store>>.
 
 [source,sql]
 ----
@@ -327,6 +329,7 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 
 *TODO:* Query plan analysis and potential partitioning strategy for 100K+ records.
 
+[[sect-versioning-schema-evolution]]
 === Versioning & Schema Evolution
 
 *Approach:* Schema versioning via semantic versioning on tables; migrations tracked in schema_migrations table.

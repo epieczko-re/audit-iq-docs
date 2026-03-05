@@ -1,8 +1,9 @@
+[[sect-pricing]]
 == Pricing and Packaging
 
 === Market Context: Competitive Pricing Intelligence
 
-Based on internal competitive analysis of ~141 primary competitor customers (circa 2023 data). See Section 4.1 for full tier-by-tier breakdown.
+Based on internal competitive analysis of ~141 primary competitor customers (circa 2023 data). See <<sect-primary-competitor, Primary Competitor Analysis>> for full tier-by-tier breakdown.
 
 [cols="40%,60%",options="header"]
 |===
@@ -280,7 +281,7 @@ Customers purchasing 2+ packs simultaneously receive a *10% discount on pack sub
 
 |*AI Copilot*
 |Included in Professional and Enterprise platform tiers; $1,500/mo add-on for Essentials tier
-|AI-drafted findings, narrative generation with citations, predictive validation suggestions, adaptive learning from reviewer feedback. All AI outputs labeled and governed per Section 22.
+|AI-drafted findings, narrative generation with citations, predictive validation suggestions, adaptive learning from reviewer feedback. All AI outputs labeled and governed per <<sect-ai-governance>>.
 
 |*Custom AI Model Training*
 |$10,000 one-time setup + $500/mo hosting
