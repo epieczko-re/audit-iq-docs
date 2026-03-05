@@ -3,16 +3,26 @@
 
 === Vision Statement
 
-Make every financial institution always exam-ready by providing a unified audit workflow platform that combines human expertise with AI-assisted efficiency, immutable evidence management, and confidence-scored transparency — so that compliance teams can focus on judgment, not data entry.
+Every compliance team in every financial institution deserves to be always exam-ready — not because they worked nights before the regulator arrived, but because their platform made it inevitable.
+
+AuditIQ exists to make that real.
+It is a unified audit workflow platform that combines human expertise with AI-assisted efficiency, immutable evidence management, and confidence-scored transparency — so compliance teams spend their time on professional judgment, not mind-numbing data entry.
 
 === Strategic Positioning
 
-AuditIQ is positioned as:
+AuditIQ is not another point solution.
+It is a strategic bet on the future of compliance technology — and it is positioned to win:
 
-* *Governance-first AI* — AI is a core capability, not a bolt-on; every AI output is governed, traceable, and human-approved.
-* *Additive, not replacement* — it extends RiskExec’s existing compliance platform, increasing deal size by 20–30%.
-* *Examiner-friendly* — designed to produce the evidence packages and audit trails that regulators want to see.
-* *AI-native* — AI is embedded throughout the audit workflow, powering extraction, confidence scoring, findings drafting, and narrative generation as core platform capabilities.
+* *Governance-first AI* — AI is not a checkbox feature bolted on at the last mile.
+It is a core capability woven into every workflow: extraction, scoring, narrative generation, citation linking.
+Every AI output is governed, traceable, and human-approved.
+Regulators will not just tolerate AuditIQ — they will trust it.
+* *Additive, not replacement* — AuditIQ extends the RiskExec platform that 300+ institutions already rely on.
+It turns existing compliance customers into audit customers, increasing deal size by 20–30% without a separate sales cycle.
+* *Examiner-friendly by design* — Built from the ground up to produce the evidence packages, audit trails, and exam-ready bundles that regulators actually want to see.
+No more scrambling before an exam; the bundle is always ready because the platform generates it continuously.
+* *AI-native* — AI is embedded throughout: powering document extraction, confidence scoring, findings drafting, regulatory citation linking, and narrative generation.
+Not a layer on top — a capability at the core.
 
 === Target Users
 
@@ -28,4 +38,5 @@ AuditIQ is positioned as:
 
 === Interested Clients (Design Partner Candidates)
 
-Commerce Bank, Ally Financial, Truist, Citizens Financial Group, and SoFi have expressed interest. The team is targeting validation with 8–10 design partners.
+Commerce Bank, Ally Financial, Truist, Citizens Financial Group, and SoFi have expressed interest — and they are not waiting.
+The team is validating AuditIQ with 8–10 design partners who are ready to move off spreadsheets and into a platform that respects both their time and their regulators’ expectations.

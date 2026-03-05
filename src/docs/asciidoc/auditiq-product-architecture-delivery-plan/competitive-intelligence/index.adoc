@@ -1,6 +1,10 @@
 [[sect-competitive-intelligence]]
 == Competitive Intelligence
 
+The audit QC market is not empty — but it is underserved.
+The dominant player has built a strong business on enterprise relationships and switching costs, but the architecture is aging and the AI strategy is reactive.
+AuditIQ enters this market with structural advantages that are difficult to replicate: governance-first AI, three-lines-of-defense coverage, and a pack-based extensibility model that the incumbent cannot match without a rewrite.
+
 [[sect-primary-competitor]]
 === Primary Competitor Analysis
 
@@ -104,10 +108,15 @@
 
 ==== Primary Competitor Strategic Assessment
 
-* *Defensibility:* MEDIUM-HIGH. Deep enterprise relationships and switching costs, but aging architecture and bolt-on AI.
-* *AI strategy:* Introduced AI features via partnerships (not native) in September 2025. Cannot easily retrofit governance-first AI controls.
+* *Defensibility:* MEDIUM-HIGH.
+Deep enterprise relationships and switching costs create a moat — but it is a *relationship moat, not a technology moat.*
+The underlying architecture is aging, and bolt-on AI cannot deliver the governance guarantees that regulators increasingly demand.
+* *AI strategy:* Introduced AI features via partnerships (not native) in September 2025.
+This is a tell: they cannot build it themselves and cannot easily retrofit governance-first AI controls into an architecture that was not designed for them.
 * *Weaknesses:* QC-only (not three lines of defense), documentation quality criticized, limited OCR/document extraction capabilities.
-* *Pricing vulnerability:* Per-pack pricing without AI features means customers pay more for less intelligence. AuditIQ can include AI governance controls at competitive pricing and win on value.
+Every customer who needs compliance or internal audit coverage today is buying a second tool — AuditIQ eliminates that need.
+* *Pricing vulnerability:* Per-pack pricing without AI governance means customers pay more for less intelligence.
+AuditIQ includes confidence scoring, evidence management, and AI controls at the same price point — winning on value, not just on cost.
 
 === Other Competitors
 
@@ -121,9 +130,15 @@
 
 === AuditIQ Competitive Differentiation
 
+This is not a feature comparison — it is an architectural gap that widens over time:
+
 [arabic]
-. *Governance-first AI* vs. bolt-on partnerships — built natively, explainable, human-approved.
-. *Three-layer confidence scoring* vs. binary pass/fail — quantified trust signals.
-. *Three-lines-of-defense* vs. first-line-only — unified compliance system of record.
-. *Audit pack extensibility* vs. hard-coded logic — new regulations without platform changes.
-. *Immutable, exam-ready evidence management* vs. file shares and email.
+. *Governance-first AI* vs. bolt-on partnerships — AuditIQ's AI is built natively, explainable, and human-approved.
+The incumbent cannot retrofit this without a fundamental architecture change.
+. *Three-layer confidence scoring* vs. binary pass/fail — Reviewers get quantified trust signals that tell them where to focus.
+Binary pass/fail wastes expert time on cases the system already knows are correct.
+. *Three-lines-of-defense* vs. first-line-only — One platform for QC, compliance, and internal audit.
+The incumbent serves first-line only; customers buy separate tools for the rest.
+. *Audit pack extensibility* vs. hard-coded logic — New regulations ship as pack configurations, not platform releases.
+AuditIQ can enter new markets (CRA, ECOA, SBL) without rewriting the engine.
+. *Immutable, exam-ready evidence management* vs. file shares and email — Every piece of evidence, every finding, every approval is hash-chained and regulator-ready from day one.

@@ -10,6 +10,7 @@
 |0.2 |2026-02-27 |Erik Pieczkowski |Build-ready spec — all stubs replaced with implementable detail; new sections 19–22 added (MVP Decisions, Immutability, Exam Bundle, AI Governance); MVP Cutline produced
 |0.3 |2026-03-05 |Erik Pieczkowski |Formatting & cross-reference improvements — FR-1.1 acceptance criteria reformatted with bullets; section 7.1 phase timeline split to separate lines; section 1.4 updated with cross-references reflecting reorganized document structure; Appendix X reference corrected; added CLAUDE.md, .editorconfig one-sentence-per-line enforcement, and CI lint step
 |0.4 |2026-03-05 |Erik Pieczkowski |Component architecture completeness — added Target vs. Source Schema Definitions (section 7); full component specs for API Gateway (Azure APIM), Audit Orchestration Service (state transitions, GraphQL mutations, concurrency), Regulatory Citation Engine (semantic search, Qdrant, open-source embeddings), Document Store (Azure Blob, 7-year retention, CMK, lifecycle), Search Index (Azure Elasticsearch, indexing pipeline, ILM), AI Rule Generation vision (Phase 2 placeholder); updated glossary with target/source definitions
+|0.5 |2026-03-05 |Erik Pieczkowski |Architecture & presentation — expanded section 10 with Azure deployment diagram, NFRs (99.95% SLA), security architecture (STRIDE), DR strategy, backup schedule; added component integration diagram to section 11; converted blockquotes to admonitions in section 11; added energy and conviction to sections 4, 5, 6 writing
 |===
 
 === Authors / Owners

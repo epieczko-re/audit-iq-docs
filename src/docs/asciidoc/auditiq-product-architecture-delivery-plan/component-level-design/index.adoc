@@ -1,6 +1,114 @@
 [[sect-component-design]]
 == Component-Level Design
 
+The diagram below shows how all components connect — from the API Gateway through the data pipeline to storage and intelligence services.
+Each component is specified in detail in the subsections that follow.
+
+.AuditIQ Component Integration Map
+[mermaid]
+----
+graph TB
+  subgraph Client["Client Layer"]
+    UI["Web Application<br/>(React)"]
+    APIM["Azure API Management<br/>Gateway"]
+  end
+
+  subgraph Core["Core Platform Services"]
+    AUTH["Auth & RBAC<br/>(Azure AD + RLS)"]
+    ORCH["Audit Orchestration<br/>Service"]
+    PACK["Audit Pack<br/>Manager"]
+    WF["Workflow Engine<br/>(State Machine)"]
+  end
+
+  subgraph Pipeline["Data Pipeline"]
+    ING["Ingestion<br/>Service"]
+    DOCPROC["Document Processing<br/>(Docling-Graph)"]
+    MAPPER["Schema Mapping<br/>Service"]
+    NORM["Normalization<br/>Engine"]
+    RULES["Comparison &<br/>Rules Engine"]
+    FINDINGS["Findings<br/>Management"]
+    EVIDENCE["Evidence &<br/>Attachments"]
+  end
+
+  subgraph Intelligence["Intelligence Layer"]
+    SCORING["Confidence &<br/>Severity Scoring"]
+    CITATIONS["Regulatory Citation<br/>Engine (Qdrant)"]
+    REPORT["AI Reporting<br/>Assistant"]
+    AIRULES["AI Rule Generation<br/>(Phase 2)"]
+  end
+
+  subgraph Storage["Data & Storage Layer"]
+    PG[("PostgreSQL<br/>(RLS + Events)")]
+    BLOB[("Azure Blob<br/>Storage (CMK)")]
+    ES[("Elasticsearch<br/>(Azure Managed)")]
+    QDRANT[("Qdrant<br/>Vector DB")]
+  end
+
+  %% Client → Core
+  UI -->|HTTPS| APIM
+  APIM -->|JWT + Tenant ID| AUTH
+  APIM -->|GraphQL| ORCH
+
+  %% Core orchestration
+  ORCH --> PACK
+  ORCH --> WF
+  ORCH --> ING
+  ORCH --> REPORT
+
+  %% Data pipeline flow
+  ING -->|Target dataset| MAPPER
+  ING -->|Source documents| DOCPROC
+  DOCPROC -->|Extracted fields + AFC| MAPPER
+  MAPPER -->|Mapped fields| NORM
+  NORM -->|Normalized values| RULES
+  RULES -->|Findings| FINDINGS
+  RULES -->|Scores| SCORING
+  FINDINGS --> EVIDENCE
+
+  %% Intelligence connections
+  SCORING -->|Combined confidence| FINDINGS
+  PACK --> RULES
+  PACK --> AIRULES
+  FINDINGS -->|Context| CITATIONS
+  CITATIONS -->|Ranked citations| REPORT
+
+  %% Storage connections
+  ORCH --> PG
+  FINDINGS --> PG
+  WF -->|Events| PG
+  DOCPROC --> BLOB
+  EVIDENCE --> BLOB
+  REPORT --> BLOB
+  ING --> ES
+  FINDINGS --> ES
+  CITATIONS --> QDRANT
+
+  %% Styling
+  style UI fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style APIM fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style AUTH fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style ORCH fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style PACK fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style WF fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style ING fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style DOCPROC fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style MAPPER fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style NORM fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style RULES fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style FINDINGS fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style EVIDENCE fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style SCORING fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style CITATIONS fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style REPORT fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style AIRULES fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style PG fill:#6C3483,color:#fff,stroke:#4A235A
+  style BLOB fill:#6C3483,color:#fff,stroke:#4A235A
+  style ES fill:#6C3483,color:#fff,stroke:#4A235A
+  style QDRANT fill:#6C3483,color:#fff,stroke:#4A235A
+----
+
+*Color legend:* [blue]#Blue# = Client & Data Pipeline | [orange]#Orange# = Core Platform | [green]#Green# = Intelligence | [purple]#Purple# = Storage
+
 === Ingestion Service
 
 *Responsibilities:*
@@ -104,9 +212,13 @@ graph LR
 * Fall back to cloud OCR for pages graded POOR or FAIR by Docling
 * Store extracted text, AFC metadata, and Docling page-level confidence grades
 
-____
-*Critical Architecture Clarification (per Docling Technical Validation Report v1):* Docling is a *document conversion + layout understanding engine*, not a per-field extraction system. Its confidence scores (`layout_score`, `ocr_score`, `parse_score`) are *conversion-quality indicators* (POOR/FAIR/GOOD/EXCELLENT) that grade how well the page was converted—they are NOT per-field extraction confidence. AuditIQ must build its own *deterministic field extractor* that consumes Docling’s `DoclingDocument` output and produces per-field AFC scores. Do not use Docling’s numeric scores directly for field-level gating.
-____
+[IMPORTANT]
+====
+*Critical Architecture Clarification (per Docling Technical Validation Report v1):* Docling is a *document conversion + layout understanding engine*, not a per-field extraction system.
+Its confidence scores (`layout_score`, `ocr_score`, `parse_score`) are *conversion-quality indicators* (POOR/FAIR/GOOD/EXCELLENT) that grade how well the page was converted — they are NOT per-field extraction confidence.
+AuditIQ must build its own *deterministic field extractor* that consumes Docling’s `DoclingDocument` output and produces per-field AFC scores.
+Do not use Docling’s numeric scores directly for field-level gating.
+====
 
 ==== Docling-Graph Integration
 
@@ -327,11 +439,16 @@ Based on Docling validation report benchmarks:
 
 ==== Licensing Warning
 
-____
-*GPL Risk:* The `docling-surya` integration package wraps SuryaOCR, which is licensed under GPL. If AuditIQ links or imports `docling-surya`, the entire application may be subject to GPL copyleft obligations. *For commercial SaaS deployment, either (a) ensure Docling is used WITHOUT `docling-surya` (use EasyOCR or Tesseract OCR backends instead), or (b) obtain legal review of GPL implications before Phase 1a.*
+[WARNING]
+====
+*GPL Risk:* The `docling-surya` integration package wraps SuryaOCR, which is licensed under GPL.
+If AuditIQ links or imports `docling-surya`, the entire application may be subject to GPL copyleft obligations.
+*For commercial SaaS deployment, either (a) ensure Docling is used WITHOUT `docling-surya` (use EasyOCR or Tesseract OCR backends instead), or (b) obtain legal review of GPL implications before Phase 1a.*
 
-*Docling-Graph (MIT):* Docling-Graph is MIT-licensed and represents a lower-risk integration option than GPL-linked adapters such as `docling-surya`. Where possible prefer Docling-Graph for production deployments to avoid GPL copyleft risk. If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms before Phase 1a.
-____
+*Docling-Graph (MIT):* Docling-Graph is MIT-licensed and represents a lower-risk integration option than GPL-linked adapters such as `docling-surya`.
+Where possible prefer Docling-Graph for production deployments to avoid GPL copyleft risk.
+If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms before Phase 1a.
+====
 
 [[sect-poc-test-plan]]
 ==== POC Test Plan (Phase 0)
@@ -367,9 +484,12 @@ ____
 * Provide UI for human review and override with confidence-based routing
 * Version and store approved mappings; feed override data back into calibration
 
-____
-*Scope constraint (per Schema Mapping Strategy Report):* HMDA LAR spans 48 data points → ~110 fields, with 37 “key HMDA data fields” (Fed CA Letter 18-9). Closing Disclosure (CD) documents alone cover only ~10–20% of these at ≥0.85 auto-mappable confidence. MVP must explicitly label fields as “CD-supported,” “requires 1003/URLA,” “requires appraisal,” or “manual entry required.”
-____
+[IMPORTANT]
+====
+*Scope constraint (per Schema Mapping Strategy Report):* HMDA LAR spans 48 data points → ~110 fields, with 37 “key HMDA data fields” (Fed CA Letter 18-9).
+Closing Disclosure (CD) documents alone cover only ~10–20% of these at ≥0.85 auto-mappable confidence.
+MVP must explicitly label fields as “CD-supported,” “requires 1003/URLA,” “requires appraisal,” or “manual entry required.”
+====
 
 [[sect-matching-algorithm]]
 ==== Matching Algorithm (Phase 1 — Hybrid Heuristic)
@@ -782,9 +902,13 @@ interface EvidenceRecord {
 * Enable audit replay for investigations and regulator exam response
 * Support litigation defensibility via FRE Rule 902(13)/(14) self-authentication
 
-____
-*Critical design requirement (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient. An attacker with database write access can rewrite the entire chain. This design adds three mandatory layers: (1) RFC 8785 canonical JSON serialization for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points that cannot be silently rewritten. See <<sect-decision-d3, Decision D3>> for design tier rationale.
-____
+[IMPORTANT]
+====
+*Critical design requirement (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient.
+An attacker with database write access can rewrite the entire chain.
+This design adds three mandatory layers: (1) RFC 8785 canonical JSON serialization for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points that cannot be silently rewritten.
+See <<sect-decision-d3, Decision D3>> for design tier rationale.
+====
 
 ==== Event Schema
 
