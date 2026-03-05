@@ -8,7 +8,29 @@
 . *Declarative configuration:* Packs are JSON, not code. The platform interprets them.
 . *Confidence scoring:* Every output carries a quantified confidence score (extraction, mapping, rule application).
 . *Human-in-loop by default:* AI outputs are advisory and non-finalized until explicitly approved by a human with the right role.
-. *Multi-tenancy:* Row-level security at the database level. No cross-tenant data leakage.
+. *Multi-tenancy:* Row-level security at the database level. No cross-tenant data leakage. See diagram below.
+
+.Multi-Tenant Data Isolation
+[mermaid]
+----
+graph TD
+  A[API Request] -->|Tenant ID| B[Auth Middleware]
+  B -->|Validate Session| C[RLS Policy Check]
+  C -->|Allowed?| D{Access Control}
+  D -->|Yes| E[Return Tenant Data Only]
+  D -->|No| F[403 Forbidden]
+  E -->|Append Event| G[Audit Log]
+  G -->|Immutable| H[Event Store]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#C0392B,color:#fff,stroke:#922B21
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
 . *Reproducibility:* Identical inputs + pack version + configuration = identical deterministic outputs.
 
 === Component Architecture (Deep Dive)

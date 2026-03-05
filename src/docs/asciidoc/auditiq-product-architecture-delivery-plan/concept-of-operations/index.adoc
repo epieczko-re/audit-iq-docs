@@ -1,5 +1,34 @@
 == Concept of Operations (ConOps)
 
+=== Audit Workflow State Machine
+
+The following diagram shows the end-to-end state transitions for an audit run, from creation through finalization.
+
+.Audit Workflow State Machine
+[mermaid]
+----
+stateDiagram-v2
+  direction TB
+  [*] --> Created
+  Created --> DocumentsUploaded: Upload loan file + HMDA doc
+  DocumentsUploaded --> Extracted: Docling extraction complete
+  Extracted --> ReviewerInProgress: Reviewer starts review
+  ReviewerInProgress --> FindingsGenerated: Findings + scores created
+  FindingsGenerated --> ManagerReview: Manager reviews escalations
+  ManagerReview --> ManagerApproval: All critical findings approved
+  ManagerApproval --> Finalized: Audit finalized + report generated
+  Finalized --> [*]
+  ReviewerInProgress --> ReviewerInProgress: Corrections, overrides
+  ManagerReview --> FindingsGenerated: Manager requests re-review
+
+  classDef blueState fill:#4A6FA5,color:#fff,stroke:#2B4570
+  classDef greenState fill:#2E8B57,color:#fff,stroke:#1B5E3B
+
+  class Created,DocumentsUploaded,Extracted,ReviewerInProgress blueState
+  class FindingsGenerated,ManagerReview,ManagerApproval blueState
+  class Finalized greenState
+----
+
 === Audit Workflow: Manual Mode
 
 [arabic]
@@ -12,6 +41,31 @@
 . *Second review:* Configurable sampling of completed reviews for quality assurance.
 . *Reporting:* Manager reviews dashboards, generates audit summary report, exports exam-ready bundle.
 
+.Manual Mode Workflow
+[mermaid]
+----
+sequenceDiagram
+  participant Admin
+  participant System
+  participant Reviewer
+  participant Manager
+
+  Admin->>System: Create audit run + select pack
+  Admin->>System: Upload target dataset
+  System->>System: Validate schema against pack
+  System-->>Admin: Validation result (errors/warnings)
+  Admin->>System: Link source documents to records
+  Reviewer->>System: Open record in side-by-side viewer
+  Reviewer->>System: Compare fields (confirm / discrepancy / unable)
+  Reviewer->>System: Create finding (value, root cause, severity, comment)
+  System->>System: Route findings to responsible parties
+  Reviewer->>System: Track remediation + evidence
+  System->>System: Second review (QA sampling)
+  Manager->>System: Review dashboards
+  Manager->>System: Generate audit summary report
+  System-->>Manager: Exam-ready bundle
+----
+
 === Audit Workflow: OCR-Assisted Mode (Phase 1+)
 
 Steps 1–3 as above, then:
@@ -21,6 +75,30 @@ Steps 1–3 as above, then:
 . *Automated pre-scan:* Comparison engine applies pack rules to match target values against extracted source values. Generates preliminary findings with combined confidence scores (extraction × rule application).
 . *Human review:* Reviewer sees pre-populated comparison results. High-confidence matches are pre-confirmed (reviewer can override). Low/medium-confidence items are flagged for manual verification. Reviewer focuses time on genuinely uncertain cases.
 . Steps 6–8 as manual mode.
+
+.OCR-Assisted Mode Workflow
+[mermaid]
+----
+sequenceDiagram
+  participant System
+  participant Docling
+  participant CompEngine as Comparison Engine
+  participant Reviewer
+  participant Manager
+
+  System->>Docling: Send source documents
+  Docling->>System: Extracted text, tables, key-value pairs + confidence scores
+  System->>CompEngine: Apply pack rules (target vs. extracted source)
+  CompEngine->>System: Preliminary findings + combined confidence scores
+  System->>Reviewer: Pre-populated comparison results
+  Note over Reviewer: High-confidence matches pre-confirmed
+  Note over Reviewer: Low/medium-confidence items flagged
+  Reviewer->>System: Verify flagged items + override if needed
+  Reviewer->>System: Create/adjust findings
+  System->>Manager: Escalated findings for review
+  Manager->>System: Approve / request re-review
+  Manager->>System: Generate report + exam-ready bundle
+----
 
 === Audit Workflow: Automated Pre-Scan (“Target-to-Source” / “Record-to-Record”)
 
@@ -32,3 +110,27 @@ For structured data audits (e.g., HMDA LAR against LOS database extract), the fu
 . Comparison engine runs all pack rules automatically.
 . Output: full findings register with confidence scores.
 . Human review is required for: all Critical/High findings, all findings below confidence threshold, all AI-generated narratives.
+
+.Automated Pre-Scan Workflow
+[mermaid]
+----
+sequenceDiagram
+  participant Admin
+  participant System
+  participant CompEngine as Comparison Engine
+  participant Reviewer
+  participant Manager
+
+  Admin->>System: Upload target dataset (CSV/API)
+  Admin->>System: Upload source dataset (CSV/API)
+  System->>System: Auto-suggest schema mapping
+  Admin->>System: Approve schema mapping
+  System->>CompEngine: Run all pack rules automatically
+  CompEngine->>System: Full findings register + confidence scores
+  System->>Reviewer: Critical/High findings for review
+  System->>Reviewer: Below-threshold findings for review
+  Reviewer->>System: Approve / override findings
+  System->>Manager: Escalated findings
+  Manager->>System: Final approval
+  Manager->>System: Generate report
+----

@@ -1,5 +1,29 @@
 == AI Governance & Model Risk Controls
 
+.AI & Human-in-Loop Decision Flow
+[mermaid]
+----
+graph TD
+  A[Extracted Data] -->|LLM Call| B{Confidence > 0.70?}
+  B -->|Yes| C[Auto-Narrative]
+  B -->|No| D[Manual Narrative]
+  C -->|Confidence| E[Finding]
+  D -->|Manual| E
+  E -->|Severity=Critical?| F{Manager Review}
+  F -->|Approved| G[Finalized]
+  F -->|Rejected| H[Revision]
+  H -->|Resubmit| F
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#4A6FA5,color:#fff,stroke:#2B4570
+----
+
 === Purpose & Regulatory Context
 
 AuditIQ uses AI (LLMs, schema matchers, scoring models) to extract data, suggest mappings, and generate narratives. *Regulators increasingly scrutinize AI in regulated products.* This section defines operational controls to manage AI risk, ensure transparency, and maintain audit trail.

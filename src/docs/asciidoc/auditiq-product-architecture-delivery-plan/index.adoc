@@ -4,6 +4,8 @@
 :author: Erik Pieczkowski
 :revnumber: 0.2
 :revdate: 2026-02-27
+:toc:
+:toclevels: 3
 :sectnums:
 :sectnumlevels: 4
 

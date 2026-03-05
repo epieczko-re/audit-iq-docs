@@ -1,5 +1,30 @@
 == Audit Pack Specification
 
+.Pack Engine Architecture
+[mermaid]
+----
+graph LR
+  A[Audit Instance] -->|Instantiate| B[Pack Engine]
+  B -->|Load Rules| C[Rule Registry]
+  B -->|Load Schema| D[Schema Registry]
+  C -->|Eval Rule| E[Scoring Engine]
+  D -->|Map Field| F[Schema Matcher]
+  F -->|Confidence| E
+  E -->|Finding| G[Finding Creator]
+  G -->|Append| H[Audit Trail]
+  H -->|Immutable| I[Evidence Store]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style G fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style I fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
 === Overview
 
 An audit pack is a versioned, declarative configuration artifact that encapsulates everything needed to audit a specific regulatory domain or business process. The platform interprets the pack—it does not execute code embedded in the pack. This ensures safety, reproducibility, and extensibility.

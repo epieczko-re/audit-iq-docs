@@ -1,5 +1,25 @@
 == Immutability vs. Correctability (Regulator-Safe Semantics)
 
+.Immutability & Versioning Flow
+[mermaid]
+----
+graph TD
+  A[Finding v1] -->|Approve| B[Event: Approved]
+  B -->|Immutable| C[Audit Trail]
+  A -->|Error Found| D[Event: Corrected]
+  D -->|Compensating Event| C
+  D -->|Status Reset| E[Finding v2]
+  E -->|New Approval| F[Event: Re-approved]
+  F -->|Event Chain| C
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+----
+
 === The Problem: Audit Trail Integrity vs. Operational Reality
 
 *Regulator expectation:* Audit trail is immutable and append-only. No deletions, no retroactive changes. Entire audit history is reconstructible from the log.

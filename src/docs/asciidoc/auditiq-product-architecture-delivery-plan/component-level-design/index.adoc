@@ -71,6 +71,29 @@ interface ValidationError {
 
 === Document Processing Service (Docling + OCR)
 
+.Document Processing Pipeline
+[mermaid]
+----
+graph LR
+  A[Upload PDF] -->|Scan| B{Malware Check}
+  B -->|Clean| C[Docling Extract]
+  B -->|Infected| D[Quarantine]
+  C -->|Text + Tables| E[Schema Mapper]
+  E -->|Confidence| F[Extracted Record]
+  F -->|Event| G[Audit Trail]
+  C -->|OCR Failed?| H[Cloud OCR Fallback]
+  H -->|Re-extract| E
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#FF7E2D,color:#fff,stroke:#CC5500
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#C0392B,color:#fff,stroke:#922B21
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#4A6FA5,color:#fff,stroke:#2B4570
+----
+
 *Responsibilities:*
 
 * Process source documents through Docling (document conversion + layout understanding substrate)
