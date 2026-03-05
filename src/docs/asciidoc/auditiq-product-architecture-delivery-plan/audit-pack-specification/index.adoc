@@ -1,6 +1,18 @@
 [[sect-audit-pack-spec]]
 == Audit Pack Specification
 
+The audit pack is the central intellectual artifact in AuditIQ.
+It is not a configuration file — it is the encoded regulatory intelligence that transforms AuditIQ from a generic document extraction platform into a compliance audit product.
+Every downstream component — ingestion, schema mapping, comparison, scoring, reporting, and the exam-ready bundle — is driven by the pack.
+If the pack is wrong, the audit is wrong.
+If the pack is shallow, the audit is shallow.
+The quality of AuditIQ is, in the final analysis, the quality of its packs.
+
+RiskExec builds and maintains all packs.
+Pack correctness is a platform obligation, not a customer responsibility.
+When regulations change, RiskExec guarantees updated packs within a committed SLA (see <<sect-pack-regulatory-change-mgmt>>).
+This is a product commitment.
+
 .Pack Engine Architecture
 [mermaid]
 ----
@@ -26,24 +38,100 @@ graph LR
   style I fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
 
-=== Overview
+=== Strategic Role of the Audit Pack
+
+==== The Pack Is the Product
+
+An audit pack encapsulates everything needed to audit a specific regulatory domain: what fields to check, which documents to extract from, how to compare values, when to flag discrepancies, how to score severity, and what the final report looks like.
+The platform is the engine; the pack is the brain.
+
+This has three strategic implications:
+
+. *Extensibility without code changes.* Adding a new regulation (CRA, SBL 1071, fair lending) means creating a new pack — not modifying the platform.
+The platform's architecture is pack-agnostic by design.
+. *Regulatory defensibility.* Because packs are declarative, every rule is explicit, auditable, and traceable to a regulation citation.
+There is no hidden logic.
+Examiners can review the pack itself as part of the audit methodology.
+. *Competitive moat.* The accumulated depth and accuracy of RiskExec's pack library — hundreds of rules, field-level coverage matrices, tested against thousands of loan files — is IP that cannot be trivially replicated.
+
+==== Competitive Differentiation
+
+The audit technology market has no shortage of tools.
+What it lacks is a product that encodes regulatory logic as a versioned, testable, declarative artifact.
+AuditIQ's pack model is architecturally distinct from every major competitor.
+
+[cols="20%,25%,25%,30%",options="header"]
+|===
+|Competitor |Approach |Strengths |AuditIQ Differentiation
+
+|*CaseWare Working Papers*
+|Digital binder with trial balance integration and AI assistant (AiDA)
+|Mature product; strong roll-forward; AiDA for memo generation
+|CaseWare automates document assembly, not regulatory logic.
+Rules live in the auditor's head, not in the tool.
+AuditIQ encodes the rules declaratively.
+
+|*TeamMate+ (Wolters Kluwer)*
+|Audit lifecycle management with IBM Cognos reporting
+|End-to-end workflow; customizable content libraries
+|TeamMate manages audit workflow — it does not execute audit logic.
+AuditIQ packs drive automated comparison and scoring, not just task tracking.
+
+|*AuditBoard*
+|Cloud-native workflow automation with AI summaries
+|Modern UX; real-time collaboration; template-driven
+|AuditBoard orchestrates people and tasks.
+AuditIQ orchestrates rules and evidence.
+Pack-driven automation replaces manual workpaper assembly.
+
+|*Diligent One / HighBond*
+|GRC platform with ACL Robotics for automated monitoring
+|60% of Fortune 1000; strong analytics; ML for false positive reduction
+|HighBond analyzes transactions; AuditIQ audits compliance.
+Packs encode regulation-specific validation logic that HighBond's generic analytics cannot express.
+
+|*DataSnipper*
+|Excel-native evidence linking with AI document extraction
+|Fast adoption; $1.4B productivity savings; strong evidence-to-workpaper linking
+|DataSnipper links evidence to cells.
+AuditIQ defines what evidence to look for, what values to expect, and what constitutes a finding — the full regulatory logic chain.
+
+|*MindBridge AI*
+|Full-population transaction analysis with ensemble ML
+|100% coverage vs. sampling; unsupervised anomaly detection
+|MindBridge finds statistical anomalies.
+AuditIQ validates against regulatory requirements.
+Packs encode what "correct" means per regulation, not just what is "unusual."
+
+|*Fieldguide*
+|Document management with AI copilots for findings drafting
+|AI evidence review; completeness checking; auto-renaming
+|Fieldguide assists auditors in managing documents.
+AuditIQ replaces manual audit logic with pack-driven comparison and scoring.
+|===
+
+*The key insight:* No competitor has productized declarative regulatory logic as a versioned, testable, distributable artifact.
+Competitors automate the workflow around auditing (binder assembly, task management, evidence linking, memo drafting).
+AuditIQ automates the audit itself.
+
+=== Pack Overview and Components
 
 An audit pack is a versioned, declarative configuration artifact that encapsulates everything needed to audit a specific regulatory domain or business process.
-The platform interprets the pack—it does not execute code embedded in the pack.
+The platform interprets the pack — it does not execute code embedded in the pack.
 This ensures safety, reproducibility, and extensibility.
 
-*Pack components:*
+*Pack components (7 core elements):*
 
-* Manifest (metadata, versioning, authorship)
-* Target schema (which fields are audit-reportable)
-* Source schema(s) (document types and expected layouts)
-* Comparison rules (how to validate target vs. source)
-* Scoring rules (severity, confidence thresholds)
-* Report templates (how to format findings into reports)
-* Test cases (reference data for validation harness)
+* *Manifest* — metadata, versioning, authorship, regulatory basis
+* *Target schema* — which fields are audit-reportable (e.g., HMDA LAR fields)
+* *Source schema(s)* — document types and expected layouts (e.g., Closing Disclosure, Loan Estimate)
+* *Comparison rules* — how to validate target vs. source values, including the expression language for complex logic
+* *Scoring rules* — severity definitions, confidence thresholds for auto-accept/review/reject
+* *Report templates* — how to format findings into reports (PDF/HTML/Markdown)
+* *Test cases* — reference data for validation harness, including golden datasets
 
-*DECISION LOCKED:* Declarative JSON v1 — no executable logic.
-See <<sect-decision-d4, Decision D4>>.
+*DECISION EVOLVED:* Declarative JSON v1 with sandboxed expression language (CEL) for complex rules.
+See <<sect-decision-d4, Decision D4>> for the original locked decision and <<sect-pack-expression-language>> for the controlled evolution.
 
 [[sect-pack-manifest-schema]]
 === Pack Manifest JSON Schema
@@ -52,7 +140,7 @@ See <<sect-decision-d4, Decision D4>>.
 ----
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "AuditIQ Pack Manifest v1.0",
+  "title": "AuditIQ Pack Manifest v1.1",
   "type": "object",
   "required": [
     "pack_id",
@@ -126,6 +214,30 @@ See <<sect-decision-d4, Decision D4>>.
       "items": { "type": "string" },
       "description": "e.g., ['US Federal', 'State-CA', 'State-NY']"
     },
+    "regulatory_effective_date": {
+      "type": "string",
+      "format": "date",
+      "description": "The regulatory effective date this pack version targets (e.g., '2025-01-01' for 2025 HMDA filing season)"
+    },
+    "regulatory_change_tracking": {
+      "type": "object",
+      "description": "Metadata linking this pack version to specific regulatory changes",
+      "properties": {
+        "federal_register_citations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "e.g., ['88 FR 12345', '89 FR 67890']"
+        },
+        "cfpb_guidance_references": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "change_summary": {
+          "type": "string",
+          "description": "Human-readable summary of what regulatory changes this version addresses"
+        }
+      }
+    },
     "deprecation": {
       "type": "object",
       "properties": {
@@ -142,7 +254,7 @@ See <<sect-decision-d4, Decision D4>>.
       "properties": {
         "schema_id": {
           "type": "string",
-          "description": "e.g., 'hmda-lar-2024'"
+          "description": "e.g., 'hmda-lar-2025'"
         },
         "source_document": {
           "type": "string",
@@ -156,6 +268,10 @@ See <<sect-decision-d4, Decision D4>>.
             "properties": {
               "field_id": { "type": "string" },
               "field_name": { "type": "string" },
+              "mismo_field_name": {
+                "type": "string",
+                "description": "MISMO Reference Model v3.x canonical name"
+              },
               "data_type": {
                 "enum": ["string", "integer", "decimal", "date", "boolean", "enum"]
               },
@@ -209,42 +325,9 @@ See <<sect-decision-d4, Decision D4>>.
     },
     "comparison_rules": {
       "type": "array",
-      "description": "Pack-defined comparison rules",
+      "description": "Pack-defined comparison rules — see Rule Engine Specification for full semantics",
       "items": {
-        "type": "object",
-        "required": ["rule_id", "target_field", "comparison_type"],
-        "properties": {
-          "rule_id": { "type": "string" },
-          "rule_name": { "type": "string" },
-          "target_field": { "type": "string" },
-          "source_field": { "type": "string" },
-          "comparison_type": {
-            "enum": [
-              "exact_match",
-              "tolerance_absolute",
-              "tolerance_percentage",
-              "conditional",
-              "lookup",
-              "cross_field"
-            ]
-          },
-          "tolerance": {
-            "type": "object",
-            "properties": {
-              "value": { "type": "number" },
-              "unit": { "enum": ["absolute", "percentage"] }
-            }
-          },
-          "condition": {
-            "type": "string",
-            "description": "If comparison_type is 'conditional', e.g., 'if property_type = 1-4 family'"
-          },
-          "severity": {
-            "enum": ["critical", "high", "medium", "low", "informational"]
-          },
-          "regulation_citation": { "type": "string" },
-          "enabled": { "type": "boolean", "default": true }
-        }
+        "$ref": "#/definitions/comparison_rule"
       }
     },
     "scoring_rules": {
@@ -359,50 +442,690 @@ See <<sect-decision-d4, Decision D4>>.
         }
       }
     }
+  },
+  "definitions": {
+    "comparison_rule": {
+      "type": "object",
+      "required": ["rule_id", "target_field", "comparison_type"],
+      "properties": {
+        "rule_id": { "type": "string" },
+        "rule_name": { "type": "string" },
+        "target_field": { "type": "string" },
+        "source_field": { "type": "string" },
+        "source_doc_types": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Document types to check — enables multi-document corroboration"
+        },
+        "comparison_type": {
+          "enum": [
+            "exact_match",
+            "tolerance_absolute",
+            "tolerance_percentage",
+            "conditional",
+            "lookup",
+            "cross_field",
+            "multi_doc_corroboration",
+            "temporal",
+            "expression"
+          ]
+        },
+        "tolerance": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number" },
+            "unit": { "enum": ["absolute", "percentage", "days"] }
+          }
+        },
+        "expression": {
+          "type": "string",
+          "description": "CEL expression for complex conditional logic — see Expression Language section"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Rule IDs that must execute before this rule (conditional rule chains)"
+        },
+        "condition": {
+          "type": "string",
+          "description": "If comparison_type is 'conditional', e.g., 'if property_type = 1-4 family'"
+        },
+        "severity": {
+          "enum": ["critical", "high", "medium", "low", "informational"]
+        },
+        "base_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Base rule confidence — reduced by precondition/normalization failures per scoring framework"
+        },
+        "regulation_citation": { "type": "string" },
+        "enabled": { "type": "boolean", "default": true }
+      }
+    }
   }
 }
 ----
+
+[[sect-pack-rule-engine]]
+=== Rule Engine Specification
+
+The rule engine interprets comparison rules defined in the pack manifest and produces findings.
+This section specifies the full semantics of each comparison type, including complex scenarios required for real-world regulatory audits.
+
+==== Comparison Types
+
+===== Basic Types
+
+*exact_match:* Target value must exactly equal source value after normalization.
+Used for enum fields (Action Taken codes), identifiers (loan numbers), and boolean flags.
+
+*tolerance_absolute:* Target value must be within ±N of source value.
+Tolerance specified in the rule's `tolerance` object.
+Used for currency amounts (e.g., loan amount within ±$50 of CD amount).
+
+*tolerance_percentage:* Target value must be within ±N% of source value.
+Used for rates and ratios (e.g., interest rate within ±0.125% of CD rate).
+
+*lookup:* Target value must be present in a reference lookup table defined in the pack.
+Used for enum validation (e.g., Action Taken code must be one of 1–8 per HMDA spec).
+
+*cross_field:* Target field value is validated against a computed relationship between two or more other fields.
+Used for derived values (e.g., LTV ratio = loan_amount / appraised_value).
+
+==== Advanced Types
+
+[[sect-multi-doc-corroboration]]
+===== Multi-Document Corroboration
+
+A single target field is validated by cross-referencing values from two or more source documents.
+This is the core audit pattern for HMDA compliance — the same field (e.g., loan amount) appears on the Closing Disclosure, the Loan Estimate, the URLA, and the LOS record, and all must agree.
+
+*Rule structure:*
+
+[source,json]
+----
+{
+  "rule_id": "hmda-loan-amount-corroboration",
+  "rule_name": "Loan Amount Multi-Document Corroboration",
+  "target_field": "loan_amount",
+  "comparison_type": "multi_doc_corroboration",
+  "source_doc_types": ["closing-disclosure", "loan-estimate", "urla-1003"],
+  "tolerance": { "value": 0.50, "unit": "absolute" },
+  "corroboration_policy": {
+    "minimum_sources": 2,
+    "conflict_resolution": "flag_for_review",
+    "agreement_threshold": 0.95
+  },
+  "severity": "high",
+  "regulation_citation": "12 CFR 1003.4(a)(7)"
+}
+----
+
+*Execution semantics:*
+
+. Extract the target field value from each specified source document type.
+. For each pair of extracted values, apply the specified tolerance to determine agreement.
+. If fewer than `minimum_sources` documents are available, flag as `unable_to_determine` with reduced rule confidence (×0.7).
+. If all available sources agree within tolerance, produce a `match` finding with confidence boosted by the number of corroborating sources.
+. If sources disagree, apply `conflict_resolution` policy: `flag_for_review` routes to human reviewer; `majority_wins` accepts the majority value; `highest_confidence_wins` accepts the value from the source with the highest extraction confidence (AFC).
+
+*Confidence aggregation for multi-doc rules:*
+
+....
+corroboration_confidence = min(afc_per_source) * (1 + 0.05 * (num_agreeing_sources - 1))
+rule_confidence = min(base_confidence, corroboration_confidence)
+....
+
+The more independent sources that agree, the higher the corroboration signal — capped at 1.0.
+
+[[sect-conditional-rule-chains]]
+===== Conditional Rule Chains
+
+Rules can depend on the outcome of other rules.
+This enables branching audit logic: if the loan is FHA, apply additional FHA-specific validation rules that do not apply to conventional loans.
+
+*Rule structure:*
+
+[source,json]
+----
+{
+  "rule_id": "fha-pmi-validation",
+  "rule_name": "FHA PMI/MIP Validation",
+  "target_field": "mortgage_insurance_premium",
+  "comparison_type": "expression",
+  "depends_on": ["hmda-loan-type-check"],
+  "expression": "results['hmda-loan-type-check'].value == 'FHA' && target.mortgage_insurance_premium > 0",
+  "severity": "high",
+  "regulation_citation": "24 CFR 203.259a"
+}
+----
+
+*Execution semantics:*
+
+. Rules are topologically sorted by `depends_on` references before execution.
+Circular dependencies are rejected at pack validation time.
+. A rule with `depends_on` executes only if all prerequisite rules have completed.
+. The `expression` field can reference `results['rule_id']` to access the outcome of prerequisite rules.
+. If a prerequisite rule produced `unable_to_determine`, the dependent rule's confidence is reduced (×0.5) because its precondition is uncertain.
+
+*Maximum chain depth:* 5 levels.
+Packs with deeper chains are rejected at validation time.
+This prevents runaway complexity while supporting real-world audit logic.
+
+[[sect-temporal-rules]]
+===== Temporal and Date Logic
+
+Regulatory compliance frequently involves date calculations, deadlines, and timing requirements.
+The rule engine supports temporal comparison types for these scenarios.
+
+*Rule structure:*
+
+[source,json]
+----
+{
+  "rule_id": "trid-3-day-rule",
+  "rule_name": "TRID Closing Disclosure 3-Business-Day Rule",
+  "target_field": "closing_date",
+  "comparison_type": "temporal",
+  "source_field": "cd_received_date",
+  "source_doc_types": ["closing-disclosure"],
+  "temporal_config": {
+    "operator": "gte",
+    "offset_value": 3,
+    "offset_unit": "business_days",
+    "calendar": "us_federal",
+    "description": "Closing date must be at least 3 business days after CD receipt"
+  },
+  "severity": "critical",
+  "regulation_citation": "12 CFR 1026.19(f)(1)(ii)"
+}
+----
+
+*Supported temporal operators:*
+
+* `gte` — target date ≥ source date + offset (e.g., closing ≥ CD receipt + 3 business days)
+* `lte` — target date ≤ source date + offset (e.g., rate lock expiration ≤ application date + 60 days)
+* `eq` — target date = source date + offset (exact date match with offset)
+* `within` — target date is within ±offset of source date (date proximity)
+
+*Calendar support:*
+
+* `us_federal` — US federal business day calendar (excludes weekends + federal holidays)
+* `calendar_days` — simple calendar day count
+* `state:{code}` — state-specific calendar (for state-level regulatory deadlines)
+
+*Edge cases:*
+
+* If either date field is missing or unparseable, the rule produces `unable_to_determine` with confidence ×0.5.
+* Date parsing supports ISO 8601, MM/DD/YYYY, and common US date formats.
+The parser normalizes to ISO 8601 before comparison.
+
+[[sect-pack-expression-language]]
+===== Expression Language (CEL)
+
+Decision D4 established declarative JSON as the pack interface.
+As pack complexity grows, pure JSON configuration becomes insufficient for expressing real-world regulatory logic — particularly conditional chains, cross-field validations, and computed thresholds.
+
+The pack expression language extends D4 with a controlled, sandboxed expression evaluator.
+AuditIQ adopts the *Common Expression Language (CEL)* — a non-Turing-complete expression language designed by Google for security-critical policy evaluation.
+
+*Why CEL:*
+
+* *Non-Turing-complete:* CEL expressions always terminate.
+No infinite loops, no recursion, no unbounded computation.
+This is a hard security requirement for packs.
+* *Sandboxed:* CEL has no I/O, no network access, no file system access, no side effects.
+It evaluates expressions against provided data only.
+* *Auditable:* CEL expressions are human-readable strings embedded in JSON.
+Examiners can review them directly.
+* *Proven:* CEL is used in Google Cloud IAM, Kubernetes admission webhooks, Firebase security rules, and Envoy proxy.
+It is production-hardened for policy evaluation.
+
+*Available variables in CEL expressions:*
+
+* `target` — the target record object (all fields accessible by field_id)
+* `source` — the source document object (all extracted fields)
+* `results` — map of prior rule results (keyed by rule_id), each containing `value`, `status`, `confidence`
+* `metadata` — audit context (audit_id, pack_version, run_date)
+
+*Expression constraints (enforced at pack validation):*
+
+* Maximum expression length: 1,024 characters.
+* No function definitions — expressions only.
+* Only CEL standard functions + AuditIQ custom functions (see below).
+* Expressions must type-check at pack validation time.
+
+*AuditIQ custom CEL functions:*
+
+* `businessDaysBetween(date1, date2, calendar)` — returns business day count
+* `normalize(value, type)` — applies normalization rules (e.g., currency formatting, address standardization)
+* `lookupEnum(value, table_name)` — validates value against a reference enum table defined in the pack
+* `withinTolerance(actual, expected, tolerance, unit)` — returns boolean for tolerance comparison
+
+*Example expressions:*
+
+[source]
+----
+// FHA-specific PMI validation
+target.loan_type == 'FHA' && source.mortgage_insurance_premium > 0
+
+// TRID 3-day rule
+businessDaysBetween(source.cd_received_date, target.closing_date, 'us_federal') >= 3
+
+// Cross-field LTV validation
+abs(target.ltv_ratio - (target.loan_amount / source.appraised_value * 100)) <= 0.5
+
+// Conditional severity escalation
+results['loan-amount-check'].status == 'mismatch' && target.loan_amount > 500000
+----
+
+==== Rule Precedence and Conflict Resolution
+
+When multiple rules evaluate the same target field and produce conflicting results, the engine applies the following precedence:
+
+. *Highest severity wins:* If rule A produces a `critical` finding and rule B produces a `low` finding for the same field, the critical finding is reported.
+The low finding is attached as a supplementary note.
+. *Most specific rule wins:* A conditional rule that matches its precondition takes precedence over a generic rule for the same field.
+. *Explicit conflict flag:* If two rules of the same severity produce contradictory findings (one says match, one says mismatch), both are flagged for human review with a `rule_conflict` indicator.
+
+==== Rule Execution Order
+
+Rules are executed in dependency-aware order:
+
+. All rules are topologically sorted by `depends_on` references.
+. Rules with no dependencies execute first, in parallel where possible.
+. Rules with dependencies execute after their prerequisites complete.
+. The engine enforces a maximum total execution time of 30 seconds per record.
+If this budget is exceeded, remaining rules are marked `timed_out` and routed to manual review.
+
+[[sect-pack-ai-boundary]]
+=== AI-Pack Boundary Specification
+
+The pack is declarative; the AI pipeline is probabilistic.
+The boundary between these two domains is one of the most critical design decisions in AuditIQ.
+Getting it wrong means either: (a) packs that are too dumb to handle real documents, or (b) AI that makes unauditable decisions.
+This section draws the line precisely.
+
+==== The Boundary Principle
+
+*Deterministic operations live in the pack.
+Probabilistic operations live in the AI pipeline.
+Every crossing of the boundary is explicitly labeled, scored, and auditable.*
+
+[cols="30%,35%,35%",options="header"]
+|===
+|Operation |Owner |Rationale
+
+|Target data validation (schema check)
+|Pack (deterministic)
+|Target data is structured; validation is rule-based; no uncertainty.
+
+|Source document extraction (OCR, layout parsing)
+|AI pipeline (probabilistic)
+|Unstructured documents introduce OCR uncertainty; extraction confidence (AFC) quantifies this.
+
+|Schema mapping (target field → source field)
+|AI pipeline (probabilistic) with pack constraints
+|Mapping requires semantic similarity judgment; confidence scored; pack constrains candidate space via source schemas.
+
+|Comparison execution (target value vs. source value)
+|Pack (deterministic)
+|Once values are extracted and mapped, comparison is rule-based.
+The pack defines what "equal" or "within tolerance" means.
+
+|Scoring (severity assignment)
+|Pack (deterministic)
+|Severity is defined by the pack rule.
+Confidence is computed from the three-layer formula.
+
+|Narrative generation (finding descriptions, report summaries)
+|AI pipeline (probabilistic)
+|Natural language generation is inherently probabilistic.
+All AI narratives require human approval before finalization.
+
+|Rule suggestion (during pack authoring)
+|AI pipeline (advisory only)
+|AI can suggest new rules based on regulatory text analysis, but a human compliance expert must approve and add them to the pack.
+|===
+
+==== AI-Assisted Rule Creation
+
+When RiskExec compliance experts author packs, AI assists by:
+
+. *Regulatory text analysis:* Given a regulation citation (e.g., 12 CFR 1003.4), AI extracts candidate audit rules — field requirements, validation conditions, and severity suggestions.
+. *Rule draft generation:* AI generates draft comparison rules in the pack JSON schema format.
+These are suggestions, not final rules.
+. *Gap detection:* AI compares a draft pack against the full regulatory text and flags coverage gaps — fields or requirements that have no corresponding rule.
+
+*Guardrail:* AI-suggested rules are always created in `draft` status.
+They cannot be published until a human compliance expert reviews and approves each rule.
+The pack manifest records `ai_suggested: true` on any rule that originated from AI assistance, and this flag is visible in exam-ready bundles.
+
+==== AI in the Rule Execution Hot Path
+
+The general principle is that rule execution is deterministic.
+However, there are specific scenarios where the AI pipeline is invoked during rule execution:
+
+*Scenario 1: Extraction confidence below threshold.*
+If a source document field has AFC < 0.50, the value is unreliable.
+The rule engine can invoke AI re-extraction: a second-pass extraction using a different model (e.g., LLM-based extraction via Mistral) to produce an alternative value with its own AFC score.
+If the re-extracted value's AFC exceeds the threshold, it is used.
+If not, the rule produces `unable_to_determine`.
+
+*Scenario 2: Fuzzy/semantic matching for unstructured fields.*
+Some fields (e.g., property address, borrower name) cannot be compared with exact_match due to formatting variations.
+The rule engine delegates these to a fuzzy matching service that uses NLP-based similarity scoring.
+The fuzzy match confidence is recorded as an additional signal in the rule's confidence calculation.
+
+*Scenario 3: AI-assisted normalization.*
+When standard normalization rules (address standardization, currency formatting) fail, AI-based normalization can be invoked as a fallback.
+The AI normalization result is flagged with `ai_normalized: true` and its confidence is reduced (×0.7) to reflect the additional uncertainty.
+
+*In all three scenarios:*
+
+* The AI invocation is logged as an audit event with model version, input, output, and confidence.
+* The finding is tagged with `ai_assisted: true` in the finding record.
+* Human-in-loop triggers apply: any AI-assisted finding with severity ≥ `high` requires mandatory human review regardless of confidence score.
+
+==== Confidence Propagation Model
+
+The three-layer confidence model (<<sect-scoring-framework>>) computes combined confidence as:
+
+....
+combined_confidence = min(mapping_confidence, extraction_confidence, rule_confidence)
+....
+
+This section specifies precisely how each layer is computed in the context of pack rule execution.
+
+*Extraction confidence (AFC):*
+Produced by the Document Processing Service.
+Per-field composite score from 6 signals (see <<sect-glossary>>).
+When extraction is not applicable (record-to-record audit), defaults to 1.0.
+
+*Mapping confidence:*
+Produced by the Schema Mapping Service.
+5-signal hybrid heuristic (name similarity, synonym match, type compatibility, document section context, historical acceptance).
+When mapping is pre-defined in the pack (no ambiguity), defaults to 1.0.
+
+*Rule confidence:*
+Starts at `base_confidence` from the pack rule definition.
+Reduced by the following modifiers:
+
+* Precondition not satisfied (dependent rule unclear): ×0.7
+* Normalization failed: ×0.5
+* Fewer than `minimum_sources` available (multi-doc rules): ×0.7
+* AI-assisted extraction used: ×0.85
+* AI-assisted normalization used: ×0.7
+
+Multiple modifiers stack multiplicatively:
+
+....
+rule_confidence = base_confidence * modifier_1 * modifier_2 * ... * modifier_n
+rule_confidence = max(0.0, min(1.0, rule_confidence))
+....
+
+*Combined confidence routing:*
+
+* ≥0.85: Auto-confirm eligible.
+No human review required.
+* 0.50–0.84: Human review required.
+Reviewer validates finding.
+* <0.50: Finding rejected.
+Routed to manual re-review if severity is critical or high.
+
+These thresholds are pack-configurable via `scoring_rules.confidence_thresholds`.
+The values above are the platform defaults and the values used by the HMDA Origination pack.
+
+[[sect-pack-authoring]]
+=== Pack Authoring and Lifecycle
+
+==== Authoring Model
+
+RiskExec exclusively authors and maintains all packs.
+Clients configure audit parameters (sample size, severity overrides) but do not create packs.
+This is a deliberate product decision: pack quality is a platform obligation, and regulatory compliance packs require deep domain expertise that most client compliance teams cannot maintain.
+
+*Authoring team composition (per pack):*
+
+[cols="25%,25%,50%",options="header"]
+|===
+|Role |Responsibility |Requirement
+
+|Compliance SME
+|Defines field coverage, comparison logic, severity assignments, regulatory citations
+|Deep knowledge of the target regulation; examiner experience preferred
+
+|Pack Engineer
+|Translates compliance requirements into pack JSON schema; writes CEL expressions; builds test cases
+|Proficiency with the pack manifest schema and expression language
+
+|QA Reviewer
+|Validates pack against golden dataset; reviews edge cases; runs regression tests
+|Independent of the authoring pair; fresh eyes on the rules
+|===
+
+==== Authoring Workflow
+
+.Pack Authoring Lifecycle
+[mermaid]
+----
+graph TD
+  A[Regulatory Analysis] -->|Extract requirements| B[Field Coverage Matrix]
+  B -->|Define rules| C[Rule Authoring]
+  C -->|Write expressions| D[CEL Expression Authoring]
+  D -->|Build test data| E[Test Case Creation]
+  E -->|Run harness| F[Validation & Testing]
+  F -->|Pass| G[Compliance Review]
+  F -->|Fail| C
+  G -->|Approved| H[Publication]
+  G -->|Rejected| C
+  H -->|Deploy| I[Platform Distribution]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style I fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Step 1 — Regulatory Analysis:* Compliance SME reads the regulation (e.g., 12 CFR 1003 for HMDA), identifies every auditable requirement, and documents field-level requirements with citations.
+AI-assisted gap detection (see <<sect-pack-ai-boundary>>) can accelerate this step.
+
+*Step 2 — Field Coverage Matrix:* For each target field, document which source documents contain the value, the expected comparison type, and the severity of a mismatch.
+This becomes the pack's coverage matrix (see <<sect-hmda-coverage-matrix>>).
+
+*Step 3 — Rule Authoring:* Pack engineer translates the coverage matrix into comparison rules in the pack JSON schema.
+Complex conditions use CEL expressions.
+Every rule includes a `regulation_citation`.
+
+*Step 4 — Test Case Creation:* For each rule, create at minimum: one passing test case (values match), one failing test case (values mismatch), and one edge case (missing data, boundary values, format variations).
+Golden datasets are constructed from anonymized production loan files.
+
+*Step 5 — Validation & Testing:* Run the pack through the validation harness (see <<sect-pack-testing>>).
+All test cases must pass.
+Rule coverage must be ≥90%.
+
+*Step 6 — Compliance Review:* An independent compliance reviewer (not the original author) reviews all rules for correctness, completeness, and regulatory alignment.
+This is a mandatory gate before publication.
+
+*Step 7 — Publication:* Pack transitions from `draft` to `published`.
+Existing audit runs are not affected (version pinning).
+New audit runs use the latest published version.
+
+==== Pack Lifecycle States
+
+.Pack Lifecycle State Machine
+[mermaid]
+----
+stateDiagram-v2
+    [*] --> Draft : Pack created
+    Draft --> Published : Compliance review passed
+    Draft --> Draft : Test failures / review feedback
+    Published --> Deprecated : New version published OR regulation superseded
+    Published --> Published : Patch update (bug fix)
+    Deprecated --> Retired : Grace period expired
+    Retired --> [*]
+----
+
+* *Draft:* Created by pack author, not available to audit runs.
+Undergoes iterative testing and compliance review.
+* *Published:* Available for new audit runs.
+Existing runs remain pinned to their original version.
+Only one version per pack_id can be in `published` state at a time.
+* *Deprecated:* Marked for removal with migration path.
+No new runs can be created.
+Existing runs continue uninterrupted.
+The `deprecation` object in the manifest specifies the replacement pack and reason.
+Grace period: 90 days from deprecation date.
+* *Retired:* No longer available.
+Existing runs reference the archived pack version (read-only) for reproducibility.
+
+[[sect-pack-regulatory-change-mgmt]]
+==== Regulatory Change Management
+
+When regulations change, pack updates are a platform obligation with SLA-backed timelines.
+
+*Regulatory monitoring:*
+
+RiskExec monitors the following sources for regulatory changes affecting active packs:
+
+* Federal Register publications (CFPB final rules, proposed rules, amendments)
+* CFPB guidance and bulletins
+* FFIEC examination procedures updates
+* State regulatory agency publications (for state-specific pack overlays)
+* MISMO Reference Model version releases
+
+*Update SLA:*
+
+[cols="25%,25%,50%",options="header"]
+|===
+|Change Type |SLA |Example
+
+|*Critical* (enforcement-impacting)
+|Updated pack published within 30 days of effective date
+|New HMDA data point added by final rule effective January 1
+
+|*Standard* (annual filing changes)
+|Updated pack published 60 days before filing season opens
+|Annual HMDA LAR field changes (e.g., 2026 filing season pack ready by November 1, 2025)
+
+|*Minor* (guidance clarifications)
+|Updated pack published within 90 days
+|CFPB FAQ clarifying property address formatting requirements
+|===
+
+*Version migration for regulatory changes:*
+
+When a regulation changes, RiskExec publishes a new MAJOR or MINOR pack version:
+
+. *MAJOR version* (breaking): Schema changes, field additions/removals, rule logic changes that affect finding outcomes.
+Existing runs continue on the old version.
+New runs use the new version.
+The old version is deprecated with a 90-day grace period.
+. *MINOR version* (backward-compatible): New rules added, existing rule severity adjustments, citation updates.
+Existing runs can optionally upgrade (admin action).
+New runs default to the latest minor version.
+. *PATCH version*: Typo fixes, description updates, no functional changes.
+Applied automatically to all runs using the same MAJOR.MINOR version.
+
+*Annual HMDA update cycle (concrete example):*
+
+[cols="15%,25%,60%",options="header"]
+|===
+|Month |Activity |Detail
+
+|July
+|CFPB publishes proposed rule changes for next filing year
+|RiskExec compliance team reviews and assesses impact on HMDA pack
+
+|September
+|CFPB publishes final rule
+|Pack engineer begins draft of new pack version; field coverage matrix updated
+
+|October
+|Internal testing
+|New pack version tested against golden dataset; regression tests against prior version
+
+|November
+|Compliance review + publication
+|New pack published ≥60 days before January 1 filing season
+
+|January
+|Filing season opens
+|Customers creating new HMDA audits automatically use the new pack version
+
+|March
+|Post-filing-season patch
+|Address any edge cases or clarifications discovered during filing season
+|===
 
 === Pack Versioning and Distribution
 
 *Version format:* Semantic Versioning (MAJOR.MINOR.PATCH)
 
-* *MAJOR:* Breaking changes to schemas or rule logic (requires migration)
-* *MINOR:* New rules or schemas added (backward-compatible)
-* *PATCH:* Bug fixes, typo corrections (no functional changes)
-
-*Pack lifecycle:*
-1. *Draft:* Created by pack author, not available to audit runs.
-2. *Published:* Available for new audit runs.
-Existing runs remain pinned to their original version.
-3. *Deprecated:* Marked for removal with migration path.
-No new runs can be created.
-Existing runs continue.
-4. *Retired:* No longer available.
-Existing runs can reference archived pack version (read-only).
+* *MAJOR:* Breaking changes to schemas or rule logic (requires migration).
+Increment when: target field added/removed, comparison rule logic fundamentally changes, severity assignments revised across multiple rules.
+* *MINOR:* New rules or schemas added (backward-compatible).
+Increment when: new comparison rules added for existing fields, new source document type supported, regulatory citation updated.
+* *PATCH:* Bug fixes, typo corrections (no functional changes).
+Increment when: rule description typo fixed, test case corrected, no change to rule evaluation behavior.
 
 *Distribution channel:*
 
-* *Phase 1:* RiskExec ships HMDA pack v1.0 in the platform binary.
-* *Phase 2+:* Packs distributed via pack marketplace API with version pinning and rollback capability.
+* *Phase 1:* RiskExec ships HMDA Origination QC pack v1.0 in the platform binary.
+Pack is embedded in the deployment artifact and versioned with the platform release.
+* *Phase 2+:* Packs distributed via internal pack registry API with version pinning and rollback capability.
+Customers pin to a specific pack version per audit run.
+Rollback to a prior pack version is supported for new runs.
 
+[[sect-pack-testing]]
 === Pack Testing and Validation Harness
 
-*Harness requirements:*
+==== Harness Requirements
 
-* Load a pack manifest and test cases.
-* Execute each test case against the pack rules.
+* Load a pack manifest and validate its JSON schema compliance.
+* Validate all CEL expressions for syntax and type correctness.
+* Detect circular dependencies in rule chains.
+* Load and execute each test case against the pack rules.
 * Compare actual findings to expected findings.
-* Report pass/fail, coverage metrics, and rule execution time.
+* Report pass/fail, coverage metrics, rule execution time, and expression evaluation results.
 
-*Test harness success criteria (before publication):*
+==== Test Case Requirements
 
-* All test cases pass.
-* Code coverage ≥90% of pack rules executed.
-* No test case execution exceeds 5 seconds.
+*Minimum test cases per rule:*
+
+* 1 positive case (values match — no finding expected)
+* 1 negative case (values mismatch — finding expected with specified severity)
+* 1 edge case (missing field, boundary value, format variation, or multi-document disagreement)
+
+*Golden dataset requirements:*
+
+Each regulation-specific pack must include a golden dataset: a curated set of anonymized loan records with known-correct findings, constructed from production data.
+The golden dataset serves as the regression test baseline.
+
+* *HMDA Origination pack:* Golden dataset of ≥200 anonymized loan records from ≥5 lenders, covering all loan types (conventional, FHA, VA, USDA), property types (1-4 family, multifamily, manufactured), and action taken codes (1–8).
+* *Per-document-type:* Golden documents with pre-verified field extractions for each source document type the pack supports.
+
+==== Success Criteria (Before Publication)
+
+* All test cases pass (0 failures).
+* Rule coverage ≥90% of pack rules have at least one test case that exercises them.
+* No test case execution exceeds 5 seconds per record.
+* All CEL expressions evaluate without runtime errors.
+* No circular dependencies detected.
 * All AI suggestions (if any) are labeled and traced to model/version.
+* Regression: No prior-version test case that previously passed now fails (unless the failure is intentional and documented in the change log).
 
-*TODO:* Build test harness CLI tool for pack authors to validate locally before submission.
+==== Continuous Regression Testing
+
+Published packs are retested nightly against their golden datasets.
+If a regression is detected (e.g., due to platform engine changes), an alert is generated and the pack is flagged for review.
+This ensures that platform updates do not silently break pack behavior.
 
 === Pack Interface Contract (System-to-Pack)
 
@@ -425,22 +1148,610 @@ interface AuditPackContract {
     packId: string
   ): MappingSuggestion[];
 
-  // Comparison execution (deterministic)
+  // Comparison execution (deterministic + expression evaluation)
   executeComparisons(
     targetRecord: object,
     sourceData: object,
     mappings: FieldMapping[],
     packId: string,
-    packVersion: string
+    packVersion: string,
+    priorResults?: Map<string, RuleResult>
   ): ComparisonResult[];
+
+  // Multi-document corroboration
+  executeCorroboration(
+    targetRecord: object,
+    sourceDocuments: Map<string, object>,
+    packId: string,
+    packVersion: string
+  ): CorroborationResult[];
 
   // Scoring
   scoreFindings(findings: Finding[], packId: string): ScoredFinding[];
 
   // Report generation
   generateReport(auditData: AuditData, packId: string): Report;
+
+  // Expression evaluation (CEL)
+  evaluateExpression(
+    expression: string,
+    context: ExpressionContext
+  ): ExpressionResult;
 }
 ----
 
 *Immutability guarantee:* For a given (packId, packVersion, targetRecord, sourceData, mappings), the output of executeComparisons() is always identical.
-All non-deterministic outputs (AI narratives) are explicitly generated separately and labeled.
+All non-deterministic outputs (AI narratives, AI-assisted extractions) are explicitly generated separately and labeled.
+CEL expressions are deterministic by design — same inputs always produce same outputs.
+
+[[sect-hmda-coverage-matrix]]
+=== HMDA Origination Pack — Field Coverage Matrix
+
+This section specifies the complete field-by-field coverage for the HMDA Origination QC pack (MVP).
+The HMDA LAR schema defines ~80 data points per the MISMO-aligned HMDA Reporting Dataset.
+Each field is mapped to its source document(s), comparison type, target confidence, and phase availability.
+
+==== Coverage Summary
+
+[cols="25%,15%,15%,15%,15%,15%",options="header"]
+|===
+|Category |Total Fields |Phase 1 (CD) |Phase 1 (LOS) |Phase 2 (URLA+) |Manual Only
+
+|Borrower/Co-Borrower Information
+|12
+|3
+|9
+|8
+|1
+
+|Property Information
+|8
+|2
+|6
+|5
+|0
+
+|Loan Information
+|15
+|6
+|10
+|12
+|0
+
+|Action Taken / Disposition
+|5
+|0
+|5
+|3
+|0
+
+|Pricing Information
+|10
+|4
+|6
+|8
+|0
+
+|HOEPA / High-Cost Indicators
+|4
+|1
+|3
+|2
+|0
+
+|Demographic / ECOA
+|14
+|0
+|2
+|10
+|6
+
+|Geographic / Census
+|8
+|1
+|7
+|3
+|0
+
+|Application / Preapproval
+|4
+|0
+|4
+|4
+|0
+
+|*TOTAL*
+|*~80*
+|*~17*
+|*~52*
+|*~55*
+|*~7*
+|===
+
+*Phase 1 coverage reality:* The Closing Disclosure provides reliable extraction for ~17 fields (~21% of HMDA LAR).
+The LOS structured data export (record-to-record) covers ~52 fields (~65%) with extraction confidence = 1.0.
+Combined Phase 1 coverage is ~60 fields (~75%) through the combination of CD extraction and LOS data.
+Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
+~7 fields (primarily demographic/ECOA) require manual entry due to privacy restrictions and regulatory constraints.
+
+==== Detailed Field Matrix
+
+*Borrower / Co-Borrower Information:*
+
+[cols="20%,15%,15%,10%,10%,15%,15%",options="header"]
+|===
+|HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
+
+|Borrower Name
+|`BorrowerFullName`
+|CD, URLA
+|1 (CD)
+|exact_match (fuzzy)
+|≥0.90
+|High
+
+|Co-Borrower Name
+|`CoBorrowerFullName`
+|CD, URLA
+|1 (CD)
+|exact_match (fuzzy)
+|≥0.85
+|High
+
+|Borrower Age
+|`BorrowerAge`
+|URLA
+|2
+|exact_match
+|≥0.85
+|Medium
+
+|Borrower Race (collected)
+|`BorrowerRaceType`
+|URLA, GMI
+|2
+|lookup
+|N/A (manual)
+|Medium
+
+|Borrower Ethnicity (collected)
+|`BorrowerEthnicityType`
+|URLA, GMI
+|2
+|lookup
+|N/A (manual)
+|Medium
+
+|Borrower Sex (collected)
+|`BorrowerSexType`
+|URLA, GMI
+|2
+|lookup
+|N/A (manual)
+|Medium
+
+|Borrower Income
+|`BorrowerTotalMonthlyIncome`
+|URLA, pay stubs
+|2
+|tolerance_percentage (5%)
+|≥0.80
+|High
+
+|Borrower Credit Score
+|`BorrowerCreditScore`
+|Credit report, LOS
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|Medium
+
+|Co-Borrower Credit Score
+|`CoBorrowerCreditScore`
+|Credit report, LOS
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|Medium
+
+|Credit Score Model
+|`CreditScoreModelType`
+|LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Low
+
+|Borrower Debt-to-Income
+|`BorrowerDTIRatio`
+|URLA, LOS
+|1 (LOS)
+|tolerance_percentage (2%)
+|1.0 (structured)
+|Medium
+
+|Number of Borrowers
+|`TotalBorrowerCount`
+|LOS
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|Low
+|===
+
+*Loan Information:*
+
+[cols="20%,15%,15%,10%,10%,15%,15%",options="header"]
+|===
+|HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
+
+|Loan Amount
+|`LoanAmount`
+|CD, LE, URLA, LOS
+|1 (CD+LOS)
+|multi_doc_corroboration
+|≥0.92
+|Critical
+
+|Loan Type
+|`MortgageLoanType`
+|CD, LOS
+|1 (CD)
+|lookup
+|≥0.90
+|Critical
+
+|Loan Purpose
+|`LoanPurposeType`
+|CD, URLA, LOS
+|1 (CD)
+|lookup
+|≥0.90
+|Critical
+
+|Interest Rate
+|`NoteRatePercent`
+|CD, LOS
+|1 (CD)
+|tolerance_percentage (0.125%)
+|≥0.88
+|High
+
+|Rate Spread
+|`RateSpread`
+|LOS
+|1 (LOS)
+|cross_field (computed)
+|1.0 (structured)
+|High
+
+|Loan Term
+|`LoanTermMonths`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.88
+|Medium
+
+|Introductory Rate Period
+|`IntroductoryRatePeriodMonths`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.85
+|Medium
+
+|Lien Status
+|`LienStatusType`
+|Title, LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|High
+
+|Amortization Type
+|`AmortizationType`
+|CD, LOS
+|1 (CD)
+|lookup
+|≥0.88
+|Medium
+
+|Prepayment Penalty Term
+|`PrepaymentPenaltyTermMonths`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.85
+|Medium
+
+|Non-Amortizing Features
+|`NonAmortizingFeatureType`
+|CD, LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Medium
+
+|Total Loan Costs
+|`TotalLoanCosts`
+|CD
+|1 (CD)
+|tolerance_absolute ($50)
+|≥0.85
+|High
+
+|Origination Charges
+|`OriginationCharges`
+|CD
+|1 (CD)
+|tolerance_absolute ($25)
+|≥0.85
+|High
+
+|Discount Points
+|`DiscountPointsAmount`
+|CD
+|1 (CD)
+|tolerance_absolute ($10)
+|≥0.85
+|Medium
+
+|Lender Credits
+|`LenderCreditsAmount`
+|CD
+|1 (CD)
+|tolerance_absolute ($10)
+|≥0.85
+|Medium
+|===
+
+*Property Information:*
+
+[cols="20%,15%,15%,10%,10%,15%,15%",options="header"]
+|===
+|HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
+
+|Property Address
+|`PropertyAddress`
+|CD, appraisal, LOS
+|1 (CD)
+|exact_match (fuzzy + normalized)
+|≥0.85
+|High
+
+|Property Value
+|`PropertyValuationAmount`
+|Appraisal, LOS
+|2 (appraisal)
+|tolerance_percentage (1%)
+|≥0.85
+|High
+
+|Property Type
+|`PropertyType`
+|LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|High
+
+|Construction Method
+|`ConstructionMethodType`
+|LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Medium
+
+|Occupancy Type
+|`OccupancyType`
+|URLA, LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Medium
+
+|Manufactured Home Type
+|`ManufacturedHomeType`
+|LOS
+|1 (LOS)
+|lookup (conditional)
+|1.0 (structured)
+|Medium
+
+|Census Tract
+|`CensusTractIdentifier`
+|LOS, geocoding
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|Critical
+
+|County Code
+|`CountyFIPSCode`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.85
+|High
+|===
+
+*Action Taken / Disposition:*
+
+[cols="20%,15%,15%,10%,10%,15%,15%",options="header"]
+|===
+|HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
+
+|Action Taken
+|`ActionTakenType`
+|LOS
+|1 (LOS)
+|lookup (enum 1–8)
+|1.0 (structured)
+|Critical
+
+|Action Taken Date
+|`ActionTakenDate`
+|LOS
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|High
+
+|Denial Reason(s)
+|`DenialReasonType`
+|LOS, denial letter
+|1 (LOS)
+|lookup (conditional)
+|1.0 (structured)
+|High
+
+|Application Date
+|`ApplicationDate`
+|LOS
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|Medium
+
+|Preapproval
+|`PreapprovalType`
+|LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Medium
+|===
+
+*Pricing Information:*
+
+[cols="20%,15%,15%,10%,10%,15%,15%",options="header"]
+|===
+|HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
+
+|Total Points and Fees
+|`TotalPointsAndFees`
+|CD, LOS
+|1 (CD)
+|tolerance_absolute ($50)
+|≥0.85
+|High
+
+|APR
+|`APR`
+|CD, TIL
+|1 (CD)
+|tolerance_percentage (0.125%)
+|≥0.88
+|Critical
+
+|HOEPA Status
+|`HOEPAStatusType`
+|CD, LOS
+|1 (CD)
+|expression (computed from APR + points/fees thresholds)
+|≥0.85
+|Critical
+
+|Mortgage Insurance Premium
+|`MortgageInsurancePremium`
+|CD
+|1 (CD)
+|tolerance_absolute ($25)
+|≥0.85
+|Medium
+
+|Mortgage Insurance Type
+|`MortgageInsuranceType`
+|CD, LOS
+|1 (LOS)
+|lookup (conditional on loan type)
+|1.0 (structured)
+|Medium
+
+|Penalty Interest Rate
+|`PenaltyInterestRate`
+|CD, LOS
+|1 (CD)
+|tolerance_percentage (0.25%)
+|≥0.85
+|Medium
+
+|Balloon Payment
+|`BalloonPaymentIndicator`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.88
+|Medium
+
+|Interest-Only Payment
+|`InterestOnlyPaymentIndicator`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.88
+|Medium
+
+|Negative Amortization
+|`NegativeAmortizationIndicator`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.88
+|High
+
+|Other Non-Amortizing Features
+|`OtherNonAmortizingFeatures`
+|CD, LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Medium
+|===
+
+==== Known Gaps and Mitigations
+
+[cols="30%,30%,40%",options="header"]
+|===
+|Gap |Affected Fields |Mitigation
+
+|Demographic data (race, ethnicity, sex) requires manual entry due to privacy constraints
+|BorrowerRaceType, BorrowerEthnicityType, BorrowerSexType, CoBorrower equivalents, and visual observation fields
+|These fields are flagged as `manual_entry_required` in the pack.
+The UI presents a dedicated demographic data entry screen.
+No AI extraction is attempted.
+
+|Closing Disclosure covers only ~21% of HMDA fields
+|See Phase column in matrices above
+|Phase 1 combines CD extraction (~17 fields) with LOS structured data (~52 fields) for ~75% automated coverage.
+Phase 2 adds URLA/1003 for ~90% coverage.
+The pack's coverage matrix explicitly labels each field's phase availability.
+
+|Address fuzzy matching can produce false positives
+|PropertyAddress, BorrowerMailingAddress
+|Address normalization service (USPS CASS-certified) standardizes addresses before comparison.
+Fuzzy match threshold set conservatively (≥0.90 similarity required for auto-accept).
+
+|HOEPA status is a computed field requiring APR and points/fees calculations
+|HOEPAStatusType
+|CEL expression computes HOEPA status from extracted APR and points/fees values.
+Because this is a derived comparison, confidence is the minimum of all input field confidences.
+
+|Census tract requires geocoding, not document extraction
+|CensusTractIdentifier
+|Census tract is validated against LOS structured data.
+If LOS data is unavailable, geocoding service derives census tract from property address with a separate confidence score.
+|===
+
+=== Cross-References
+
+* *<<sect-key-concepts>>:* Audit Packs as the "Brain" Plugin Model; Target vs. Source Schema Definitions; Three-Layer Confidence Scoring
+* *<<sect-scoring-framework>>:* Confidence scoring layers, severity definitions, and routing thresholds
+* *<<sect-decision-d4>>:* Decision D4 — original locked decision for declarative JSON v1
+* *<<sect-decision-d6>>:* Decision D6 — MISMO Reference Model as canonical data schema
+* *<<sect-docling-graph>>:* Docling-Graph integration and Pydantic template requirements for packs
+* *<<sect-immutability>>:* Immutability semantics for pack versions — published packs are immutable
+* *<<sect-exam-ready-bundle>>:* Exam-ready bundle includes pack configuration snapshot
+* *<<sect-appendices>>:* Appendix B — full example HMDA pack manifest JSON
