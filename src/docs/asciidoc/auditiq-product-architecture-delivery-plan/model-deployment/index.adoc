@@ -1,3 +1,4 @@
+[[sect-model-deployment]]
 == Model Deployment: Mistral Self-Hosted (Production Decision)
 
 ____
@@ -179,8 +180,8 @@ Operational guardrails:
 
 === Cross-References
 
-* *Section 10.2.0:* Docling-Graph integration and pipeline design
-* *Section 22.2:* PII redaction requirements
-* *Section 22.3:* Provenance logging requirements
-* *Section 22.8:* Third-party AI provider requirements
-* *Section 24:* Model Registry approvals and controls
+* *<<sect-doc-processing>>:* Docling-Graph integration and pipeline design
+* *<<sect-ai-governance, PII Redaction>>:* PII redaction requirements
+* *<<sect-ai-provenance>>:* Provenance logging requirements
+* *<<sect-ai-governance, Third-Party AI Provider Requirements>>:* Third-party AI provider requirements
+* *<<sect-model-registry>>:* Model Registry approvals and controls

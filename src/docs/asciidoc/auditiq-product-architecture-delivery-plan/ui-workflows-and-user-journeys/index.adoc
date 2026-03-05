@@ -1,3 +1,4 @@
+[[sect-ui-workflows]]
 == UI Workflows and User Journeys
 
 ____
@@ -30,15 +31,15 @@ This is the primary happy-path workflow from login to exam-ready bundle export. 
 . *Auditor logs in* → selects or creates a new audit
 . *Configure audit* — select pack template, define loan sample, date range, regulatory scope
 . *Upload documents* — Closing Disclosures, 1003s, appraisals, title documents
-. *Docling extraction + AFC scoring* — system converts documents and computes field-level confidence (Section 10.2)
-. *Schema mapping* — AI suggests field mappings; reviewer validates per two-layer confidence routing (Section 10.3)
-. *Rules engine scoring* — pack rules execute against extracted + mapped data (Section 10.4)
-. *AI drafts findings* — LLM generates narratives with citations (Section 10.7)
-. *Reviewer effective challenge* — approve, edit, or reject each finding (Section 22)
+. *Docling extraction + AFC scoring* — system converts documents and computes field-level confidence (<<sect-doc-processing>>)
+. *Schema mapping* — AI suggests field mappings; reviewer validates per two-layer confidence routing (<<sect-schema-mapping-service>>)
+. *Rules engine scoring* — pack rules execute against extracted + mapped data
+. *AI drafts findings* — LLM generates narratives with citations
+. *Reviewer effective challenge* — approve, edit, or reject each finding (<<sect-ai-governance>>)
 . *Finalize audit* — lock scorecard, sign off
-. *Export exam-ready bundle* — structured ZIP with manifest, PDF reports, evidence, audit trail (Section 21)
+. *Export exam-ready bundle* — structured ZIP with manifest, PDF reports, evidence, audit trail (<<sect-exam-ready-bundle>>)
 
-*Audit Trail:* Every step from extraction through finalization emits an immutable audit event (RFC 8785 + hash chain, Section 10.8).
+*Audit Trail:* Every step from extraction through finalization emits an immutable audit event (RFC 8785 + hash chain, <<sect-audit-trail-event-store>>).
 
 [mermaid]
 ----
@@ -111,7 +112,7 @@ This workflow details the document processing pipeline from upload through field
 . *Reviewer validates* — for human-review fields, reviewer sees extracted value + confidence + source highlight
 . *Field confirmed* → value passes to schema mapping
 
-*Design Reference:* Section 10.2, Decision D1 (Section 19.2)
+*Design Reference:* <<sect-doc-processing>>, <<sect-decision-d1, Decision D1>>
 
 [mermaid]
 ----
@@ -196,7 +197,7 @@ This workflow details how extracted fields are mapped to the HMDA/MISMO target s
 
 *Coverage Note:* With CD-only documents, expect ~10-20% of HMDA fields at ≥0.85 confidence. Full coverage requires 1003, appraisal, and title documents (Phase 2).
 
-*Design Reference:* Section 10.3, Decision D2 (Section 19.3)
+*Design Reference:* <<sect-schema-mapping-service>>, <<sect-decision-d2, Decision D2>>
 
 [mermaid]
 ----
@@ -251,7 +252,7 @@ flowchart TD
 
 === Workflow 4: Findings Review & Approval (AI Governance Controls)
 
-This workflow details the human oversight process for AI-generated findings, enforcing the AI governance red lines from Section 22.
+This workflow details the human oversight process for AI-generated findings, enforcing the AI governance red lines from <<sect-ai-governance>>.
 
 *Actors:* Rules Engine, AI (LLM), Reviewer (effective challenge) *Trigger:* Rules engine generates exceptions from scored data *End State:* Finding finalized with full provenance and effective challenge documentation
 
@@ -276,19 +277,19 @@ This workflow details the human oversight process for AI-generated findings, enf
 . *Audit event created* — `human_approval` event with full provenance chain
 . *Finding finalized* → appears on scorecard
 
-*RED LINES (Section 22.1.4):*
+*RED LINES (<<sect-ai-governance>>):*
 
 * No AI output enters the official audit record without explicit human approval
 * AI output must never be represented as definitive conclusions
 * Reviewer is responsible for accuracy of any approved finding
 
-*Required Disclaimers (Section 22.1.3):*
+*Required Disclaimers (<<sect-ai-governance>>):*
 
 * “This content was drafted by an AI assistant and requires human verification before use”
 * “AI-generated content may contain inaccuracies — reviewer is responsible for verifying accuracy”
 * “This finding has been reviewed and approved by [reviewer name] on [date]”
 
-*Design Reference:* Section 10.6 (Findings Management), Section 10.9 (Reporting), Section 22, Decision D1–D3
+*Design Reference:* Findings Management, Reporting Service, <<sect-ai-governance>>, <<sect-decision-d1, Decision D1>>–<<sect-decision-d3, D3>>
 
 [mermaid]
 ----
@@ -339,7 +340,7 @@ flowchart TD
 === UI Development Strategy
 
 ____
-*Dual-track development:* AuditIQ follows both UI-driven and API-driven development practices. The workflows above define the user journeys; the API contracts in Section 10 define the backend interfaces. Screen designs (Phase 2 of this section) will be developed from these workflows.
+*Dual-track development:* AuditIQ follows both UI-driven and API-driven development practices. The workflows above define the user journeys; the API contracts in <<sect-component-design>> define the backend interfaces. Screen designs (Phase 2 of this section) will be developed from these workflows.
 ____
 
 *Phase 1 — Workflow Diagrams (this section):*

@@ -1,3 +1,4 @@
+[[sect-mvp-decisions]]
 == MVP Decisions Locked (Default Unless Overridden)
 
 === Purpose & Authority
@@ -14,14 +15,15 @@ Each decision includes:
 
 '''
 
+[[sect-decision-d1]]
 === Decision D1: Document Extraction Strategy
 
 *Decision Statement:* Which document parsing and OCR technology will AuditIQ use for HMDA loan document extraction, and how will per-field extraction confidence be produced?
 
-*Chosen Default:* *Docling-Graph pipeline (Docling + Docling-Graph, MIT-licensed) + deterministic AuditIQ Field Confidence (AFC v2 with graph_corrob_score) layer + LLM extraction via LiteLLM / self-hosted Mistral/vLLM + AWS/GCP cloud OCR (page-level fallback for degraded documents only)*
+*Chosen Default:* *Docling-Graph pipeline (Docling + Docling-Graph, MIT-licensed) + deterministic AuditIQ Field Confidence (AFC v2 with graph_corrob_score) layer + LLM extraction via LiteLLM / self-hosted Mistral/vLLM + Azure cloud OCR (page-level fallback for degraded documents only)*
 
 ____
-*Critical clarification (per Docling Technical Validation Report):* Docling is a _document conversion and layout understanding_ engine, NOT a field-level extraction engine with per-field confidence scores. Docling’s native confidence scores are _conversion-quality indicators_ (POOR/FAIR/GOOD/EXCELLENT), not extraction probabilities. AuditIQ must build a *deterministic field extractor layer* on top of Docling output, and produce its own per-field confidence via the *AuditIQ Field Confidence (AFC)* composite score. See Section 10.2 for full AFC design.
+*Critical clarification (per Docling Technical Validation Report):* Docling is a _document conversion and layout understanding_ engine, NOT a field-level extraction engine with per-field confidence scores. Docling’s native confidence scores are _conversion-quality indicators_ (POOR/FAIR/GOOD/EXCELLENT), not extraction probabilities. AuditIQ must build a *deterministic field extractor layer* on top of Docling output, and produce its own per-field confidence via the *AuditIQ Field Confidence (AFC)* composite score. See <<sect-doc-processing>> for full AFC design.
 ____
 
 *Alternatives Considered:*
@@ -31,34 +33,34 @@ ____
 |Alternative |Pros |Cons |Rejected?
 |Docling only (no AFC layer) |Open-source, free, no vendor lock-in |No per-field confidence; Docling confidence ≠ extraction accuracy; cannot drive auto-confirm routing |Yes — AFC layer required
 |IronOCR, Tesseract |Proven, specialized for document types |Expensive (IronOCR), limited accuracy (Tesseract), no layout understanding |Yes
-|Cloud-only (AWS Textract) |High accuracy, handles edge cases, has per-field confidence |Vendor lock-in, cost per page (~$0.01–$0.015), data residency concerns |Yes
+|Cloud-only (Azure AI Document Intelligence) |High accuracy, handles edge cases, has per-field confidence |Vendor lock-in, cost per page (~$0.01–$0.015), data residency concerns |Yes
 |*Docling-Graph + AFC v2 + LiteLLM/Mistral + cloud OCR fallback* |Open-source MIT baseline + Pydantic schema validation + graph corroboration + self-hosted LLM inference + fallback safety |Multi-component system with Docling-Graph templates (complexity); requires Mistral legal sign-off for self-hosting |*CHOSEN*
 |===
 
 *Rationale:*
 
 * *Docling-Graph* extends Docling with Pydantic schema enforcement and a directed knowledge graph, yielding validated structured outputs and explicit cross-document entity relationships — improving determinism, traceability, and corroboration scoring
-* The *AFC v2 layer* (Section 10.2.1) builds deterministic per-field confidence from 6 signals: `docling_page_grade` (0.12), `ocr_segment_confidence` (0.23), `pattern_validity` (0.20), `layout_anchor_consistency` (0.18), `cross_doc_redundancy` (0.12), `graph_corrob_score` (0.15)
+* The *AFC v2 layer* (<<sect-doc-processing>>) builds deterministic per-field confidence from 6 signals: `docling_page_grade` (0.12), `ocr_segment_confidence` (0.23), `pattern_validity` (0.20), `layout_anchor_consistency` (0.18), `cross_doc_redundancy` (0.12), `graph_corrob_score` (0.15)
 * AFC routing thresholds: ≥0.85 auto-confirm, 0.50–0.85 human review, <0.50 manual entry
 * Docling-Graph supports both VLM and LLM extraction backends via LiteLLM — self-hosted Mistral via vLLM provides lower per-call cost, data residency, and high throughput for batch workloads
 * Fallback chain: Docling-Graph VLM → Docling-Graph LLM (Mistral) → cloud OCR → manual entry
 * *Docling-Graph is MIT-licensed* — reduces GPL copyleft risk vs. `docling-surya`; *WARNING:* `docling-surya` plugin wraps SuryaOCR under GPL — do NOT adopt without legal review (see Risk #4 below)
-* *Mistral self-hosting requires legal sign-off* for model license before deployment — see Section 25 (Model Deployment)
-* Graph artifacts (CSV, Cypher) are exportable for exam-ready bundles (Section 21)
+* *Mistral self-hosting requires legal sign-off* for model license before deployment — see <<sect-model-deployment, Model Deployment>>
+* Graph artifacts (CSV, Cypher) are exportable for exam-ready bundles (<<sect-exam-ready-bundle>>)
 * MVP timeline: Docling-Graph integration + AFC v2 by end of Phase 0; Mistral self-hosted by Phase 1a; cloud OCR as operational fallback
 
 * *Risks of This Choice:* 1. *AFC precision insufficient on HMDA corpus:* If Phase 0 POC reveals <85% precision on key HMDA fields at AFC ≥0.85, the auto-confirm tier is unusable and all fields route to human review, negating the value proposition.
-* *Mitigation:* Phase 0 POC test plan (Section 10.2.7) with explicit go/kill criteria; sample HMDA corpus (≥200 loans, 5+ lenders) 2. *Cloud OCR fallback rate too high:* If >40% of pages require cloud OCR fallback, cost model breaks ($0.20–$0.50+ per document) and latency degrades
+* *Mitigation:* Phase 0 POC test plan (<<sect-poc-test-plan>>) with explicit go/kill criteria; sample HMDA corpus (≥200 loans, 5+ lenders) 2. *Cloud OCR fallback rate too high:* If >40% of pages require cloud OCR fallback, cost model breaks ($0.20–$0.50+ per document) and latency degrades
 * *Mitigation:* Page-level fallback routing (not document-level); usage monitoring; cost cap per customer per month 3. *Latency issues:* Docling <2s/page target; cloud OCR adds 3–5s per page for API calls + network roundtrips
 * *Mitigation:* Async processing; queue-based fallback (not blocking); fallback pages processed in parallel 4. *GPL licensing contamination:* `docling-surya` wraps SuryaOCR under GPL — if adopted, may require open-sourcing AuditIQ or create legal exposure for commercial SaaS
 * *Mitigation:* Do NOT use `docling-surya` in any build. Stick to MIT-licensed Docling core. If OCR accuracy requires SuryaOCR-class models, use cloud OCR fallback instead. 5. *Docling beta extraction API instability:* Docling’s extraction API is marked beta and may change between releases, breaking field extractor logic
 * *Mitigation:* Pin Docling version; wrap in abstraction layer; use conversion + layout API only (not beta extraction API)
 
-*Go/Kill Criteria (Phase 0 POC — see Section 10.2.7):*
+*Go/Kill Criteria (Phase 0 POC — see <<sect-poc-test-plan>>):*
 
 * *Go:* ≥85% precision on critical HMDA fields (borrower name, loan amount, property address, action taken, loan type) for AFC ≥0.85 slice; deterministic reproducibility (same input → same output); bounding-box alignment ≥90% overlap with ground truth
 * *Kill:* <70% precision at AFC ≥0.85 OR fallback rate >40% of pages OR non-deterministic output across runs
-* *Pivot:* If killed, evaluate AWS Textract as primary with Docling relegated to pre-processing only
+* *Pivot:* If killed, evaluate Azure AI Document Intelligence as primary with Docling relegated to pre-processing only
 
 *Do Not Do (per Docling Validation Report):*
 
@@ -75,6 +77,7 @@ ____
 
 '''
 
+[[sect-decision-d2]]
 === Decision D2: Schema Mapping Approach
 
 *Decision Statement:* How will AuditIQ map extracted HMDA field values to audit pack schema fields with confidence scoring, given that HMDA LAR structure spans 48 data points expanding to ~110 fields with 37 “key HMDA data fields” (per Fed CA Letter 18-9)?
@@ -109,7 +112,7 @@ ____
 |Multi-source field |`total_income` (W-2 + 1003 + pay stubs) |Phase 2; flag as “requires additional documents” in MVP
 |===
 
-*Two-Layer Confidence Design (see Section 10.3 for implementation):*
+*Two-Layer Confidence Design (see <<sect-schema-mapping-service>> for implementation):*
 
 * *Layer 1 — Raw signals:* `conf_extraction` (from AFC), `conf_mapping` (heuristic matcher output), `conf_rule` (business rule pass/fail)
 * *Layer 2 — Calibrated decision score:* Combines Layer 1 signals using reliability diagrams + temperature scaling (or isotonic regression in Phase 2) to produce a calibrated probability that the mapping is correct
@@ -160,11 +163,12 @@ ____
 
 '''
 
+[[sect-decision-d3]]
 === Decision D3: Audit Trail Immutability & Correctability Semantics
 
 *Decision Statement:* How will AuditIQ balance the need for immutable, cryptographically defensible audit trails (regulator + litigation requirement) with the business need to correct mistakes after finalization (operational reality)?
 
-*Chosen Default:* *Append-only event log with RFC 8785 canonical JSON serialization + SHA-256 hash chaining + global monotonic sequence IDs + cryptographic anchor points + periodic snapshots + immutability rules per artifact type (Section 20)*
+*Chosen Default:* *Append-only event log with RFC 8785 canonical JSON serialization + SHA-256 hash chaining + global monotonic sequence IDs + cryptographic anchor points + periodic snapshots + immutability rules per artifact type (<<sect-immutability>>)*
 
 ____
 *Critical clarification (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient for defensibility. An attacker with database write access can rewrite the chain and recompute all subsequent hashes. The design MUST include: (1) RFC 8785 canonical JSON for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points (signed checkpoints or WORM-stored anchors) that cannot be silently rewritten.
@@ -242,6 +246,7 @@ ____
 
 '''
 
+[[sect-decision-d4]]
 === Decision D4: Pack Interface – Declarative vs. Executable
 
 *Decision Statement:* Should audit packs be declarative (JSON configuration) or executable (code with logic)?
@@ -280,6 +285,7 @@ ____
 
 '''
 
+[[sect-decision-d5]]
 === Decision D5: Tenant Isolation – Row-Level Security (RLS) for Phase 1
 
 *Decision Statement:* What is the data isolation strategy for the multi-tenant AuditIQ system in Phase 1?
@@ -305,8 +311,8 @@ ____
 * Cost: RLS is free (PostgreSQL feature); encryption licensing depends on strategy (pgcrypto free, customer keys optional)
 
 * *Risks of This Choice:* 1. *RLS policy bugs expose customer data:* If role definition is incorrect, one customer can query another’s audit logs.
-* *Mitigation:* RLS policy review by security partner (Phase 1c); automated tests for IDOR (Section 5.3); regular penetration testing 2. *Encryption deferred to Phase 1c introduces schedule risk:* If key management is complex, Phase 1c deadline at risk.
-* *Mitigation:* Early PoC on encryption key rotation (Phase 0); third-party key management service (AWS KMS, HashiCorp Vault) considered 3. *Performance overhead:* Encryption adds ~5–10% latency per query (research needed).
+* *Mitigation:* RLS policy review by security partner (Phase 1c); automated tests for IDOR; regular penetration testing 2. *Encryption deferred to Phase 1c introduces schedule risk:* If key management is complex, Phase 1c deadline at risk.
+* *Mitigation:* Early PoC on encryption key rotation (Phase 0); third-party key management service (Azure Key Vault, HashiCorp Vault) considered 3. *Performance overhead:* Encryption adds ~5–10% latency per query (research needed).
 * *Mitigation:* Benchmarking in Phase 1b; encryption only for sensitive tables (audit_events, findings) not high-frequency reads
 
 *Conditions to Revisit/Override:*
@@ -318,6 +324,7 @@ ____
 
 '''
 
+[[sect-decision-d6]]
 === Decision D6: Canonical Data Schema — MISMO Reference Model (Flattened Subset)
 
 *Decision Statement:* What naming convention and field definition standard should AuditIQ use for its canonical loan-level data model — the schema to which source records are mapped during ingestion and against which audit rules are evaluated?
@@ -345,10 +352,10 @@ ____
 * Non-MISMO fields (custom institution fields, derived metrics) use a `custom:` prefix (e.g., `custom:InternalRiskScore`) for clear separation
 
 * *Risks of This Choice:* 1. *MISMO version drift:* MISMO releases periodic updates; field names or enumerations could change.
-* *Mitigation:* Pin to MISMO v3.6 for Phase 1; `mismo_dictionary` table includes version tracking; migration path defined in Section 11.6. 2. *Incomplete MISMO coverage for non-mortgage regulations:* Future regulations (BSA/AML, CRA, fair lending) may have fields not well-represented in MISMO.
+* *Mitigation:* Pin to MISMO v3.6 for Phase 1; `mismo_dictionary` table includes version tracking; migration path defined in <<sect-versioning-schema-evolution>>. 2. *Incomplete MISMO coverage for non-mortgage regulations:* Future regulations (BSA/AML, CRA, fair lending) may have fields not well-represented in MISMO.
 * *Mitigation:* `custom:` namespace handles gaps; each pack manifest declares its MISMO coverage percentage; if coverage <60%, evaluate domain-specific standards. 3. *Flattening loses structural context:* MISMO’s nested XML carries semantic relationships (e.g., Borrower → Address → City) that are lost in a flat key-value model.
 * *Mitigation:* `mismo_xpath` column in the dictionary preserves the full path for traceability; dot-notation keys (e.g., `Borrower.MailingAddress.City`) retain hierarchy in flat form where needed. 4. *Integration complexity for non-MISMO sources:* Customers uploading CSV/Excel from legacy systems that don’t speak MISMO will require more mapping effort.
-* *Mitigation:* Schema mapping engine (Section 10) handles source-to-MISMO mapping; AI-assisted mapping suggestions use MISMO field descriptions for matching.
+* *Mitigation:* Schema mapping engine (<<sect-schema-mapping-service>>) handles source-to-MISMO mapping; AI-assisted mapping suggestions use MISMO field descriptions for matching.
 
 *Conditions to Revisit/Override:*
 

@@ -1,3 +1,4 @@
+[[sect-exam-ready-bundle]]
 == Exam-Ready Bundle Specification
 
 === Purpose
@@ -197,7 +198,7 @@ finding_001,"Implement missing disclosure language per Reg Z",mgmt_team_lead,202
       "page_count": 3,
       "extracted_fields": ["loan_amount", "interest_rate", "disclosure_date", ...],
       "evidence_linked": ["evidence_001", "evidence_003"],
-      "storage_url": "s3://bucket/audit_20260215/doc_loan_estimate_v1"
+      "storage_url": "https://auditiq.blob.core.windows.net/bucket/audit_20260215/doc_loan_estimate_v1"
     }
   ]
 }
@@ -205,7 +206,7 @@ finding_001,"Implement missing disclosure language per Reg Z",mgmt_team_lead,202
 
 ==== F. Pack Configuration Snapshot (JSON)
 
-*Full pack manifest + rule definitions (reference Section 8):*
+*Full pack manifest + rule definitions (reference <<sect-audit-pack-spec>>):*
 
 [source,json]
 ----
@@ -317,7 +318,7 @@ bundle_20260215_loanXYZ_hmda_v2p1.zip
     "extracted_value": "loan_amount: $250,000",
     "confidence": 0.94,
     "timestamp_extracted": "2026-02-15T10:00:00Z",
-    "storage_url": "s3://bucket/audit_20260215/evidence_001.json",
+    "storage_url": "https://auditiq.blob.core.windows.net/bucket/audit_20260215/evidence_001.json",
     "content_hash_sha256": "sha256_evidence_content",
     "linked_to_finding_ids": ["finding_001", "finding_003"]
   }

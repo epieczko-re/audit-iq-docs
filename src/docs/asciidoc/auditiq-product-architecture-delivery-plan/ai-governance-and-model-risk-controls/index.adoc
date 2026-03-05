@@ -1,3 +1,4 @@
+[[sect-ai-governance]]
 == AI Governance & Model Risk Controls
 
 .AI & Human-in-Loop Decision Flow
@@ -36,7 +37,7 @@ ____
 
 * *SR 11-7 / OCC 2011-12 (Model Risk Management):* Requires effective challenge, robust validation, governance, and documentation for any model used in a decision process. AuditIQ’s AI components (narrative generation, schema matching, confidence scoring) qualify as models under this guidance.
 * *NIST AI RMF 1.0 (Govern / Map / Measure / Manage):* Provides trustworthiness characteristics framework; AuditIQ maps to Govern (policy + oversight), Map (risk identification), Measure (metrics + monitoring), Manage (controls + response).
-* *NIST GenAI Profile (AI 600-1):* Requires content provenance, pre-deployment testing, incident disclosure, and confabulation management — all implemented in Sections 22.3–22.5.
+* *NIST GenAI Profile (AI 600-1):* Requires content provenance, pre-deployment testing, incident disclosure, and confabulation management — all implemented in <<sect-ai-provenance>> and the subsections that follow.
 * *CFPB Circular 2022-03:* No AI exemption for adverse action notice requirements. If AuditIQ findings influence credit decisions, the human reviewer (not AI) must be the decision-maker.
 * *Interagency Third-Party Relationships Guidance:* Third-party AI providers (OpenAI, Mistral) must be managed as critical service providers with contractual exam access.
 
@@ -66,12 +67,12 @@ AI-drafted audit narratives are acceptable in regulatory lending QC when ALL of 
 |1 |*Confabulation:* AI invents finding details not in source documents |Medium |High |Citation verification + human review gate
 |2 |*Omission:* AI misses material finding present in documents |Medium |High |Completeness rules + dual-pass review
 |3 |*Policy conflict:* AI narrative contradicts institution’s internal policies |Low–Med |High |Policy corpus in retrieval context + human review
-|4 |*PII leakage:* Customer data sent to third-party AI provider |Medium |High |Pre-call PII redaction (Section 22.2)
+|4 |*PII leakage:* Customer data sent to third-party AI provider |Medium |High |Pre-call PII redaction (<<sect-ai-governance, PII Redaction>>)
 |5 |*Bias:* AI outputs systematically differ by protected class |Low |High |Fairness testing (Phase 2) + human review
-|6 |*Model drift:* AI accuracy degrades over time |Medium |Medium |Drift monitoring (Section 22.5) + retraining triggers
+|6 |*Model drift:* AI accuracy degrades over time |Medium |Medium |Drift monitoring (<<sect-ai-governance, Drift Monitoring>>) + retraining triggers
 |7 |*Automation bias:* Reviewers accept AI outputs without genuine review |High |High |Override rate monitoring; effective challenge documentation
 |8 |*Vendor artifacts:* AI outputs contain provider-specific watermarks or metadata |Low |Medium |Output sanitization; contract review
-|9 |*Undisclosed AI:* AI involvement not disclosed to examiner |Low |High |Mandatory labeling (Section 22.6) + report disclaimers
+|9 |*Undisclosed AI:* AI involvement not disclosed to examiner |Low |High |Mandatory labeling (<<sect-ai-governance, UI Labeling>>) + report disclaimers
 |10 |*Adverse action linkage:* AI finding used as basis for credit decision without human determination |Low–Med |Very High |UI guard: AI findings cannot be exported to adverse action system without human override
 |===
 
@@ -90,7 +91,7 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 . *No AI narratives in official audit record without documented human approval.* Every AI-generated finding narrative must have an explicit “Approved” action by a named human reviewer before it can appear in any finalized report.
 . *No representing AI outputs as definitive compliance conclusions.* AI findings are drafts; the human reviewer’s judgment is the conclusion.
 . *No third-party AI providers without contractual exam access.* Regulators must be able to examine the AI vendor relationship; contracts must include right-to-audit and exam-access clauses.
-. *No unredacted PII sent to AI providers.* All customer-identifying information must be removed before any API call (Section 22.2).
+. *No unredacted PII sent to AI providers.* All customer-identifying information must be removed before any API call (<<sect-ai-governance, PII Redaction>>).
 . *No black-box AI in legally-required explanations.* If a finding contributes to an adverse action notice, the explanation must be human-authored and based on documented evidence — not AI-generated text.
 
 === Data Handling: PII Redaction & Residency
@@ -119,11 +120,12 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 * Explicit contractual clause with LLM provider (OpenAI, Mistral, etc.): “Do not use customer data for model training.”
 * Verified in API contract before Phase 1a launch
 
+[[sect-ai-provenance]]
 === Provenance: Every AI Output is Traceable
 
 *Requirement:* If an AI-generated narrative or score appears in an audit, humans must be able to trace it back to the model, version, prompt, retrieval corpus, and input. This is a regulatory requirement under SR 11-7 (documentation) and NIST GenAI Profile (content provenance).
 
-*Model Registry:* The `model_name`, `model_version`, `prompt_template_id`, and `retrieval_corpus_id` fields below are anchored to the *Model Registry* (Section 24). Only models with `status = 'approved'` in the registry may be called in production. See Section 24 for the registry schema, API contract, lifecycle state machine, and validation requirements.
+*Model Registry:* The `model_name`, `model_version`, `prompt_template_id`, and `retrieval_corpus_id` fields below are anchored to the *Model Registry* (<<sect-model-registry>>). Only models with `status = 'approved'` in the registry may be called in production. See <<sect-model-registry>> for the registry schema, API contract, lifecycle state machine, and validation requirements.
 
 *Required Logging Fields (per AI Regulatory Acceptance Report — ALL fields mandatory for every AI API call):*
 
@@ -147,7 +149,7 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
 |15 |`graph_node_ids` |string[] |Docling-Graph node IDs for entities referenced by this AI output
 |16 |`pydantic_template_id` + `version` |string |Docling-Graph Pydantic template used for extraction (e.g., `closing_disclosure_v1`)
 |17 |`graph_export_version` |string |Version of graph export format used
-|18 |`graph_db_export_location` |string |S3 path or URI for exported graph artifact
+|18 |`graph_db_export_location` |string |Azure Blob Storage path or URI for exported graph artifact
 |19 |`llm_inference_runtime` |string |Runtime used for LLM calls (e.g., “vLLM”, “Ollama”, “LiteLLM”)
 |20 |`llm_runtime_cluster_id` |string |Identifier for the inference cluster/host
 |21 |`llm_inference_config` |object |Batch size, max sequence length, GPU profile
@@ -181,14 +183,14 @@ These disclaimers must appear: (a) in the UI above every AI-generated narrative,
     "api_call_cost_usd": 0.02,
     "data_handling_flags": {
       "pii_redaction_applied": true,
-      "data_residency": "us-east-1",
+      "data_residency": "eastus",
       "no_training_clause": true
     },
     "graph_node_ids": ["node_cd_12345", "node_le_67890"],
     "pydantic_template_id": "closing_disclosure_v1",
     "pydantic_template_version": "v1.0",
     "graph_export_version": "v1.0",
-    "graph_db_export_location": "s3://audit-exports/graphs/audit_XYZ.zip",
+    "graph_db_export_location": "https://auditiq.blob.core.windows.net/audit-exports/graphs/audit_XYZ.zip",
     "llm_inference_runtime": "vLLM",
     "llm_runtime_cluster_id": "llm-cluster-01",
     "llm_inference_config": {
@@ -340,11 +342,11 @@ Per Interagency Guidance on Third-Party Relationships (OCC 2023-17 / FDIC FIL-29
 
 *Cross-references:*
 
-* Section 22.1: Regulatory context, conditional acceptability standard, risk scenarios, disclaimers, red lines
-* Section 22.2: PII redaction and data residency controls
-* Section 22.3: Required logging fields and provenance metadata
-* Section 22.4: Hallucination detection and QA gates
-* Section 22.5: Drift monitoring and retraining triggers
-* Section 22.6: UI labeling and transparency requirements
-* *Section 24 (Model Registry):* Schema, API contract, lifecycle governance, and validation requirements for all AI model artifacts referenced by provenance fields
+* <<sect-ai-governance>>: Regulatory context, conditional acceptability standard, risk scenarios, disclaimers, red lines
+* <<sect-ai-governance, PII Redaction>>: PII redaction and data residency controls
+* <<sect-ai-provenance>>: Required logging fields and provenance metadata
+* <<sect-ai-governance, Evaluation Plan>>: Hallucination detection and QA gates
+* <<sect-ai-governance, Drift Monitoring>>: Drift monitoring and retraining triggers
+* <<sect-ai-governance, UI Labeling>>: UI labeling and transparency requirements
+* *<<sect-model-registry, Model Registry>>:* Schema, API contract, lifecycle governance, and validation requirements for all AI model artifacts referenced by provenance fields
 * AI Regulatory Acceptance Report: Full regulatory analysis, risk exposure assessment, and recommended controls

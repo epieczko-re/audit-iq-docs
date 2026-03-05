@@ -1,3 +1,4 @@
+[[sect-product-requirements]]
 == Product Requirements
 
 === Functional Requirements (Organized by Epics)
@@ -25,12 +26,12 @@
 |FR-2.2 |Each extracted value shall carry an extraction confidence score (AFC 0.0–1.0) that includes graph-derived corroboration signals from the Docling-Graph knowledge graph. |Given an extracted loan amount, when displayed to reviewer, then AFC score is visible with color indicator (green ≥0.85, yellow 0.50–0.84, red <0.50) and includes an explicit `graph_corrob_score` subcomponent showing cross-document graph corroboration strength. |P0
 |FR-2.3 |OCR output shall be presented as assistive/advisory in Phase 1, not authoritative. |Given any OCR-extracted value, when displayed, then it is visually labeled as “AI-extracted (advisory)” and cannot auto-finalize a finding without human confirmation. |P0
 |FR-2.4 |System shall provide a high-fidelity document viewer with page navigation, zoom, text search, and field highlight overlay. |Given a 50-page PDF, when opened in viewer, then page loads within 3 seconds, zoom works from 50% to 400%, text search returns results with highlighting, and extracted fields are overlaid with bounding boxes. |P0
-|FR-2.5 |System shall execute a 3-tier extraction fallback chain: (1) Docling-Graph VLM extraction, (2) Docling-Graph LLM extraction via LiteLLM/self-hosted Mistral, (3) cloud OCR (AWS Textract or equivalent). Fallback from tier 1→2 triggers when AFC < 0.50 for the extracted page; fallback from tier 2→3 triggers when AFC remains < 0.50 after LLM re-extraction or when >30% of key fields on a document remain below 0.50. |Given a low-quality scanned document where Docling-Graph VLM extraction produces AFC < 0.50 on key fields, when fallback triggers, then system attempts LLM extraction via LiteLLM/Mistral first; if still below threshold, re-processes with cloud OCR; each fallback event is logged with `extraction_method` provenance (see Section 22.3). |P1
+|FR-2.5 |System shall execute a 3-tier extraction fallback chain: (1) Docling-Graph VLM extraction, (2) Docling-Graph LLM extraction via LiteLLM/self-hosted Mistral, (3) cloud OCR (Azure AI Document Intelligence or equivalent). Fallback from tier 1→2 triggers when AFC < 0.50 for the extracted page; fallback from tier 2→3 triggers when AFC remains < 0.50 after LLM re-extraction or when >30% of key fields on a document remain below 0.50. |Given a low-quality scanned document where Docling-Graph VLM extraction produces AFC < 0.50 on key fields, when fallback triggers, then system attempts LLM extraction via LiteLLM/Mistral first; if still below threshold, re-processes with cloud OCR; each fallback event is logged with `extraction_method` provenance (see <<sect-ai-provenance>>). |P1
 |===
 
 *Deterministic boundary:* OCR extraction is deterministic for a given model version and input. The same document processed with the same model version always produces the same extraction. Model version is logged as provenance metadata.
 
-*DECISION LOCKED:* Docling-Graph pipeline as baseline extraction engine (MIT-licensed); self-hosted Mistral via LiteLLM as LLM extraction backend; cloud OCR as page-level fallback. See Section 19.2.
+*DECISION LOCKED:* Docling-Graph pipeline as baseline extraction engine (MIT-licensed); self-hosted Mistral via LiteLLM as LLM extraction backend; cloud OCR as page-level fallback. See <<sect-decision-d1, Decision D1>>.
 
 ==== Epic 3: Schema Mapping + Mapping UI
 
@@ -45,7 +46,7 @@
 
 *Deterministic boundary:* Schema mapping suggestions are deterministic for a given matcher version and input schemas. The same inputs always produce the same suggestions.
 
-*DECISION LOCKED:* Simple confidence-scored matcher for v1; LogMap prototype as parallel track. See Section 19.2.
+*DECISION LOCKED:* Simple confidence-scored matcher for v1; LogMap prototype as parallel track. See <<sect-decision-d1, Decision D1>>.
 
 ==== Epic 4: Audit Execution + Comparison Engine
 
@@ -69,7 +70,7 @@
 |FR-5.1 |System shall support creating, versioning, publishing, and retiring audit packs. |Given an admin publishing HMDA pack v1.1, when published, then v1.0 remains available for existing audit runs, v1.1 is available for new runs, and the version change is logged. |P0
 |FR-5.2 |Phase 1 shall ship with a pre-built HMDA origination QC audit pack. |Given the HMDA pack, when used on sample HMDA data, then it validates all 110 reportable fields with appropriate rules and generates expected findings. |P0
 |FR-5.3 |Active audit runs pin to a specific pack version and do not auto-upgrade. |Given an active audit using HMDA pack v1.0, when v1.1 is published, then the active audit continues using v1.0 until explicitly migrated. |P0
-|FR-5.4 |Pack manifest shall conform to the Pack Manifest JSON Schema (Section 8.2). |Given a pack manifest JSON, when validated against the schema, then validation passes with no errors. |P0
+|FR-5.4 |Pack manifest shall conform to the <<sect-pack-manifest-schema, Pack Manifest JSON Schema>>. |Given a pack manifest JSON, when validated against the schema, then validation passes with no errors. |P0
 |FR-5.5 |Pack changes shall be validated in a test harness before publication. |Given a modified pack, when test harness runs against sample data, then expected findings are generated, unexpected findings are flagged, and validation report is produced. |P1
 |===
 
@@ -103,7 +104,7 @@
 |FR-8.1 |System shall generate pack-specific audit reports using templates defined in the audit pack manifest. |Given the HMDA pack report template, when report generation is triggered, then a PDF report is produced with all template sections populated from audit data. |P0
 |FR-8.2 |AI-assisted narrative generation for audit summaries: mandatory human review and explicit approval before finalization. |Given a completed audit, when AI narrative is requested, then draft is produced labeled “AI-generated draft — requires approval,” and cannot be included in finalized reports until a Manager-role user clicks “Approve.” |P0
 |FR-8.3 |Export formats: PDF (formatted reports), CSV (data exports), XLSX (data exports with formatting), JSON (API). |Given a findings export request, when CSV is selected, then all findings with all metadata fields are exported in a clean CSV with headers. |P0
-|FR-8.4 |Exam-ready bundle: single exportable package per Section 21 specification. |Given a finalized audit, when exam bundle is exported, then the ZIP contains all files specified in Section 21 with valid manifest and hash verification. |P0
+|FR-8.4 |Exam-ready bundle: single exportable package per <<sect-exam-ready-bundle>> specification. |Given a finalized audit, when exam bundle is exported, then the ZIP contains all files specified in <<sect-exam-ready-bundle>> with valid manifest and hash verification. |P0
 |FR-8.5 |Manager and executive dashboards showing: review progress, aging, error rates by field/category, trends vs. prior periods, escalation frequency. |Given an active audit with 1,000 records, when manager opens dashboard, then all metrics load within 5 seconds with current data. |P1
 |===
 
@@ -112,14 +113,14 @@
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
-|FR-9.1 |RBAC with roles: Reviewer, Senior Reviewer, Manager, Audit Lead, Executive, IT Admin. Permission matrix defined in Section 10.11. |Given a Reviewer-role user, when they attempt to approve a report, then access is denied with “Insufficient permissions” message. |P0
+|FR-9.1 |RBAC with roles: Reviewer, Senior Reviewer, Manager, Audit Lead, Executive, IT Admin. Permission matrix defined in <<sect-rbac-permission-matrix>>. |Given a Reviewer-role user, when they attempt to approve a report, then access is denied with “Insufficient permissions” message. |P0
 |FR-9.2 |Segregation of duties: reviewers cannot approve their own findings. |Given a reviewer who created a finding, when they attempt to close it, then system blocks with “Segregation of duties violation” message and logs the attempt. |P0
 |FR-9.3 |Multi-tenant isolation using row-level security (Phase 1). |Given Tenant A and Tenant B sharing the same database, when Tenant A queries findings, then only Tenant A’s data is returned. Cross-tenant data access is impossible at the database level. |P0
 |FR-9.4 |SSO integration (SAML 2.0 / OIDC). |Given a client with SAML 2.0 IdP, when configured, then users authenticate via SSO with no AuditIQ-specific password. |P0
 |FR-9.5 |Audit log access for IT administrators: searchable, filterable, exportable. |Given an IT Admin, when they access the audit log, then they can filter by user, action type, date range, and entity, and export results as CSV. |P1
 |===
 
-*DECISION LOCKED:* Row-level security for Phase 1 tenant isolation. See Section 19.5.
+*DECISION LOCKED:* Row-level security for Phase 1 tenant isolation. See <<sect-decision-d5, Decision D5>>.
 
 === Non-Functional Requirements
 

@@ -1,3 +1,4 @@
+[[sect-delivery-plan]]
 == Delivery Plan and Work Breakdown Structure (WBS)
 
 === High-Level Phased Delivery (Q2–Q4 2026)
@@ -71,7 +72,7 @@ Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
 |Work Item |Story Points |Owner |Dependencies
 |*Document upload & ingestion* | | |
 |File upload UI + malware scan |8 |UX + Full-stack |Auth & storage
-|S3 storage + encryption + quarantine |5 |Full-stack |DevOps infra
+|Azure Blob Storage + encryption + quarantine |5 |Full-stack |DevOps infra
 |Async document processing queue (celery/workers) |8 |Full-stack |Messaging, monitoring
 |Docling extraction + OCR fallback |13 |Data/ML + Full-stack |Docling setup, error handling
 |*Evidence & audit state management* | | |
@@ -100,7 +101,7 @@ Phase 3: Platform Scale & Ecosystem (Q4 2026 & beyond)
 |*Scoring & findings* | | |
 |Rules engine integration (scoring logic) |13 |Full-stack + Data/ML |Pack definition, test packs
 |Finding creation + severity assignment |8 |Full-stack |State machine, audit events
-|Confidence scoring API + human-in-loop triggers |13 |Full-stack |Scoring framework (Section 12.6)
+|Confidence scoring API + human-in-loop triggers |13 |Full-stack |Scoring framework (<<sect-scoring-framework>>)
 |*AI narratives* | | |
 |LLM prompt templates for narrative generation |5 |AI engineer |Model selection, cost estimates
 |AI narrative generation + caching |13 |Full-stack + AI |Rate limiting, user approval flow

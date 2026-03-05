@@ -1,3 +1,4 @@
+[[sect-component-design]]
 == Component-Level Design
 
 === Ingestion Service
@@ -69,6 +70,7 @@ interface ValidationError {
 
 *Storage:* Validated records stored in audit.staging_datasets table (temporary, cleaned up after audit completion or 30 days, whichever first).
 
+[[sect-doc-processing]]
 === Document Processing Service (Docling + OCR)
 
 .Document Processing Pipeline
@@ -124,20 +126,20 @@ Docling (document conversion & VLM)
 
 * Deterministic, schema-validated outputs (Pydantic objects) — extraction results are typed and validated at extraction time, not downstream
 * Cross-document corroboration through explicit graph edges — improves `cross_doc_redundancy` and adds a new `graph_corrob_score` AFC signal
-* Exportable graph artifacts for exam-ready bundles (CSV, Cypher, Neo4j) — supports Section 21 evidence requirements
+* Exportable graph artifacts for exam-ready bundles (CSV, Cypher, Neo4j) — supports <<sect-exam-ready-bundle>> evidence requirements
 * Supports both VLM and LLM extraction backends — flexible inference routing
 * Trace/debug exports for provenance and troubleshooting
 * *MIT-licensed* — lower licensing risk than GPL-linked alternatives
 
 _See: Docling-Graph README (https://github.com/docling-project/docling-graph)_
 
-*LLM Integration (LiteLLM / Mistral):* Docling-Graph integrates with *LiteLLM* — a single interface to local and remote LLM runtimes (vLLM, Ollama) and cloud providers (Mistral, OpenAI). For Phase 1 the recommended LLM inference path is *self-hosted Mistral* using vLLM or Ollama orchestrated via LiteLLM, with `provider_override` set to `mistral` in Docling-Graph configs. This provides high throughput, lower per-call cost at scale, and improved data residency controls while preserving the option to use cloud LLMs during early validation. See Section 25 (Model Deployment: Mistral Self-Hosted) for hardware and operational guidance.
+*LLM Integration (LiteLLM / Mistral):* Docling-Graph integrates with *LiteLLM* — a single interface to local and remote LLM runtimes (vLLM, Ollama) and cloud providers (Mistral, OpenAI). For Phase 1 the recommended LLM inference path is *self-hosted Mistral* using vLLM or Ollama orchestrated via LiteLLM, with `provider_override` set to `mistral` in Docling-Graph configs. This provides high throughput, lower per-call cost at scale, and improved data residency controls while preserving the option to use cloud LLMs during early validation. See <<sect-model-deployment, Model Deployment>> for hardware and operational guidance.
 
 *Integration guidance:*
 
 * *Templates:* Implement Pydantic templates for each key document type (Closing Disclosure, Loan Estimate, 1003/URLA) and version them. Templates must include `model_config` fields for stable graph IDs.
-* *Fallback strategy:* Prefer Docling-Graph LLM extraction (LiteLLM → self-hosted Mistral) when Docling page grade or initial AFC is borderline. Use cloud OCR fallback only for documents where Docling conversion fails at the page level (e.g., encrypted PDFs, severely degraded scans). See updated fallback logic in Section 10.2.3.
-* *Provenance:* Every extracted Pydantic object records `pydantic_template_id`, `template_version`, `graph_node_id`, and `graph_export_version` in the extraction metadata (see Section 22.3 for provenance fields).
+* *Fallback strategy:* Prefer Docling-Graph LLM extraction (LiteLLM → self-hosted Mistral) when Docling page grade or initial AFC is borderline. Use cloud OCR fallback only for documents where Docling conversion fails at the page level (e.g., encrypted PDFs, severely degraded scans). See updated fallback logic in <<sect-fallback-logic>>.
+* *Provenance:* Every extracted Pydantic object records `pydantic_template_id`, `template_version`, `graph_node_id`, and `graph_export_version` in the extraction metadata (see <<sect-ai-provenance>> for provenance fields).
 * *Legal:* Docling-Graph is MIT-licensed. If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms.
 
 ==== AuditIQ Field Confidence (AFC)
@@ -183,7 +185,7 @@ NOTE: Weights are calibration targets — tune during Phase 1a using labeled ext
 interface DocumentProcessingRequest {
   auditId: string;
   documentId: string;
-  filePath: string; // S3 path
+  filePath: string; // Azure Blob Storage path or URI
   fileType: 'pdf' | 'tiff' | 'jpeg' | 'png';
   documentType: string; // e.g., 'closing-disclosure'
   pageCount: number;
@@ -237,6 +239,7 @@ interface PageGrade {
 }
 ----
 
+[[sect-fallback-logic]]
 ==== Fallback Logic (Refined — Docling-Graph-First)
 
 *Phase 1 fallback chain:* Docling-Graph (VLM) → Docling-Graph (LLM via LiteLLM/Mistral) → Cloud OCR → Manual entry
@@ -292,7 +295,7 @@ for each page in document:
 end
 ....
 
-*Cloud OCR fallback providers (ranked by cost):* 1. AWS Textract `DetectDocumentText` — $0.0015/page 2. Google Enterprise Document OCR — $0.0015/page ($1.50/1000 pages) 3. AWS Textract `AnalyzeDocument` — $0.01/page (tables/forms; use only when needed)
+*Cloud OCR fallback providers (ranked by cost):* 1. Azure AI Document Intelligence (read) — $0.001/page 2. Google Enterprise Document OCR — $0.0015/page ($1.50/1000 pages) 3. Azure AI Document Intelligence (layout analysis) — $0.01/page (tables/forms; use only when needed)
 
 ==== Known Extraction Failure Modes
 
@@ -330,6 +333,7 @@ ____
 *Docling-Graph (MIT):* Docling-Graph is MIT-licensed and represents a lower-risk integration option than GPL-linked adapters such as `docling-surya`. Where possible prefer Docling-Graph for production deployments to avoid GPL copyleft risk. If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms before Phase 1a.
 ____
 
+[[sect-poc-test-plan]]
 ==== POC Test Plan (Phase 0)
 
 [cols="34%,33%,33%",options="header"]
@@ -347,15 +351,16 @@ ____
 
 *Go criteria:* ≥85% precision on key HMDA fields at AFC ≥ 0.85 threshold. *Kill criteria:* <70% precision at AFC ≥ 0.85 OR fallback rate >40% on representative corpus.
 
-*DECISION LOCKED:* Docling-Graph pipeline as baseline (Docling + Docling-Graph); primary LLM inference via LiteLLM / self-hosted Mistral/vLLM; cloud OCR fallback for degraded documents only. AuditIQ Field Confidence layer (AFC v2 with graph_corrob_score). See Section 19.2.
+*DECISION LOCKED:* Docling-Graph pipeline as baseline (Docling + Docling-Graph); primary LLM inference via LiteLLM / self-hosted Mistral/vLLM; cloud OCR fallback for degraded documents only. AuditIQ Field Confidence layer (AFC v2 with graph_corrob_score). See <<sect-decision-d1, Decision D1>>.
 
 *Determinism:* Deterministic within a Docling version + field extractor version. Same document + same versions = same extraction + same AFC. All versions logged as provenance.
 
+[[sect-schema-mapping-service]]
 === Schema Mapping Service
 
 *Responsibilities:*
 
-* Suggest field-level mappings between MISMO-aligned canonical target schema (see Section 11.2) and source schema (customer-uploaded data from LOS, CSV, or document extraction)
+* Suggest field-level mappings between MISMO-aligned canonical target schema (see <<sect-mismo-alignment>>) and source schema (customer-uploaded data from LOS, CSV, or document extraction)
 * Validate that target field references exist in the `mismo_dictionary` (or use `custom:` namespace)
 * Produce two-layer confidence scores for each suggestion (raw signals + calibrated decision score)
 * Clearly demarcate CD-supported fields (~10–20% auto-mappable at ≥0.85) vs. fields requiring additional document types or manual entry
@@ -366,6 +371,7 @@ ____
 *Scope constraint (per Schema Mapping Strategy Report):* HMDA LAR spans 48 data points → ~110 fields, with 37 “key HMDA data fields” (Fed CA Letter 18-9). Closing Disclosure (CD) documents alone cover only ~10–20% of these at ≥0.85 auto-mappable confidence. MVP must explicitly label fields as “CD-supported,” “requires 1003/URLA,” “requires appraisal,” or “manual entry required.”
 ____
 
+[[sect-matching-algorithm]]
 ==== Matching Algorithm (Phase 1 — Hybrid Heuristic)
 
 The matcher uses a COMA-style combination of multiple independent signals, weighted to produce a raw mapping confidence:
@@ -388,6 +394,7 @@ The matcher uses a COMA-style combination of multiple independent signals, weigh
 |Multi-source field |`total_income` (W-2 + 1003 + pay stubs) |Flagged as “Phase 2: requires additional documents”
 |===
 
+[[sect-two-layer-confidence]]
 ==== Two-Layer Confidence Design
 
 *Layer 1 — Raw signals (produced per mapping suggestion):*
@@ -404,7 +411,7 @@ conf_mapping = (
 
 where each component is normalized to [0.0, 1.0].
 
-Additional raw signals passed to Layer 2: - `conf_extraction`: AFC score from Section 10.2 (how confident we are in the extracted value) - `conf_rule`: Business rule pass/fail from Section 10.5 (does the mapped value pass validation?)
+Additional raw signals passed to Layer 2: - `conf_extraction`: AFC score from <<sect-doc-processing>> (how confident we are in the extracted value) - `conf_rule`: Business rule pass/fail from the Comparison &amp; Rules Engine (does the mapped value pass validation?)
 
 *Layer 2 — Calibrated decision score:*
 
@@ -415,7 +422,7 @@ Additional raw signals passed to Layer 2: - `conf_extraction`: AFC score from Se
 
 *Routing thresholds (calibrated score):*
 
-* ≥0.95: Auto-accept (reviewer sees green checkmark; ~10s visual confirmation). NOTE: Initial conservative threshold per Decision D2 (Section 19.3); may be lowered to ≥0.90 after calibration validation on ≥500 mappings.
+* ≥0.95: Auto-accept (reviewer sees green checkmark; ~10s visual confirmation). NOTE: Initial conservative threshold per <<sect-decision-d2, Decision D2>>; may be lowered to ≥0.90 after calibration validation on ≥500 mappings.
 * 0.70–0.95: Human review required (reviewer evaluates suggestion; ~45s per field)
 * <0.70: Manual mapping required (no suggestion shown; reviewer selects from field list)
 
@@ -506,7 +513,7 @@ Target: ≤25% override rate on CD-supported fields by end of Phase 1b UAT.
 
 *Determinism:* Deterministic for a given matcher version, synonym dictionary version, and input schemas.
 
-*DECISION LOCKED:* Hybrid heuristic matcher with two-layer confidence for v1. See Section 19.3 (Decision D2) for go/kill criteria and Phase 2 upgrade path.
+*DECISION LOCKED:* Hybrid heuristic matcher with two-layer confidence for v1. See <<sect-decision-d2, Decision D2>> for go/kill criteria and Phase 2 upgrade path.
 
 *Phase 2 upgrade path:* Embedding-based candidate expansion → LLM-based reranking → LogMap ontology track → isotonic regression calibration.
 
@@ -763,6 +770,7 @@ interface EvidenceRecord {
 
 *Append-only semantics:* When a user “replaces” an evidence file, the system: 1. Stores the new file with a new evidence_id 2. Creates a “supersedes” link from new to old 3. Marks the original as visible in history (never deleted) 4. Audit trail records both the original and the replacement
 
+[[sect-audit-trail-event-store]]
 === Audit Trail & Event Store (Immutable Log)
 
 *Responsibilities:*
@@ -775,7 +783,7 @@ interface EvidenceRecord {
 * Support litigation defensibility via FRE Rule 902(13)/(14) self-authentication
 
 ____
-*Critical design requirement (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient. An attacker with database write access can rewrite the entire chain. This design adds three mandatory layers: (1) RFC 8785 canonical JSON serialization for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points that cannot be silently rewritten. See Section 19.4 (Decision D3) for design tier rationale.
+*Critical design requirement (per Audit Trail Defensibility Report):* Hash chaining alone is necessary but NOT sufficient. An attacker with database write access can rewrite the entire chain. This design adds three mandatory layers: (1) RFC 8785 canonical JSON serialization for repeatable hash verification, (2) global monotonic sequence IDs for gap/reorder detection, (3) cryptographic anchor points that cannot be silently rewritten. See <<sect-decision-d3, Decision D3>> for design tier rationale.
 ____
 
 ==== Event Schema
@@ -850,9 +858,9 @@ event_hash = SHA-256(
 
 ==== Cryptographic Anchor Points
 
-Every N events (default N=100, configurable per tenant), the system writes an *anchor event*: - `is_anchor = true` - `anchor_hash` = SHA-256 of the event_hash at this point - Anchor hash is written to *WORM storage* (e.g., AWS S3 Object Lock, Azure Immutable Blob) — cannot be overwritten or deleted during retention period - Anchor verification: compare stored anchor hash against recomputed hash from event chain; mismatch = tampering detected
+Every N events (default N=100, configurable per tenant), the system writes an *anchor event*: - `is_anchor = true` - `anchor_hash` = SHA-256 of the event_hash at this point - Anchor hash is written to *WORM storage* (e.g., Azure Immutable Blob Storage) — cannot be overwritten or deleted during retention period - Anchor verification: compare stored anchor hash against recomputed hash from event chain; mismatch = tampering detected
 
-*Phase 2 upgrade:* Replace WORM anchors with KMS-signed checkpoint events (AWS KMS, Azure Key Vault) for non-repudiation and litigation support under FRE 902(13)/(14).
+*Phase 2 upgrade:* Replace WORM anchors with KMS-signed checkpoint events (Azure Key Vault) for non-repudiation and litigation support under FRE 902(13)/(14).
 
 ==== Operational Integrity Controls (NIST AU-9 / FFIEC)
 
@@ -916,7 +924,7 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 * Weekly: Full chain verification for each tenant
 * On anchor write: Verify chain from previous anchor to current anchor before writing to WORM
 
-*Snapshot integrity (see Section 20):*
+*Snapshot integrity (see <<sect-immutability>>):*
 
 * When snapshots are materialized, compute snapshot hash and store in event stream
 * Periodic re-materialization from events; compare against stored snapshot hash; mismatch = drift alert
@@ -1010,6 +1018,7 @@ interface ReportSection {
 }
 ----
 
+[[sect-rbac-permission-matrix]]
 === RBAC & Permission Matrix
 
 *Roles and permissions:*

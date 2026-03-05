@@ -1,5 +1,7 @@
+[[sect-competitive-intelligence]]
 == Competitive Intelligence
 
+[[sect-primary-competitor]]
 === Primary Competitor Analysis
 
 ==== Market Position & ACV Analysis

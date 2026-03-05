@@ -1,3 +1,4 @@
+[[sect-key-concepts]]
 == Key Architectural Concepts
 
 === Audit Packs: The “Brain” Plugin Model
@@ -40,7 +41,7 @@ Severity measures the regulatory importance of a finding (how bad is it?). Confi
 
 === Immutable Audit Trail with Regulator-Safe Semantics
 
-Every state change in the system is recorded as an immutable event. Events are append-only and hash-chained for tamper evidence. The system differentiates between truly immutable artifacts (evidence, events) and correctible artifacts (findings, mappings) where corrections are modeled as new events that supersede prior state. See Section 20 for the full immutability/correctability specification.
+Every state change in the system is recorded as an immutable event. Events are append-only and hash-chained for tamper evidence. The system differentiates between truly immutable artifacts (evidence, events) and correctible artifacts (findings, mappings) where corrections are modeled as new events that supersede prior state. See <<sect-immutability>> for the full immutability/correctability specification.
 
 === Architecture Diagrams
 
@@ -81,25 +82,25 @@ title: Data Flow — OCR-Assisted Audit
 ---
 graph LR
     subgraph Inputs
-        CSV[Target Dataset\nCSV/API]
-        DOCS[Source Documents\nPDF/Image]
+        CSV["Target Dataset<br/>CSV/API"]
+        DOCS["Source Documents<br/>PDF/Image"]
     end
 
     subgraph Ingestion
         VAL[Schema Validation]
-        OCR[Document Processing\nDocling Pipeline]
+        OCR["Document Processing<br/>Docling Pipeline"]
     end
 
     subgraph Processing
-        MAP[Schema Mapping\nConfidence Scoring]
-        NORM[Normalization\nEngine]
-        COMP[Comparison &\nRules Engine]
+        MAP["Schema Mapping<br/>Confidence Scoring"]
+        NORM["Normalization<br/>Engine"]
+        COMP["Comparison &<br/>Rules Engine"]
     end
 
     subgraph Outputs
-        FIND[Findings Register\nwith Confidence Scores]
-        REPORT[Reports &\nDashboards]
-        BUNDLE[Exam-Ready\nBundle]
+        FIND["Findings Register<br/>with Confidence Scores"]
+        REPORT["Reports &<br/>Dashboards"]
+        BUNDLE["Exam-Ready<br/>Bundle"]
     end
 
     CSV --> VAL
@@ -122,37 +123,37 @@ title: AuditIQ Component Architecture
 ---
 graph TB
     subgraph ClientLayer[Client Layer]
-        UI[Web Application\nReact/Angular]
+        UI["Web Application<br/>React/Angular"]
         API_GW[API Gateway]
     end
 
     subgraph CorePlatform[Core Platform Services]
-        AUTH[Auth & RBAC\nService]
-        AUDIT[Audit Orchestration\nService]
-        PACK[Audit Pack\nManager]
-        WORKFLOW[Workflow Engine\nState Machine]
+        AUTH["Auth & RBAC<br/>Service"]
+        AUDIT["Audit Orchestration<br/>Service"]
+        PACK["Audit Pack<br/>Manager"]
+        WORKFLOW["Workflow Engine<br/>State Machine"]
     end
 
     subgraph DataPipeline[Data Pipeline]
-        INGEST[Ingestion\nService]
-        DOCPROC[Document Processing\nDocling Pipeline]
-        MAPPER[Schema Mapping\nService]
-        NORM[Normalization\nEngine]
-        COMPARE[Comparison &\nRules Engine]
+        INGEST["Ingestion<br/>Service"]
+        DOCPROC["Document Processing<br/>Docling Pipeline"]
+        MAPPER["Schema Mapping<br/>Service"]
+        NORM["Normalization<br/>Engine"]
+        COMPARE["Comparison &<br/>Rules Engine"]
     end
 
     subgraph IntelligenceLayer[Intelligence Layer]
-        AI_RULES[AI Rule\nGeneration]
-        AI_REPORT[AI Reporting\nAssistant]
-        SCORING[Confidence &\nSeverity Scoring]
-        CITATIONS[Regulatory\nCitation Engine]
+        AI_RULES["AI Rule<br/>Generation"]
+        AI_REPORT["AI Reporting<br/>Assistant"]
+        SCORING["Confidence &<br/>Severity Scoring"]
+        CITATIONS["Regulatory<br/>Citation Engine"]
     end
 
     subgraph DataLayer[Data & Storage]
-        DB[(Primary Database\nPostgreSQL)]
-        DOCS[(Document Store\nS3/Blob)]
-        SEARCH[(Search Index\nElasticsearch)]
-        EVENTS[(Event Store\nAudit Trail)]
+        DB[("Primary Database<br/>PostgreSQL")]
+        DOCS[("Document Store<br/>Azure Blob")]
+        SEARCH[("Search Index<br/>Elasticsearch")]
+        EVENTS[("Event Store<br/>Audit Trail")]
     end
 
     UI --> API_GW
