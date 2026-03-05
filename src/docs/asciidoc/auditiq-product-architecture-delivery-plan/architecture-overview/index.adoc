@@ -425,5 +425,5 @@ No configuration needed.
 * *Search:* Elasticsearch auto-sharding.
 ILM policies manage index lifecycle.
 
-*TODO:* Publish Terraform modules for infrastructure-as-code deployment.
-Target: Phase 0 completion (March 31, 2026).
+*Phase 0 deliverable:* Publish Terraform modules for infrastructure-as-code deployment by March 31, 2026.
+Owner: Junior Dev (infrastructure track, <<sect-delivery-plan>>).

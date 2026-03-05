@@ -16,6 +16,9 @@
 |*D6* |Canonical data schema: *MISMO Reference Model (flattened subset) for all loan-level attributes* |LOCKED |MISMO is the mortgage industry standard; reduces LOS integration friction; recognized by examiners; HMDA Reporting Dataset covers Phase 1 fields. Proprietary `custom:` namespace for non-MISMO fields. See <<sect-mismo-alignment>>. |If MISMO coverage <60% for a new regulation domain (Phase 2+), evaluate domain-specific alternatives
 |===
 
+NOTE: Decision IDs D7 and D8 were reserved for two v0.1 draft decisions (LLM provider selection and report templating approach) that were consolidated into D1 and D4 respectively during the v0.2 rewrite.
+The IDs are intentionally skipped to preserve traceability with early review notes.
+
 *New Decisions D9–D12 (Phase 1b–1c scope):*
 
 [cols="16%,29%,23%,8%,8%,8%,8%",options="header"]

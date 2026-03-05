@@ -346,6 +346,70 @@ The following models are pre-registered at system deployment:
 |HMDA regulation rules for RAG context
 |===
 
+=== Example Prompt Template: `narrative_finding` v1.2
+
+The following is the registered prompt template for finding narrative generation.
+This template is stored as a versioned artifact in the model registry and referenced by `prompt_template_id` + `prompt_template_version` in all AI provenance records (<<sect-ai-provenance>>).
+
+*System prompt (`system_prompt` v1.0):*
+
+[source,text]
+----
+You are an audit documentation assistant for a regulated financial institution.
+Your role is to draft finding narratives for lending quality control audits.
+
+RULES:
+1. Only state facts supported by the provided evidence. Never invent details.
+2. Cite specific document names, page numbers, and field values from the evidence.
+3. Use precise regulatory language where applicable (cite CFR sections).
+4. Keep narratives concise (2-4 sentences for standard findings).
+5. Flag any uncertainty explicitly with "[REQUIRES VERIFICATION]".
+6. Never include customer names, SSNs, or other PII — use redaction tokens only.
+7. Do not make compliance determinations. State the factual observation only.
+----
+
+*User prompt template (`narrative_finding` v1.2):*
+
+[source,text]
+----
+Generate a finding narrative for the following audit observation.
+
+RULE: {rule_name} ({rule_id})
+REGULATION: {regulatory_basis}
+SEVERITY: {severity} (assigned by pack rule definition)
+
+TARGET FIELD: {target_field_name}
+TARGET VALUE: {target_value}
+SOURCE FIELD: {source_field_name}
+SOURCE VALUE: {source_value}
+SOURCE DOCUMENT: {source_document_type} (page {page_number})
+
+EXTRACTION CONFIDENCE: {extraction_confidence}
+MAPPING CONFIDENCE: {mapping_confidence}
+COMPARISON RESULT: {comparison_result} (match / mismatch / missing)
+
+ADDITIONAL CONTEXT:
+{retrieved_regulation_text}
+
+Write a concise finding narrative (2-4 sentences) that:
+1. States the factual observation (what was found vs. what was expected)
+2. Cites the source document and specific field
+3. References the applicable regulation if relevant
+4. Notes the confidence level if below 0.85
+----
+
+*Example output (for human review):*
+
+[source,text]
+----
+Loan amount of $250,000 recorded in the Closing Disclosure (page 1, Section A)
+matches the value in the HMDA LAR target record.
+Disclosure requirement under 12 CFR 1026.19(f)(1)(i) is satisfied.
+Extraction confidence: 0.94 (high).
+----
+
+This output carries the mandatory disclaimer "AI-Drafted — Requires Human Verification" and cannot enter the official audit record without explicit human approval (<<sect-ai-governance, Red Lines>>).
+
 === Cross-References
 
 * *<<sect-ai-provenance>>:* Defines the 14 mandatory logging fields that reference registry records

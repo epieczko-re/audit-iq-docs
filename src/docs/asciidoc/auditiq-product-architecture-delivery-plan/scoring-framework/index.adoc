@@ -109,7 +109,7 @@ They must be calibrated against ground truth (human decisions) to remain accurat
 * *Coverage:* % of findings where AI confidence threshold correctly predicted human review need
 . *Adjustment:* If calibration error >5% for a given component (e.g., Docling), adjust thresholds or retrain model.
 
-*Monitoring dashboard (TODO Phase 2):*
+*Monitoring dashboard (Phase 2):*
 
 * Daily plots: Confidence vs. human agreement rate
 * Alert: If calibration error exceeds 5% threshold

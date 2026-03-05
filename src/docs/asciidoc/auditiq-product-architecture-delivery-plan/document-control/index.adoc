@@ -1,6 +1,8 @@
 [[sect-document-control]]
 == Document Control
 
+_Built: {build-timestamp}_
+
 === Version History
 
 [cols="9%,12%,32%,47%",options="header"]
@@ -16,6 +18,7 @@
 |0.8 |2026-03-05 |Erik Pieczkowski |Section 15 (Delivery Plan) complete rework — rescoped for 4-person team (2 senior devs, 1 junior dev, 1 analyst) with AI-assisted development (Claude Code, Codex); replaced story-point estimates with week-based milestones; phasing recalibrated to Mar 9 – Jun 30 timeline (Phase 0: Foundation & Validation, Phase 1a: Core Pipeline & Workflow, Phase 1b: Intelligence & Scoring, Phase 1c: Hardening & Launch); removed Phase 2/3 content (now exclusively in Future Roadmap §17); introduced two-track development model (Data Pipeline + Platform & Workflow) with Phase 1b convergence; simplified go/no-go to single Phase 0 Exit Gate + continuous launch readiness checklist cross-referencing §16; WBS now covers AI Governance, Model Registry, Model Deployment, and Docling-Graph Integration work items; added external procurement table
 |0.9 |2026-03-05 |Erik Pieczkowski |Removed Appendix F (CEO Memo) from section 19
 |0.10 |2026-03-05 |Erik Pieczkowski |Added open question Q9: whether to pursue ISO 42001 (AI Management System) certification for AuditIQ
+|0.11 |2026-03-05 |Erik Pieczkowski |Comprehensive quality pass: fixed EKS/GCP to AKS in Delivery Plan; fixed Appendix E formatting and Future Roadmap linting violations; added Finding Remediation Lifecycle state machine (9 states) to ConOps; expanded PII Redaction with HMDA PII taxonomy (12 data types) and two-pass pipeline architecture; added RFC 8785 worked example with hash chain walkthrough to Appendix C; added routing threshold context note and regulatory terminology (13 terms) to Glossary; documented D7/D8 ID gap; added prompt template example to Model Registry; resolved TODO markers; added automated build timestamp to CI pipeline and landing page
 |===
 
 === Authors / Owners

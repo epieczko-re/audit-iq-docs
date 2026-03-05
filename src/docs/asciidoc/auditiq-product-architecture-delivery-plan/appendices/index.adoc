@@ -224,6 +224,82 @@ Append-only; forms basis of regulatory compliance proof.
 }
 ----
 
+==== RFC 8785 Canonical JSON & Hash Chain Walkthrough
+
+AuditIQ uses RFC 8785 (JSON Canonicalization Scheme) to ensure that logically identical JSON always produces the same SHA-256 hash.
+This is critical because non-canonical JSON (e.g., different key ordering, whitespace, or number formatting) produces different hashes for the same data, breaking chain verification.
+
+*RFC 8785 Canonicalization Rules (summary):*
+
+[arabic]
+. *Key ordering:* Object keys sorted lexicographically by Unicode code point
+. *No whitespace:* No spaces, tabs, or newlines between tokens
+. *Number formatting:* No leading zeros; no trailing zeros after decimal; no positive sign; integers have no decimal point
+. *String escaping:* Minimal escaping; only required characters escaped
+. *No duplicate keys:* Each key appears once per object
+
+*Worked Example — Event `evt_20260215_002`:*
+
+*Step 1: Raw event (as constructed by the application):*
+
+[source,json]
+----
+{
+  "event_type": "finding_created",
+  "event_id": "evt_20260215_002",
+  "timestamp": "2026-02-15T10:45:00Z",
+  "actor_id": "system_scoring_engine",
+  "audit_id": "audit_2026_02_15_loanXYZ",
+  "sequence_id": 1002,
+  "previous_hash": "a1b2c3d4e5f6...sha256_of_evt_001",
+  "event_details": {
+    "severity": "critical",
+    "finding_id": "finding_hmda_001",
+    "rule_id": "hmda_field_completeness",
+    "combined_confidence": 0.87,
+    "narrative": "Loan amount of $250,000 verified in loan estimate."
+  }
+}
+----
+
+*Step 2: RFC 8785 canonicalized form (keys sorted, no whitespace):*
+
+[source,json]
+----
+{"actor_id":"system_scoring_engine","audit_id":"audit_2026_02_15_loanXYZ","event_details":{"combined_confidence":0.87,"finding_id":"finding_hmda_001","narrative":"Loan amount of $250,000 verified in loan estimate.","rule_id":"hmda_field_completeness","severity":"critical"},"event_id":"evt_20260215_002","event_type":"finding_created","previous_hash":"a1b2c3d4e5f6...sha256_of_evt_001","sequence_id":1002,"timestamp":"2026-02-15T10:45:00Z"}
+----
+
+Note: `event_details` keys are also sorted (`combined_confidence` before `finding_id` before `narrative` before `rule_id` before `severity`).
+
+*Step 3: Compute SHA-256 hash:*
+
+....
+event_hash = SHA-256(canonicalized_json_bytes)
+           = "b7f3a9e1c2d4..."  (64 hex characters)
+....
+
+*Step 4: Chain linkage:*
+
+The next event (`evt_20260215_003`) includes `"previous_hash": "b7f3a9e1c2d4..."` — creating an append-only hash chain.
+Any modification to event 002 changes its hash, which breaks the chain at event 003.
+
+*Verification algorithm (round-trip test):*
+
+[arabic]
+. Read event from database
+. Strip `event_hash` field from the record
+. Canonicalize remaining fields per RFC 8785
+. Compute SHA-256 of canonical bytes
+. Compare to stored `event_hash` — must match exactly
+. Verify `previous_hash` equals the `event_hash` of the preceding event (by `sequence_id`)
+. If either check fails, emit `audit_trail_integrity_violation` alert
+
+*WORM Anchor Points:*
+
+Every 1,000 events (configurable), the system writes a cryptographic anchor to WORM (Write Once Read Many) storage (Azure Immutable Blob).
+The anchor contains: `tenant_id`, `anchor_sequence_range` (e.g., 1001–2000), `final_event_hash`, `timestamp`, and `anchor_hash` (SHA-256 of the anchor record itself).
+This prevents an attacker with database write access from silently rewriting the entire chain — the WORM-stored anchor hashes cannot be modified.
+
 '''
 
 === Appendix D: Report Template Outlines
@@ -263,22 +339,26 @@ Attachments:
 
 === Appendix E: References (Source Documents)
 
-*Carry forward from v0.1:* 1.
-AuditIQ_Comprehensive_Spec_v0.1.md – Original specification 2.
-HMDA_Rule_2024_Amendment – Federal Register citation & full text 3.
-CRA_Examination_Procedures – Federal Reserve publication 4.
-ECOA_Fair_Lending_Handbook – FRB, OCC publication 5.
-SOC_2_2022_Trust_Service_Criteria – AICPA framework
+*Carry forward from v0.1:*
 
-*New references for v0.2:* 6.
-Docling Documentation – PDF/document extraction library (https://github.com/ds4sd/docling) 7.
-GraphQL Best Practices – Apollo & community resources 8.
-PostgreSQL RLS Documentation – Row-level security implementation guide 9.
-OpenAI API Reference – Completion & embedding models 10.
-PCI DSS v3.2.1 – Payment Card Industry security framework 11.
-NIST AI Risk Management Framework – AI governance guidance (https://airc.nist.gov/AI_RMF_Interactivity) 12.
-Immutable Audit Trail Patterns – Journal of Information Security & Privacy 13.
-Internal the primary competitor Pricing Study – Proprietary pricing intelligence (~141 customers)
+[arabic]
+. AuditIQ_Comprehensive_Spec_v0.1.md — Original specification
+. HMDA_Rule_2024_Amendment — Federal Register citation & full text
+. CRA_Examination_Procedures — Federal Reserve publication
+. ECOA_Fair_Lending_Handbook — FRB, OCC publication
+. SOC_2_2022_Trust_Service_Criteria — AICPA framework
+
+*New references for v0.2:*
+
+[arabic,start=6]
+. Docling Documentation — PDF/document extraction library (https://github.com/ds4sd/docling)
+. GraphQL Best Practices — Apollo & community resources
+. PostgreSQL RLS Documentation — Row-level security implementation guide
+. OpenAI API Reference — Completion & embedding models
+. PCI DSS v3.2.1 — Payment Card Industry security framework
+. NIST AI Risk Management Framework — AI governance guidance (https://airc.nist.gov/AI_RMF_Interactivity)
+. Immutable Audit Trail Patterns — Journal of Information Security & Privacy
+. Internal Competitive Pricing Study — Proprietary pricing intelligence (~141 customers)
 
 '''
 
