@@ -33,7 +33,7 @@ check_file() {
     line_num=$((line_num + 1))
 
     # Toggle source/listing block tracking
-    if [[ "$line" =~ ^(\-\-\-\-|\.\.\.\.|\+\+\+\+|====) ]]; then
+    if [[ "$line" =~ ^(\-\-\-\-|\.\.\.\.|\+\+\+\+|====)$ ]]; then
       if $in_block; then
         in_block=false
       else

@@ -3,7 +3,9 @@
 
 === Purpose
 
-*Exam-ready bundle* = A complete, portable artifact of an audit suitable for export to examiners, regulators, or auditors. Includes all evidence, findings, trail, and metadata. Format: ZIP (structured directories) + optional merged PDF.
+*Exam-ready bundle* = A complete, portable artifact of an audit suitable for export to examiners, regulators, or auditors.
+Includes all evidence, findings, trail, and metadata.
+Format: ZIP (structured directories) + optional merged PDF.
 
 === Bundle Contents & Manifest
 

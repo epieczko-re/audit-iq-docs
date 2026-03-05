@@ -222,7 +222,9 @@ Do not use Docling’s numeric scores directly for field-level gating.
 
 ==== Docling-Graph Integration
 
-*Overview.* AuditIQ adopts *Docling-Graph* as the Phase 1 baseline for document extraction and structured output. Docling-Graph combines Docling’s document conversion and VLM extraction capabilities with a Pydantic-based schema enforcement layer and a directed knowledge graph. This transforms free-text and OCR outputs into validated, strongly-typed Pydantic objects and a directed graph of entities and relationships that the Schema Mapping Service and Comparison Engine consume.
+*Overview.* AuditIQ adopts *Docling-Graph* as the Phase 1 baseline for document extraction and structured output.
+Docling-Graph combines Docling’s document conversion and VLM extraction capabilities with a Pydantic-based schema enforcement layer and a directed knowledge graph.
+This transforms free-text and OCR outputs into validated, strongly-typed Pydantic objects and a directed graph of entities and relationships that the Schema Mapping Service and Comparison Engine consume.
 
 *Primary pipeline (Phase 1):*
 
@@ -245,14 +247,21 @@ Docling (document conversion & VLM)
 
 _See: Docling-Graph README (https://github.com/docling-project/docling-graph)_
 
-*LLM Integration (LiteLLM / Mistral):* Docling-Graph integrates with *LiteLLM* — a single interface to local and remote LLM runtimes (vLLM, Ollama) and cloud providers (Mistral, OpenAI). For Phase 1 the recommended LLM inference path is *self-hosted Mistral* using vLLM or Ollama orchestrated via LiteLLM, with `provider_override` set to `mistral` in Docling-Graph configs. This provides high throughput, lower per-call cost at scale, and improved data residency controls while preserving the option to use cloud LLMs during early validation. See <<sect-model-deployment, Model Deployment>> for hardware and operational guidance.
+*LLM Integration (LiteLLM / Mistral):* Docling-Graph integrates with *LiteLLM* — a single interface to local and remote LLM runtimes (vLLM, Ollama) and cloud providers (Mistral, OpenAI).
+For Phase 1 the recommended LLM inference path is *self-hosted Mistral* using vLLM or Ollama orchestrated via LiteLLM, with `provider_override` set to `mistral` in Docling-Graph configs.
+This provides high throughput, lower per-call cost at scale, and improved data residency controls while preserving the option to use cloud LLMs during early validation.
+See <<sect-model-deployment, Model Deployment>> for hardware and operational guidance.
 
 *Integration guidance:*
 
-* *Templates:* Implement Pydantic templates for each key document type (Closing Disclosure, Loan Estimate, 1003/URLA) and version them. Templates must include `model_config` fields for stable graph IDs.
-* *Fallback strategy:* Prefer Docling-Graph LLM extraction (LiteLLM → self-hosted Mistral) when Docling page grade or initial AFC is borderline. Use cloud OCR fallback only for documents where Docling conversion fails at the page level (e.g., encrypted PDFs, severely degraded scans). See updated fallback logic in <<sect-fallback-logic>>.
+* *Templates:* Implement Pydantic templates for each key document type (Closing Disclosure, Loan Estimate, 1003/URLA) and version them.
+Templates must include `model_config` fields for stable graph IDs.
+* *Fallback strategy:* Prefer Docling-Graph LLM extraction (LiteLLM → self-hosted Mistral) when Docling page grade or initial AFC is borderline.
+Use cloud OCR fallback only for documents where Docling conversion fails at the page level (e.g., encrypted PDFs, severely degraded scans).
+See updated fallback logic in <<sect-fallback-logic>>.
 * *Provenance:* Every extracted Pydantic object records `pydantic_template_id`, `template_version`, `graph_node_id`, and `graph_export_version` in the extraction metadata (see <<sect-ai-provenance>> for provenance fields).
-* *Legal:* Docling-Graph is MIT-licensed. If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms.
+* *Legal:* Docling-Graph is MIT-licensed.
+If using self-hosted Mistral model weights, obtain legal sign-off confirming the chosen Mistral model license permits self-hosting under your deployment terms.
 
 ==== AuditIQ Field Confidence (AFC)
 
@@ -407,7 +416,10 @@ for each page in document:
 end
 ....
 
-*Cloud OCR fallback providers (ranked by cost):* 1. Azure AI Document Intelligence (read) — $0.001/page 2. Google Enterprise Document OCR — $0.0015/page ($1.50/1000 pages) 3. Azure AI Document Intelligence (layout analysis) — $0.01/page (tables/forms; use only when needed)
+*Cloud OCR fallback providers (ranked by cost):* 1.
+Azure AI Document Intelligence (read) — $0.001/page 2.
+Google Enterprise Document OCR — $0.0015/page ($1.50/1000 pages) 3.
+Azure AI Document Intelligence (layout analysis) — $0.01/page (tables/forms; use only when needed)
 
 ==== Known Extraction Failure Modes
 
@@ -468,9 +480,13 @@ If using self-hosted Mistral model weights, obtain legal sign-off confirming the
 
 *Go criteria:* ≥85% precision on key HMDA fields at AFC ≥ 0.85 threshold. *Kill criteria:* <70% precision at AFC ≥ 0.85 OR fallback rate >40% on representative corpus.
 
-*DECISION LOCKED:* Docling-Graph pipeline as baseline (Docling + Docling-Graph); primary LLM inference via LiteLLM / self-hosted Mistral/vLLM; cloud OCR fallback for degraded documents only. AuditIQ Field Confidence layer (AFC v2 with graph_corrob_score). See <<sect-decision-d1, Decision D1>>.
+*DECISION LOCKED:* Docling-Graph pipeline as baseline (Docling + Docling-Graph); primary LLM inference via LiteLLM / self-hosted Mistral/vLLM; cloud OCR fallback for degraded documents only.
+AuditIQ Field Confidence layer (AFC v2 with graph_corrob_score).
+See <<sect-decision-d1, Decision D1>>.
 
-*Determinism:* Deterministic within a Docling version + field extractor version. Same document + same versions = same extraction + same AFC. All versions logged as provenance.
+*Determinism:* Deterministic within a Docling version + field extractor version.
+Same document + same versions = same extraction + same AFC.
+All versions logged as provenance.
 
 [[sect-schema-mapping-service]]
 === Schema Mapping Service
@@ -542,7 +558,8 @@ Additional raw signals passed to Layer 2: - `conf_extraction`: AFC score from <<
 
 *Routing thresholds (calibrated score):*
 
-* ≥0.95: Auto-accept (reviewer sees green checkmark; ~10s visual confirmation). NOTE: Initial conservative threshold per <<sect-decision-d2, Decision D2>>; may be lowered to ≥0.90 after calibration validation on ≥500 mappings.
+* ≥0.95: Auto-accept (reviewer sees green checkmark; ~10s visual confirmation).
+NOTE: Initial conservative threshold per <<sect-decision-d2, Decision D2>>; may be lowered to ≥0.90 after calibration validation on ≥500 mappings.
 * 0.70–0.95: Human review required (reviewer evaluates suggestion; ~45s per field)
 * <0.70: Manual mapping required (no suggestion shown; reviewer selects from field list)
 
@@ -733,7 +750,8 @@ interface FindingOutput {
 
 *Execution performance target:* ≥500 records/minute for structured data (record-to-record).
 
-*Determinism:* Fully deterministic. Same inputs → same findings.
+*Determinism:* Fully deterministic.
+Same inputs → same findings.
 
 === Findings Management Service
 
@@ -888,7 +906,11 @@ interface EvidenceRecord {
 }
 ----
 
-*Append-only semantics:* When a user “replaces” an evidence file, the system: 1. Stores the new file with a new evidence_id 2. Creates a “supersedes” link from new to old 3. Marks the original as visible in history (never deleted) 4. Audit trail records both the original and the replacement
+*Append-only semantics:* When a user “replaces” an evidence file, the system: 1.
+Stores the new file with a new evidence_id 2.
+Creates a “supersedes” link from new to old 3.
+Marks the original as visible in history (never deleted) 4.
+Audit trail records both the original and the replacement
 
 [[sect-audit-trail-event-store]]
 === Audit Trail & Event Store (Immutable Log)
@@ -947,14 +969,16 @@ interface AuditEvent {
 
 ==== RFC 8785 Canonical JSON Serialization
 
-*MANDATORY:* All event payloads MUST be serialized using RFC 8785 (JSON Canonicalization Scheme) before hashing. This ensures: - Deterministic key ordering (lexicographic) - Consistent number formatting (no trailing zeros, no positive sign) - Consistent Unicode normalization - No optional whitespace
+*MANDATORY:* All event payloads MUST be serialized using RFC 8785 (JSON Canonicalization Scheme) before hashing.
+This ensures: - Deterministic key ordering (lexicographic) - Consistent number formatting (no trailing zeros, no positive sign) - Consistent Unicode normalization - No optional whitespace
 
 ....
 canonical_json = RFC8785.canonicalize(event_without_hash_fields)
 event_hash = SHA-256(canonical_json)
 ....
 
-*Implementation requirement:* Use a well-tested RFC 8785 library (e.g., `canonicalize` npm package or equivalent). Do NOT hand-roll canonical JSON — edge cases (Unicode escaping, number precision, key ordering with special characters) are subtle and produce silent hash mismatches.
+*Implementation requirement:* Use a well-tested RFC 8785 library (e.g., `canonicalize` npm package or equivalent).
+Do NOT hand-roll canonical JSON — edge cases (Unicode escaping, number precision, key ordering with special characters) are subtle and produce silent hash mismatches.
 
 *Write-time validation:* Every event MUST pass round-trip verification before persistence:
 
@@ -1039,7 +1063,11 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 
 *Chain verification tool (MVP — Phase 1a):*
 
-* CLI tool that reads entire tenant event chain and verifies: 1. Every `event_hash` matches recomputed SHA-256 of RFC 8785-canonicalized event 2. Every `previous_event_hash` matches `event_hash` of preceding event (by sequence_id) 3. No gaps in sequence_id 4. All anchor hashes match WORM-stored values
+* CLI tool that reads entire tenant event chain and verifies: 1.
+Every `event_hash` matches recomputed SHA-256 of RFC 8785-canonicalized event 2.
+Every `previous_event_hash` matches `event_hash` of preceding event (by sequence_id) 3.
+No gaps in sequence_id 4.
+All anchor hashes match WORM-stored values
 * Output: “OK” or list of corrupted/missing events with sequence_id range
 
 *Periodic integrity check (automated):*
@@ -1062,7 +1090,12 @@ CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE
 * Enforce mandatory human approval for AI content
 * Export in multiple formats (PDF, CSV, XLSX, JSON)
 
-*Report generation flow:* 1. Admin or Manager initiates report generation 2. System loads pack report template 3. Findings data is aggregated per template sections 4. For AI-narrative sections: - AI generates draft labeled “[AI-DRAFT — REQUIRES APPROVAL]” - Manager reviews and approves - Approved narrative embedded in report 5. Report finalized, exported, and stored immutably
+*Report generation flow:* 1.
+Admin or Manager initiates report generation 2.
+System loads pack report template 3.
+Findings data is aggregated per template sections 4.
+For AI-narrative sections: - AI generates draft labeled “[AI-DRAFT — REQUIRES APPROVAL]” - Manager reviews and approves - Approved narrative embedded in report 5.
+Report finalized, exported, and stored immutably
 
 *Report template (pack-defined):*
 

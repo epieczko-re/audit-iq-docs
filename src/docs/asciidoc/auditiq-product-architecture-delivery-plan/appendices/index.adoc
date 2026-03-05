@@ -5,39 +5,51 @@
 
 *Audit (noun):* A review of lending compliance for one or more loan records against a pack of rules and policies.
 
-*Audit Event:* Immutable timestamped record of a change to audit state (e.g., “finding created”, “manager approval”, “report finalized”). See Appendix C.
+*Audit Event:* Immutable timestamped record of a change to audit state (e.g., “finding created”, “manager approval”, “report finalized”).
+See Appendix C.
 
-*Audit Pack (or Pack):* A declarative JSON specification defining rules, scoring weights, evidence requirements, and narratives for a compliance audit category (e.g., HMDA, CRA, ECOA). See <<sect-audit-pack-spec>>.
+*Audit Pack (or Pack):* A declarative JSON specification defining rules, scoring weights, evidence requirements, and narratives for a compliance audit category (e.g., HMDA, CRA, ECOA).
+See <<sect-audit-pack-spec>>.
 
-*Calibration:* Process of tuning confidence score thresholds to match historical reviewer decisions. See <<sect-confidence-calibration>>.
+*Calibration:* Process of tuning confidence score thresholds to match historical reviewer decisions.
+See <<sect-confidence-calibration>>.
 
-*Confidence Score:* Numeric value (0.0–1.0) representing the AI system’s certainty in a data extraction, schema mapping, or finding. Composed of mapping confidence + extraction confidence + rule confidence.
+*Confidence Score:* Numeric value (0.0–1.0) representing the AI system’s certainty in a data extraction, schema mapping, or finding.
+Composed of mapping confidence + extraction confidence + rule confidence.
 
-*Docling:* Open-source document parsing library that extracts text, tables, images from PDFs. Used for HMDA document extraction in Phase 1a.
+*Docling:* Open-source document parsing library that extracts text, tables, images from PDFs.
+Used for HMDA document extraction in Phase 1a.
 
 *Evidence:* A document, table cell, or data field that is linked to a finding as proof of compliance or violation.
 
-*Finding:* A structured record of a single compliance issue (or absence thereof) identified during an audit. Contains finding_id, target_record_id, rule_id, severity, confidence, narrative, approver.
+*Finding:* A structured record of a single compliance issue (or absence thereof) identified during an audit.
+Contains finding_id, target_record_id, rule_id, severity, confidence, narrative, approver.
 
 *Human-in-Loop:* Requirement for human (reviewer or manager) to explicitly approve or correct an AI-generated result before finalization.
 
-*Immutability:* Property that audit events, evidence files, and finalized findings cannot be deleted or retroactively modified. Corrections are recorded as new compensating events (<<sect-immutability>>).
+*Immutability:* Property that audit events, evidence files, and finalized findings cannot be deleted or retroactively modified.
+Corrections are recorded as new compensating events (<<sect-immutability>>).
 
 *LogMap:* Semantic web ontology matching library; AuditIQ evaluates it as a potential schema matcher replacement in Phase 2.
 
 *Manager:* Reviewer role with authority to escalate findings, adjust severity, and approve audit finalization.
 
-*Pack Manifest:* JSON file defining pack metadata, rule list, evidence requirements, and versioning. See Appendix B.
+*Pack Manifest:* JSON file defining pack metadata, rule list, evidence requirements, and versioning.
+See Appendix B.
 
 *Reviewer:* Primary auditor role; responsible for extracting evidence, creating findings, and requesting overrides.
 
-*RLS (Row-Level Security):* PostgreSQL feature that restricts data access based on user tenant. AuditIQ relies on RLS for tenant isolation.
+*RLS (Row-Level Security):* PostgreSQL feature that restricts data access based on user tenant.
+AuditIQ relies on RLS for tenant isolation.
 
-*Sampling:* Random or stratified selection of records from a population to audit. Pack can define sampling methodology.
+*Sampling:* Random or stratified selection of records from a population to audit.
+Pack can define sampling methodology.
 
-*Schema Matcher:* Component that maps extracted HMDA field values to audit pack schema fields with confidence scores. See <<sect-schema-mapping-service>>.
+*Schema Matcher:* Component that maps extracted HMDA field values to audit pack schema fields with confidence scores.
+See <<sect-schema-mapping-service>>.
 
-*Snapshot:* Immutable record of audit state at a point in time (used for reproducibility & rollback to prior version without re-running extraction). See <<sect-immutability>>.
+*Snapshot:* Immutable record of audit state at a point in time (used for reproducibility & rollback to prior version without re-running extraction).
+See <<sect-immutability>>.
 
 *Source Documents (Source Data):* The evidence documents against which target records are compared — original loan file artifacts (PDFs, images, or a second structured dataset in record-to-record audits).
 Extraction from source documents produces confidence scores (AFC) because OCR and layout parsing introduce uncertainty.
@@ -251,9 +263,22 @@ Attachments:
 
 === Appendix E: References (Source Documents)
 
-*Carry forward from v0.1:* 1. AuditIQ_Comprehensive_Spec_v0.1.md – Original specification 2. HMDA_Rule_2024_Amendment – Federal Register citation & full text 3. CRA_Examination_Procedures – Federal Reserve publication 4. ECOA_Fair_Lending_Handbook – FRB, OCC publication 5. SOC_2_2022_Trust_Service_Criteria – AICPA framework
+*Carry forward from v0.1:* 1.
+AuditIQ_Comprehensive_Spec_v0.1.md – Original specification 2.
+HMDA_Rule_2024_Amendment – Federal Register citation & full text 3.
+CRA_Examination_Procedures – Federal Reserve publication 4.
+ECOA_Fair_Lending_Handbook – FRB, OCC publication 5.
+SOC_2_2022_Trust_Service_Criteria – AICPA framework
 
-*New references for v0.2:* 6. Docling Documentation – PDF/document extraction library (https://github.com/ds4sd/docling) 7. GraphQL Best Practices – Apollo & community resources 8. PostgreSQL RLS Documentation – Row-level security implementation guide 9. OpenAI API Reference – Completion & embedding models 10. PCI DSS v3.2.1 – Payment Card Industry security framework 11. NIST AI Risk Management Framework – AI governance guidance (https://airc.nist.gov/AI_RMF_Interactivity) 12. Immutable Audit Trail Patterns – Journal of Information Security & Privacy 13. Internal the primary competitor Pricing Study – Proprietary pricing intelligence (~141 customers)
+*New references for v0.2:* 6.
+Docling Documentation – PDF/document extraction library (https://github.com/ds4sd/docling) 7.
+GraphQL Best Practices – Apollo & community resources 8.
+PostgreSQL RLS Documentation – Row-level security implementation guide 9.
+OpenAI API Reference – Completion & embedding models 10.
+PCI DSS v3.2.1 – Payment Card Industry security framework 11.
+NIST AI Risk Management Framework – AI governance guidance (https://airc.nist.gov/AI_RMF_Interactivity) 12.
+Immutable Audit Trail Patterns – Journal of Information Security & Privacy 13.
+Internal the primary competitor Pricing Study – Proprietary pricing intelligence (~141 customers)
 
 '''
 
@@ -261,7 +286,8 @@ Attachments:
 
 *TO:* AuditIQ Steering Committee *FROM:* CEO *DATE:* February 2026 *RE:* Q2 2026 MVP Launch Commitment
 
-We are committed to launching AuditIQ MVP by June 30, 2026. The specification in this document reflects our product vision and delivery plan.
+We are committed to launching AuditIQ MVP by June 30, 2026.
+The specification in this document reflects our product vision and delivery plan.
 
 *Key Commitments:*
 1. *Go/No-Go decision:* June 15, 2026 (hard deadline)

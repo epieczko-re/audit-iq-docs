@@ -2,12 +2,14 @@
 == Docling-Graph Integration with Schema Mapping
 
 ____
-*v0.2 Addition.* This section documents how the Schema Mapping Service (<<sect-schema-mapping-service>>) consumes Docling-Graph's Pydantic objects and directed knowledge graph, and how Audit Packs must reference Pydantic templates. The graph-aware mapping approach improves determinism and reduces heuristic noise by operating on typed, validated entities and explicit relationships rather than raw OCR text.
+*v0.2 Addition.* This section documents how the Schema Mapping Service (<<sect-schema-mapping-service>>) consumes Docling-Graph's Pydantic objects and directed knowledge graph, and how Audit Packs must reference Pydantic templates.
+The graph-aware mapping approach improves determinism and reduces heuristic noise by operating on typed, validated entities and explicit relationships rather than raw OCR text.
 ____
 
 === Purpose
 
-With Docling-Graph adopted as the baseline extraction pipeline (<<sect-doc-processing>>), the Schema Mapping Service can consume structured graph outputs rather than flat extracted fields. This enables:
+With Docling-Graph adopted as the baseline extraction pipeline (<<sect-doc-processing>>), the Schema Mapping Service can consume structured graph outputs rather than flat extracted fields.
+This enables:
 
 * *Graph-pattern matching:* Map HMDA target fields to graph node properties rather than raw text positions
 * *Typed validation:* Pydantic objects enforce field types at extraction time — invalid values are rejected before mapping
@@ -177,7 +179,8 @@ Audit Pack manifests must be extended to reference Pydantic templates:
 }
 ----
 
-*Migration path:* Existing packs without `extraction_config.docling_graph_enabled` default to legacy extraction (Docling only, AFC v1). Packs opt into Docling-Graph by setting this flag and providing template references.
+*Migration path:* Existing packs without `extraction_config.docling_graph_enabled` default to legacy extraction (Docling only, AFC v1).
+Packs opt into Docling-Graph by setting this flag and providing template references.
 
 === Cross-References
 

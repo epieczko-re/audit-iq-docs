@@ -43,13 +43,17 @@ combined_confidence = min(
 
 *Interpretation:*
 
-* *≥0.85:* High confidence. Auto-confirm if desired; does not require human review.
-* *0.50–0.84:* Medium confidence. Recommend human verification; display in UI for secondary review.
-* *<0.50:* Low confidence. Reject finding; flag for manual re-review if critical issue.
+* *≥0.85:* High confidence.
+Auto-confirm if desired; does not require human review.
+* *0.50–0.84:* Medium confidence.
+Recommend human verification; display in UI for secondary review.
+* *<0.50:* Low confidence.
+Reject finding; flag for manual re-review if critical issue.
 
 === Severity Scoring (Pack-Defined)
 
-*Severity defines regulatory importance, not system confidence. Orthogonal to confidence.*
+*Severity defines regulatory importance, not system confidence.
+Orthogonal to confidence.*
 
 *Severity levels (per HMDA pack):*
 
@@ -63,7 +67,10 @@ combined_confidence = min(
 |*Informational* |Data point of interest; no action required |Historical note, data type conversion artifact |Log only; no action |Informational only
 |===
 
-*Severity is assigned by:* 1. Pack rule definition (default severity) 2. Optionally overridden by Reviewer with justification 3. May be escalated by Manager if pattern detected
+*Severity is assigned by:* 1.
+Pack rule definition (default severity) 2.
+Optionally overridden by Reviewer with justification 3.
+May be escalated by Manager if pattern detected
 
 *Severity is immutable once finding is triaged* (unless explicitly re-scored by Manager with audit trail event).
 
@@ -82,12 +89,14 @@ combined_confidence = min(
 |*Escalation override* |Manager resolves escalated finding |Manager |Must provide resolution rationale
 |===
 
-*Implementation:* API gateway middleware checks conditions before state transitions. If condition triggers, state change is blocked with error message and audit event is logged.
+*Implementation:* API gateway middleware checks conditions before state transitions.
+If condition triggers, state change is blocked with error message and audit event is logged.
 
 [[sect-confidence-calibration]]
 === Confidence Calibration & Monitoring
 
-*Calibration rationale:* Confidence scores from Docling, schema matcher, and rules engine are learned/heuristic-based. They must be calibrated against ground truth (human decisions) to remain accurate.
+*Calibration rationale:* Confidence scores from Docling, schema matcher, and rules engine are learned/heuristic-based.
+They must be calibrated against ground truth (human decisions) to remain accurate.
 
 *Calibration approach (Phase 2):*
 

@@ -2,7 +2,9 @@
 == Model Registry & AI Model Metadata
 
 ____
-*v0.2 Addition.* <<sect-ai-provenance>> mandates that every AI API call logs `model_name`, `model_version`, `prompt_template_id`, `prompt_template_version`, `retrieval_corpus_id`, and `retrieval_corpus_version`. This section defines *where* that metadata lives, *how* model versions are registered and governed, and *the API contract* for recording and querying model provenance at run-time. Without a model registry, the provenance fields in <<sect-ai-provenance>> are unanchored — there is no authoritative source to validate that a given `model_name + model_version` combination is approved for production use.
+*v0.2 Addition.* <<sect-ai-provenance>> mandates that every AI API call logs `model_name`, `model_version`, `prompt_template_id`, `prompt_template_version`, `retrieval_corpus_id`, and `retrieval_corpus_version`.
+This section defines *where* that metadata lives, *how* model versions are registered and governed, and *the API contract* for recording and querying model provenance at run-time.
+Without a model registry, the provenance fields in <<sect-ai-provenance>> are unanchored — there is no authoritative source to validate that a given `model_name + model_version` combination is approved for production use.
 ____
 
 === Purpose
@@ -16,7 +18,8 @@ The Model Registry serves three functions:
 
 === What Constitutes a "Model"
 
-Under SR 11-7, a model is any quantitative method, system, or approach that applies statistical, economic, financial, or mathematical theories to process input data into quantitative estimates. In AuditIQ, the following components are registered as models:
+Under SR 11-7, a model is any quantitative method, system, or approach that applies statistical, economic, financial, or mathematical theories to process input data into quantitative estimates.
+In AuditIQ, the following components are registered as models:
 
 [cols="20%,20%,30%,30%",options="header"]
 |===
@@ -55,7 +58,8 @@ Under SR 11-7, a model is any quantitative method, system, or approach that appl
 
 === Storage: `model_registry` Table
 
-The registry is a Postgres table in the `ai` schema. Each row represents one versioned artifact.
+The registry is a Postgres table in the `ai` schema.
+Each row represents one versioned artifact.
 
 [source,sql]
 ----
@@ -189,7 +193,8 @@ interface ResolveModelResponse {
 }
 ----
 
-*Call-time gating:* If `resolve` returns no approved model for the requested `model_type + model_name`, the AI service must *fail closed* — return a structured error rather than calling an unapproved model. This is logged as an `ai_model_resolution_failed` audit event.
+*Call-time gating:* If `resolve` returns no approved model for the requested `model_type + model_name`, the AI service must *fail closed* — return a structured error rather than calling an unapproved model.
+This is logged as an `ai_model_resolution_failed` audit event.
 
 ==== Deprecate / Retire a Model
 
@@ -204,7 +209,8 @@ interface DeprecateModelRequest {
 }
 ----
 
-Deprecation is advisory (existing runs continue; new runs get a warning). Retirement is hard — calls to a retired model fail with `MODEL_RETIRED` error.
+Deprecation is advisory (existing runs continue; new runs get a warning).
+Retirement is hard — calls to a retired model fail with `MODEL_RETIRED` error.
 
 === Lifecycle State Machine
 

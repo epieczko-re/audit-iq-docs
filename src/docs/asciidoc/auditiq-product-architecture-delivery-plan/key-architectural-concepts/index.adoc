@@ -3,7 +3,10 @@
 
 === Audit Packs: The “Brain” Plugin Model
 
-An audit pack encapsulates everything needed to audit a specific regulatory domain. It is a versioned, declarative configuration artifact — not executable code. The platform interprets the pack to drive ingestion validation, schema mapping, comparison rules, scoring, and report generation. This makes AuditIQ extensible: adding a new regulation means creating a new pack, not modifying platform code.
+An audit pack encapsulates everything needed to audit a specific regulatory domain.
+It is a versioned, declarative configuration artifact — not executable code.
+The platform interprets the pack to drive ingestion validation, schema mapping, comparison rules, scoring, and report generation.
+This makes AuditIQ extensible: adding a new regulation means creating a new pack, not modifying platform code.
 
 *Phase 1:* One pack — HMDA Origination QC.
 Pre-built by RiskExec. +
@@ -80,7 +83,9 @@ AuditIQ applies confidence scoring at three independent layers:
 . *Extraction confidence:* How confident is the OCR/extraction pipeline that the extracted value from a source document is correct? (Based on OCR quality, layout complexity, document tier.)
 . *Rule application confidence:* How confident is the system that a validation rule correctly applies to this data context? (Based on precondition satisfaction, data quality, rule specificity.)
 
-These three scores are orthogonal. A finding can have high mapping confidence but low extraction confidence (the field match is clear, but the OCR struggled with the document). The combined confidence score — computed as the minimum of the three applicable scores — determines the human review requirement.
+These three scores are orthogonal.
+A finding can have high mapping confidence but low extraction confidence (the field match is clear, but the OCR struggled with the document).
+The combined confidence score — computed as the minimum of the three applicable scores — determines the human review requirement.
 
 *Combined confidence formula:*
 
@@ -92,7 +97,9 @@ When a layer is not applicable (e.g., no OCR involved in a record-to-record audi
 
 === Findings Severity vs. Confidence (Orthogonal Dimensions)
 
-Severity measures the regulatory importance of a finding (how bad is it?). Confidence measures how sure the system is that the finding is real (how certain is it?). These are independent:
+Severity measures the regulatory importance of a finding (how bad is it?).
+Confidence measures how sure the system is that the finding is real (how certain is it?).
+These are independent:
 
 [cols="25%,25%,30%,20%",options="header"]
 |===
@@ -105,7 +112,10 @@ Severity measures the regulatory importance of a finding (how bad is it?). Confi
 
 === Immutable Audit Trail with Regulator-Safe Semantics
 
-Every state change in the system is recorded as an immutable event. Events are append-only and hash-chained for tamper evidence. The system differentiates between truly immutable artifacts (evidence, events) and correctible artifacts (findings, mappings) where corrections are modeled as new events that supersede prior state. See <<sect-immutability>> for the full immutability/correctability specification.
+Every state change in the system is recorded as an immutable event.
+Events are append-only and hash-chained for tamper evidence.
+The system differentiates between truly immutable artifacts (evidence, events) and correctible artifacts (findings, mappings) where corrections are modeled as new events that supersede prior state.
+See <<sect-immutability>> for the full immutability/correctability specification.
 
 === Architecture Diagrams
 

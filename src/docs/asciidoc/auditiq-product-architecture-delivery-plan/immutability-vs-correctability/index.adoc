@@ -23,9 +23,14 @@ graph TD
 
 === The Problem: Audit Trail Integrity vs. Operational Reality
 
-*Regulator expectation:* Audit trail is immutable and append-only. No deletions, no retroactive changes. Entire audit history is reconstructible from the log.
+*Regulator expectation:* Audit trail is immutable and append-only.
+No deletions, no retroactive changes.
+Entire audit history is reconstructible from the log.
 
-*Operational reality:* Mistakes happen. A finding might be marked “critical” but later determined to be a false positive. A mapping might be wrong and need correction. Reviewers expect “undo” or “edit” capabilities.
+*Operational reality:* Mistakes happen.
+A finding might be marked “critical” but later determined to be a false positive.
+A mapping might be wrong and need correction.
+Reviewers expect “undo” or “edit” capabilities.
 
 *The v0.1 Conflict:* How can we have a truly immutable audit trail while allowing corrections and preventing reviewer frustration?
 
@@ -109,7 +114,8 @@ No history is lost.
 === Immutability Guarantees via Cryptographic Hashing
 
 ____
-*Design updated per Audit Trail Defensibility Report.* Naive hash chaining is necessary but not sufficient — an attacker with database write access can rewrite the chain and recompute all subsequent hashes. This design adds RFC 8785 canonical serialization, global monotonic sequencing, and cryptographic anchoring.
+*Design updated per Audit Trail Defensibility Report.* Naive hash chaining is necessary but not sufficient — an attacker with database write access can rewrite the chain and recompute all subsequent hashes.
+This design adds RFC 8785 canonical serialization, global monotonic sequencing, and cryptographic anchoring.
 ____
 
 *Each audit event includes the following tamper-evidence fields (see <<sect-audit-trail-event-store>> for full schema):*
@@ -170,7 +176,8 @@ ____
 |*Audit finalized; then regulator finds issue* |Event: “audit_reopened” with reason. Compensating event resets status. New findings/corrections appended. |✓ Yes
 |===
 
-*Key principle:* Corrections are *additive* (new events + versions), not *destructive* (deletions). Audit trail grows; it never shrinks.
+*Key principle:* Corrections are *additive* (new events + versions), not *destructive* (deletions).
+Audit trail grows; it never shrinks.
 
 === Regulatory Compliance & Litigation Defensibility
 
@@ -190,10 +197,14 @@ ____
 
 *Regulator interview talking points:*
 
-* “Our immutable event log uses RFC 8785 canonical JSON serialization and SHA-256 hash chaining. No event can be deleted or modified retroactively — any change breaks the cryptographic chain and is immediately detectable.”
-* “Corrections are recorded as compensating events, not deletions. The entire decision trail is visible and reconstructible.”
-* “We write cryptographic anchor hashes to WORM storage every 100 events. Even a database administrator cannot silently rewrite the audit trail.”
-* “Reports can be versioned; old reports are preserved. You can see what was finalized, what changed, and why.”
+* “Our immutable event log uses RFC 8785 canonical JSON serialization and SHA-256 hash chaining.
+No event can be deleted or modified retroactively — any change breaks the cryptographic chain and is immediately detectable.”
+* “Corrections are recorded as compensating events, not deletions.
+The entire decision trail is visible and reconstructible.”
+* “We write cryptographic anchor hashes to WORM storage every 100 events.
+Even a database administrator cannot silently rewrite the audit trail.”
+* “Reports can be versioned; old reports are preserved.
+You can see what was finalized, what changed, and why.”
 * “Our design aligns with NIST SP 800-53 Rev 5 controls AU-9, AU-10, and AU-11, and FFIEC IT Examination Handbook requirements for log controls and isolated storage.”
 
 *Cross-references:*

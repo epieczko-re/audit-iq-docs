@@ -1,9 +1,11 @@
 [[sect-executive-summary]]
 == Executive Summary
 
-AuditIQ is a new module for the RiskExec platform that transforms how financial institutions perform lending quality control and compliance audits. It replaces manual “stare-and-compare” audit workflows — where reviewers tediously compare loan data fields against source documents using spreadsheets and email — with a structured, confidence-scored, evidence-managed platform that serves all three lines of defense (QC, compliance, and audit) in a single system.
+AuditIQ is a new module for the RiskExec platform that transforms how financial institutions perform lending quality control and compliance audits.
+It replaces manual “stare-and-compare” audit workflows — where reviewers tediously compare loan data fields against source documents using spreadsheets and email — with a structured, confidence-scored, evidence-managed platform that serves all three lines of defense (QC, compliance, and audit) in a single system.
 
-*Why now:* Over 20% of existing RiskExec clients are already performing audit functions inside the platform using user-defined fields — a clear signal of unmet demand. The team is validating AuditIQ with 8–10 design partners and publishing credible launch timelines.
+*Why now:* Over 20% of existing RiskExec clients are already performing audit functions inside the platform using user-defined fields — a clear signal of unmet demand.
+The team is validating AuditIQ with 8–10 design partners and publishing credible launch timelines.
 
 *What makes it different from the primary competitor:*
 
@@ -12,6 +14,14 @@ AuditIQ is a new module for the RiskExec platform that transforms how financial 
 * Governance-first AI: every AI output is advisory, explainable, human-approved, and immutably logged.
 * Three-lines-of-defense support in one system, vs. the primary competitor’s QC-only focus.
 
-*Phase 1 MVP scope:* HMDA origination audit. Manual and OCR-assisted review modes. Findings management with remediation tracking. Manager dashboards. AI-assisted reporting. Exam-ready export bundle. Target: June 30, 2026.
+*Phase 1 MVP scope:* HMDA origination audit.
+Manual and OCR-assisted review modes.
+Findings management with remediation tracking.
+Manager dashboards.
+AI-assisted reporting.
+Exam-ready export bundle.
+Target: June 30, 2026.
 
-*Revenue opportunity:* $3–4M incremental ARR within 24 months at base-case 40 customers and $90K average ACV. Pricing model (<<sect-pricing>>) mirrors the primary competitor’s proven per-pack subscription tiers at 15–20% below incumbent rates, with AI governance controls included. The primary competitor’s ~141 customers average $135K ACV (banks: $167K; top logos: $481K–$934K); AuditIQ targets the same ACV range with superior value.
+*Revenue opportunity:* $3–4M incremental ARR within 24 months at base-case 40 customers and $90K average ACV.
+Pricing model (<<sect-pricing>>) mirrors the primary competitor’s proven per-pack subscription tiers at 15–20% below incumbent rates, with AI governance controls included.
+The primary competitor’s ~141 customers average $135K ACV (banks: $167K; top logos: $481K–$934K); AuditIQ targets the same ACV range with superior value.

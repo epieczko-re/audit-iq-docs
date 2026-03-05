@@ -2,7 +2,9 @@
 == UI Workflows and User Journeys
 
 ____
-*v0.2 Addition.* This section defines the primary user workflows through the AuditIQ system. Each workflow is represented as a flowchart diagram showing user actions, system actions, AI actions, decision points, and audit trail integration. These workflows serve as the foundation for screen design and front-end sprint planning.
+*v0.2 Addition.* This section defines the primary user workflows through the AuditIQ system.
+Each workflow is represented as a flowchart diagram showing user actions, system actions, AI actions, decision points, and audit trail integration.
+These workflows serve as the foundation for screen design and front-end sprint planning.
 
 *Color Legend:*
 
@@ -21,7 +23,8 @@ ____
 
 === Workflow 1: Audit Lifecycle (End-to-End)
 
-This is the primary happy-path workflow from login to exam-ready bundle export. It represents the complete user journey through a single audit.
+This is the primary happy-path workflow from login to exam-ready bundle export.
+It represents the complete user journey through a single audit.
 
 *Actors:* Auditor (primary), System, AI Engine *Trigger:* Auditor creates a new audit *End State:* Exam-ready bundle exported; all events immutable
 
@@ -195,7 +198,8 @@ This workflow details how extracted fields are mapped to the HMDA/MISMO target s
 . *Synonym dictionary update* — overrides optionally feed back to improve future matching
 . *Mapping approved* → field proceeds to rules engine scoring
 
-*Coverage Note:* With CD-only documents, expect ~10-20% of HMDA fields at ≥0.85 confidence. Full coverage requires 1003, appraisal, and title documents (Phase 2).
+*Coverage Note:* With CD-only documents, expect ~10-20% of HMDA fields at ≥0.85 confidence.
+Full coverage requires 1003, appraisal, and title documents (Phase 2).
 
 *Design Reference:* <<sect-schema-mapping-service>>, <<sect-decision-d2, Decision D2>>
 
@@ -340,7 +344,9 @@ flowchart TD
 === UI Development Strategy
 
 ____
-*Dual-track development:* AuditIQ follows both UI-driven and API-driven development practices. The workflows above define the user journeys; the API contracts in <<sect-component-design>> define the backend interfaces. Screen designs (Phase 2 of this section) will be developed from these workflows.
+*Dual-track development:* AuditIQ follows both UI-driven and API-driven development practices.
+The workflows above define the user journeys; the API contracts in <<sect-component-design>> define the backend interfaces.
+Screen designs (Phase 2 of this section) will be developed from these workflows.
 ____
 
 *Phase 1 — Workflow Diagrams (this section):*

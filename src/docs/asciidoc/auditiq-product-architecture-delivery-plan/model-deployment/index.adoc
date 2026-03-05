@@ -2,7 +2,8 @@
 == Model Deployment: Mistral Self-Hosted (Production Decision)
 
 ____
-*Executive decision (2026-03-01): YES.* AuditIQ should self-host selected open-weight Mistral models for regulated production extraction, with a deliberate hybrid fallback to cloud for difficult edge cases and burst elasticity. This section records the rationale, target architecture, and implementation plan.
+*Executive decision (2026-03-01): YES.* AuditIQ should self-host selected open-weight Mistral models for regulated production extraction, with a deliberate hybrid fallback to cloud for difficult edge cases and burst elasticity.
+This section records the rationale, target architecture, and implementation plan.
 ____
 
 === Decision Summary
@@ -65,7 +66,8 @@ AuditIQ's extraction workload is a strong fit for controlled local inference:
 |Use for exceptional documents only; treat as high-cost, multi-GPU capability tier.
 |===
 
-*Licensing posture:* Prioritize open-weight Apache-2.0 model families for production self-hosting. Treat premier/API-only families as cloud/contractual unless legal explicitly grants self-host rights.
+*Licensing posture:* Prioritize open-weight Apache-2.0 model families for production self-hosting.
+Treat premier/API-only families as cloud/contractual unless legal explicitly grants self-host rights.
 
 === Production Architecture Pattern
 
@@ -104,7 +106,8 @@ F --> G
 
 === Security, Compliance, and Provenance Requirements
 
-* *Private inference boundary:* No public inference endpoints. Run within private subnets/VPC.
+* *Private inference boundary:* No public inference endpoints.
+Run within private subnets/VPC.
 * *Transport security:* mTLS/TLS between pipeline services, router, and inference runtime.
 * *PII controls remain mandatory:* Apply deterministic redaction before LLM calls for both self-hosted and fallback paths.
 * *Model registry (deny-by-default):* Permit only approved model IDs and artifact digests.
@@ -114,7 +117,8 @@ F --> G
 === Hardware and Scaling Guidance
 
 ____
-*Planning note:* Capacity must be validated with AuditIQ document distributions and Docling-Graph contract modes. Published throughput claims are directional only.
+*Planning note:* Capacity must be validated with AuditIQ document distributions and Docling-Graph contract modes.
+Published throughput claims are directional only.
 ____
 
 [cols="25%,25%,50%",options="header"]
