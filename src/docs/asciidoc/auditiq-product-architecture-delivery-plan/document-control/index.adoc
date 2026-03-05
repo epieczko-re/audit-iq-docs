@@ -5,8 +5,8 @@
 [cols="9%,12%,32%,47%",options="header"]
 |===
 |Version |Date |Author(s) |Changes
-|0.1 |2026-02-27 |Erik Pieczkowski (via Claude) |Initial comprehensive spec — Sections 0–6 full; 7–18 detailed stubs
-|0.2 |2026-02-27 |Erik Pieczkowski (via Claude) |Build-ready spec — all stubs replaced with implementable detail; new sections 19–22 added (MVP Decisions, Immutability, Exam Bundle, AI Governance); MVP Cutline produced
+|0.1 |2026-02-27 |Erik Pieczkowski |Initial comprehensive spec — Sections 0–6 full; 7–18 detailed stubs
+|0.2 |2026-02-27 |Erik Pieczkowski |Build-ready spec — all stubs replaced with implementable detail; new sections 19–22 added (MVP Decisions, Immutability, Exam Bundle, AI Governance); MVP Cutline produced
 |===
 
 === Authors / Owners
@@ -35,9 +35,9 @@
 
 This document serves three audiences simultaneously:
 
-* *Engineering team:* Sprint-plan against Sections 7–12 and 19–22. Each section contains explicit contracts, schemas, and acceptance criteria that can be decomposed into user stories and tasks. See the companion WBS (AuditIQ_WBS_v0.2.xlsx) for task breakdown.
-* *Product / leadership:* Read Sections 1–6 for context and competitive positioning. Review Section 13 (Pricing placeholder), Section 14 (Delivery Plan), Section 19 (MVP Decisions), and the MVP Cutline (AuditIQ_MVP_Cutline_v0.2.md) for investment decisions.
-* *Compliance / regulatory stakeholders:* Focus on Sections 12 (Scoring), 20 (Immutability), 21 (Exam Bundle), and 22 (AI Governance) for regulatory defensibility.
+* *Engineering team:* Sprint-plan against Sections 7–12 (Key Architectural Concepts through Data Model), Sections 20–23 (MVP Decisions, Immutability, Exam Bundle, AI Governance), and Sections 24–27 (UI Workflows, Model Registry, Model Deployment, Docling-Graph Integration). Each section contains explicit contracts, schemas, and acceptance criteria that can be decomposed into user stories and tasks. See the companion WBS (AuditIQ_WBS_v0.2.xlsx) for task breakdown.
+* *Product / leadership:* Read Sections 1–6 for context and competitive positioning. Review Section 14 (Pricing and Packaging), Section 15 (Delivery Plan), Section 20 (MVP Decisions Locked), and the MVP Cutline (AuditIQ_MVP_Cutline_v0.2.md) for investment decisions. Section 16 (Risks, Constraints, and Mitigations) and Section 18 (Decisions and Open Questions) provide risk and decision context.
+* *Compliance / regulatory stakeholders:* Focus on Section 13 (Scoring Framework), Section 21 (Immutability vs. Correctability), Section 22 (Exam-Ready Bundle), and Section 23 (AI Governance & Model Risk Controls) for regulatory defensibility. Section 25 (Model Registry) and Section 28 (Glossary) provide supporting reference material.
 
 *Canonical Glossary:* All confidence metrics (AFC, mapping_confidence, extraction_confidence, rule_confidence, combined_confidence), routing thresholds, severity definitions, and calibration criteria are defined in a *single source of truth*: the *Canonical Glossary* (Appendix — Glossary). If a threshold value elsewhere in this document conflicts with the Glossary, the Glossary governs.
 

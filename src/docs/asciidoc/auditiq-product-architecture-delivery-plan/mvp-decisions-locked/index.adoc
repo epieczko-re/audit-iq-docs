@@ -94,7 +94,7 @@ ____
 |Pure string matching (Levenshtein/Jaccard) |Name similarity only |70–80% (fails on synonyms like “loan_type” vs. “mortgage_product”) |<10ms |Yes — insufficient
 |LogMap / ontology-based |Formal ontology alignment |90–95% (requires ontology) |100ms–1s |Parallel research track
 |Embedding-based (NLP) |Semantic vector similarity |88–94% (requires training data) |50–200ms |Deferred Phase 2
-|LLM-based (zero-shot) |GPT-4 / Claude mapping |92–97% (zero-shot) |1–3s; $0.01–0.05/mapping |Deferred Phase 2 reranking
+|LLM-based (zero-shot) |GPT-4 / LLM mapping |92–97% (zero-shot) |1–3s; $0.01–0.05/mapping |Deferred Phase 2 reranking
 |===
 
 *Mapping Pattern Taxonomy (5 types the matcher must handle):*
