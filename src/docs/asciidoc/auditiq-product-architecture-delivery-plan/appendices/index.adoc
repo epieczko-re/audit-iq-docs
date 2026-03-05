@@ -242,7 +242,7 @@ Attachments:
 
 *Carry forward from v0.1:* 1. AuditIQ_Comprehensive_Spec_v0.1.md – Original specification 2. HMDA_Rule_2024_Amendment – Federal Register citation & full text 3. CRA_Examination_Procedures – Federal Reserve publication 4. ECOA_Fair_Lending_Handbook – FRB, OCC publication 5. SOC_2_2022_Trust_Service_Criteria – AICPA framework
 
-*New references for v0.2:* 6. Docling Documentation – PDF/document extraction library (https://github.com/ds4sd/docling) 7. GraphQL Best Practices – Apollo & community resources 8. PostgreSQL RLS Documentation – Row-level security implementation guide 9. OpenAI API Reference – Completion & embedding models 10. PCI DSS v3.2.1 – Payment Card Industry security framework 11. NIST AI Risk Management Framework – AI governance guidance (https://airc.nist.gov/AI_RMF_Interactivity) 12. Immutable Audit Trail Patterns – Journal of Information Security & Privacy 13. Internal ACES Pricing Study – Proprietary pricing intelligence (~141 customers)
+*New references for v0.2:* 6. Docling Documentation – PDF/document extraction library (https://github.com/ds4sd/docling) 7. GraphQL Best Practices – Apollo & community resources 8. PostgreSQL RLS Documentation – Row-level security implementation guide 9. OpenAI API Reference – Completion & embedding models 10. PCI DSS v3.2.1 – Payment Card Industry security framework 11. NIST AI Risk Management Framework – AI governance guidance (https://airc.nist.gov/AI_RMF_Interactivity) 12. Immutable Audit Trail Patterns – Journal of Information Security & Privacy 13. Internal the primary competitor Pricing Study – Proprietary pricing intelligence (~141 customers)
 
 '''
 

@@ -47,4 +47,4 @@ This document serves three audiences simultaneously:
 * *ASSUMPTION* = a belief stated explicitly; risk if wrong is documented
 * *DECISION NEEDED* = requires stakeholder input before proceeding
 * *DECISION LOCKED* = decided for MVP; revisit criteria documented in Section 19
-* Items labeled _(Source: …)_ are traceable to reference documents listed in Appendix D.
+* Reference documents are listed in Appendix D.

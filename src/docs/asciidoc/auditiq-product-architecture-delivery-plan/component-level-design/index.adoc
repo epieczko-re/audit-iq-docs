@@ -106,7 +106,7 @@ Docling (document conversion & VLM)
 * Trace/debug exports for provenance and troubleshooting
 * *MIT-licensed* — lower licensing risk than GPL-linked alternatives
 
-_(Source: Docling-Graph README, https://github.com/docling-project/docling-graph)_
+_See: Docling-Graph README (https://github.com/docling-project/docling-graph)_
 
 *LLM Integration (LiteLLM / Mistral):* Docling-Graph integrates with *LiteLLM* — a single interface to local and remote LLM runtimes (vLLM, Ollama) and cloud providers (Mistral, OpenAI). For Phase 1 the recommended LLM inference path is *self-hosted Mistral* using vLLM or Ollama orchestrated via LiteLLM, with `provider_override` set to `mistral` in Docling-Graph configs. This provides high throughput, lower per-call cost at scale, and improved data residency controls while preserving the option to use cloud LLMs during early validation. See Section 25 (Model Deployment: Mistral Self-Hosted) for hardware and operational guidance.
 

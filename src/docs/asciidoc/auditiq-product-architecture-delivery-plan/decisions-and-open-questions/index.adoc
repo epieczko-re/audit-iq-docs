@@ -51,7 +51,7 @@
 |*A3: LLM narrative generation cost <$0.50 per finding* |Financial |Medium |LLM costs spiral; business model unviable. |Prompt optimization; caching; monthly cost monitoring.
 |*A4: RiskExec API will be available + stable through launch* |External |Medium |Pack instantiation blocked; must build manual fallback. |Early engagement; caching + fallback data pipeline.
 |*A5: Regulators will accept append-only audit trail (no deletions) as compliant* |Regulatory |Medium |Audit trail design rejected; requires rework. |Early regulator engagement (Q1); legal review.
-|*A6: ~141 ACES customers represent addressable market for AuditIQ* |Market |High |Market TAM overestimated; sales forecast fails. |Customer interviews; TAM refinement by Apr 2026.
+|*A6: ~141 primary competitor customers represent addressable market for AuditIQ* |Market |High |Market TAM overestimated; sales forecast fails. |Customer interviews; TAM refinement by Apr 2026.
 |*A7: PII redaction before LLM calls is technically feasible + low-cost (<5% overhead)* |Technical |Medium |LLM calls become too expensive; data residency required. |Phase 1b POC; benchmark redaction latency.
 |*A8: Beta customers (3–5) will provide sufficient feedback for Q3 roadmap* |Product |High |Roadmap misses critical features; Phase 2 delayed. |Early customer selection; weekly feedback calls.
 |===
