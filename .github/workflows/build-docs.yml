@@ -115,7 +115,7 @@ jobs:
             -a imagesoutdir="$DOC_DIR" \
             -a data-uri \
             -a allow-uri-read \
-            -a stylesdir=src/docs/resources/styles \
+            -a stylesdir=${{ github.workspace }}/src/docs/resources/styles \
             -a stylesheet=riskexec.css \
             -a toc=left \
             -a toclevels=3 \

@@ -58,7 +58,7 @@ html: $(BUILD_DIR) ## Build HTML output
 	asciidoctor \
 		$(ASCIIDOCTOR_COMMON) \
 		-a data-uri \
-		-a stylesdir=$(STYLES_DIR) \
+		-a stylesdir=$(CURDIR)/$(STYLES_DIR) \
 		-a stylesheet=riskexec.css \
 		-a toc=left \
 		-a toclevels=3 \
