@@ -1,0 +1,779 @@
+[[sect-regulatory-compliance]]
+== Regulatory Compliance Hierarchy and Policy Management
+
+Regulations do not exist in isolation.
+A regulator creates a rule, then publishes guidance interpreting that rule.
+The institution subject to the regulation writes internal policies and procedures to comply with the rule and its guidance.
+An audit must verify compliance not merely against the raw regulation, but against the institution's own policies and procedures — because that is what examiners actually test against.
+
+This section specifies how AuditIQ models this full hierarchy and how institution-specific policies and procedures are incorporated into the audit rule set.
+For the base Audit Pack architecture, rule engine, and HMDA field coverage, see <<sect-audit-pack-spec>>.
+
+[[sect-regulatory-compliance-hierarchy]]
+=== The Compliance Hierarchy
+
+.Regulatory Compliance Hierarchy — From Rule to Audit
+[mermaid]
+----
+graph TD
+  A["<b>Layer 1 — Regulation</b><br/>Federal rule with force of law<br/><i>e.g., 12 CFR 1003 (Reg C / HMDA)</i>"] --> B["<b>Layer 2 — Regulatory Guidance</b><br/>Interpretive guidance from the regulator<br/><i>e.g., CFPB Exam Procedures, FFIEC Guidelines</i>"]
+  B --> C["<b>Layer 3 — Institution Policy</b><br/>Board-approved compliance policy<br/><i>e.g., ABC Bank HMDA Data Integrity Policy</i>"]
+  C --> D["<b>Layer 4 — Institution Procedures</b><br/>Operational procedures implementing the policy<br/><i>e.g., ABC Bank HMDA Data Collection Procedures</i>"]
+  D --> E["<b>Layer 5 — Audit Rule Set</b><br/>Effective rules used to perform the audit<br/><i>Regulatory Pack + Institution Policy Profile = Effective Rules</i>"]
+
+  style A fill:#1B3A5C,color:#fff,stroke:#0F2440
+  style B fill:#2B5A8C,color:#fff,stroke:#1B3A5C
+  style C fill:#4A6FA5,color:#fff,stroke:#2B5A8C
+  style D fill:#6A8FBF,color:#fff,stroke:#4A6FA5
+  style E fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Layer 1 — Regulation:* A federal or state rule with the force of law.
+This is the regulatory floor — every institution subject to the regulation must comply.
+Example: 12 CFR 1003 (Regulation C) governs HMDA data collection and reporting.
+
+*Layer 2 — Regulatory Guidance:* Interpretive guidance published by the regulator to clarify how the rule should be implemented and examined.
+Guidance does not have the force of law, but examiners use it as their playbook.
+Example: CFPB HMDA Examination Procedures, FFIEC Interagency Guidelines.
+
+*Layer 3 — Institution Policy:* The institution's board-approved compliance policy that addresses how it will comply with the regulation and guidance.
+Policies are typically high-level statements of intent, risk appetite, and organizational responsibilities.
+Example: "ABC Bank HMDA Data Integrity Policy" stating that all HMDA data will be validated against source documents within 30 days of closing.
+
+*Layer 4 — Institution Procedures:* Operational procedures that implement the policy — the step-by-step instructions for staff.
+Procedures are where the institution's specific thresholds, tolerances, escalation paths, and documentation requirements live.
+Example: "ABC Bank HMDA Data Collection Procedures" specifying that loan amount discrepancies exceeding $25 require supervisor review (stricter than the regulatory standard).
+
+*Layer 5 — Audit Rule Set:* The effective rules used to perform the audit.
+This is the composition of the base Regulatory Pack (Layers 1–2) and the Institution Policy Profile (Layers 3–4).
+The pack provides the regulatory floor; the policy profile tightens, extends, and contextualizes it for the specific institution.
+
+=== Why Institution Policies Matter for Auditing
+
+Examiners do not audit solely against the regulation.
+They audit against the institution's own policies and procedures — and then assess whether those policies adequately implement the regulation.
+This creates two distinct audit dimensions:
+
+. *Regulatory compliance:* Does the institution's data and documentation meet the regulatory requirements?
+(Answered by the base Regulatory Pack.)
+. *Policy adherence:* Does the institution follow its own policies and procedures?
+(Answered by the Institution Policy Profile overlay.)
+
+An institution can be in regulatory compliance but in violation of its own policy.
+An examiner will cite both.
+AuditIQ must test both.
+
+.Two Audit Dimensions — Regulatory Compliance vs. Policy Adherence
+[mermaid]
+----
+graph LR
+  subgraph "Regulatory Pack (Layers 1–2)"
+    R1["Reg Rule: Loan amount must<br/>match within ±$50"]
+    R2["Reg Rule: Action Taken date<br/>within 30 days of application"]
+    R3["Reg Rule: Interest rate matches<br/>CD within ±0.125%"]
+  end
+
+  subgraph "Institution Policy Profile (Layers 3–4)"
+    P1["Policy Override: Loan amount<br/>must match within ±$25"]
+    P2["Supplemental: Rate-lock exceptions<br/>require dual sign-off"]
+    P3["Procedural: QC review completed<br/>within 15 days of closing"]
+  end
+
+  subgraph "Effective Rule Set (Layer 5)"
+    E1["Effective: Loan amount ±$25<br/><i>Policy tightened regulatory threshold</i>"]
+    E2["Effective: Action Taken date<br/>within 30 days<br/><i>Regulatory rule (no policy override)</i>"]
+    E3["Effective: Interest rate ±0.125%<br/><i>Regulatory rule (no policy override)</i>"]
+    E4["Effective: Rate-lock dual sign-off<br/><i>Policy supplemental rule</i>"]
+    E5["Effective: QC within 15 days<br/><i>Procedural checkpoint</i>"]
+  end
+
+  R1 --> E1
+  P1 --> E1
+  R2 --> E2
+  R3 --> E3
+  P2 --> E4
+  P3 --> E5
+
+  style R1 fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style R2 fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style R3 fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style P1 fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style P2 fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style P3 fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style E1 fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style E2 fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style E3 fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style E4 fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style E5 fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+=== Three-Artifact Design
+
+AuditIQ models this hierarchy with three distinct artifacts that compose at runtime:
+
+.Three-Artifact Composition Model
+[mermaid]
+----
+graph LR
+  A["<b>Regulatory Pack</b><br/>Authored by RiskExec<br/>Regulatory floor (Layers 1–2)<br/>Immutable, versioned"] -->|Merge| C["<b>Effective Rule Set</b><br/>Computed at runtime<br/>What the audit runs against<br/>Deterministic composition"]
+  B["<b>Institution Policy Profile</b><br/>AI-generated, human-approved<br/>Institution-specific (Layers 3–4)<br/>Immutable, versioned"] -->|Overlay| C
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style C fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Artifact 1 — Regulatory Pack (existing):* The base pack as specified in <<sect-audit-pack-spec>>.
+Contains all rules derived from the regulation and regulatory guidance.
+Authored exclusively by RiskExec.
+This is the regulatory floor — it cannot be weakened by any overlay.
+
+*Artifact 2 — Institution Policy Profile (new):* A structured, versioned configuration artifact that captures the institution's specific policies and procedures for the regulation the pack covers.
+Created via the AI-driven pipeline (see <<sect-ai-policy-pipeline>>) and approved by human compliance experts.
+The profile can tighten, extend, and contextualize the base pack, but it cannot weaken the regulatory floor.
+
+*Artifact 3 — Effective Rule Set (computed):* The deterministic merge of the Regulatory Pack and the Institution Policy Profile.
+This is what the audit engine actually executes.
+The merge is computed at audit-instance creation time and is immutable for the duration of the audit run.
+See <<sect-effective-rule-merge>> for the merge logic specification.
+
+[[sect-institution-policy-profile]]
+=== Institution Policy Profile Specification
+
+The Institution Policy Profile is a versioned JSON artifact with the following schema:
+
+[source,json]
+----
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AuditIQ Institution Policy Profile v1.0",
+  "type": "object",
+  "required": [
+    "profile_id",
+    "institution_id",
+    "institution_name",
+    "base_pack_id",
+    "base_pack_version_constraint",
+    "profile_version",
+    "created_date",
+    "status"
+  ],
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "description": "Unique profile identifier, format: {institution_id}-{regulation}-policy-profile",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "institution_id": {
+      "type": "string",
+      "description": "Unique institution identifier"
+    },
+    "institution_name": {
+      "type": "string"
+    },
+    "base_pack_id": {
+      "type": "string",
+      "description": "The regulatory pack this profile overlays (e.g., 'hmda-origination-v1')"
+    },
+    "base_pack_version_constraint": {
+      "type": "string",
+      "description": "Semver range of compatible base pack versions (e.g., '>=1.0.0 <2.0.0')"
+    },
+    "profile_version": {
+      "type": "string",
+      "description": "Semantic versioning: MAJOR.MINOR.PATCH",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "published", "deprecated", "retired"]
+    },
+    "approved_by": {
+      "type": "array",
+      "description": "Human approvers who reviewed and approved this profile",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": "string" },
+          "organization": { "type": "string" },
+          "approval_date": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "policy_document_registry": {
+      "type": "array",
+      "description": "Institution policy and procedure documents that inform this profile",
+      "items": {
+        "type": "object",
+        "required": ["document_id", "title", "document_type", "effective_date"],
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "description": "Unique identifier for the policy document"
+          },
+          "title": {
+            "type": "string",
+            "description": "e.g., 'ABC Bank HMDA Data Integrity Policy v3.2'"
+          },
+          "document_type": {
+            "type": "string",
+            "enum": ["board_policy", "compliance_policy", "operating_procedure", "job_aid", "board_resolution", "risk_appetite_statement"],
+            "description": "Classification of the document within the institution's governance framework"
+          },
+          "effective_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "version": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string",
+            "description": "Department or individual responsible for maintaining the document"
+          },
+          "storage_reference": {
+            "type": "string",
+            "description": "URI or reference to the document in the institution's document store"
+          },
+          "regulations_addressed": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Regulations this document addresses, e.g., ['12 CFR 1003', 'Reg C']"
+          },
+          "ai_extraction_confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Overall confidence score from AI extraction of this document"
+          }
+        }
+      }
+    },
+    "threshold_overrides": {
+      "type": "array",
+      "description": "Institution-specific threshold tightenings applied to base pack rules",
+      "items": {
+        "type": "object",
+        "required": ["override_id", "base_rule_id", "override_type", "policy_citation"],
+        "properties": {
+          "override_id": { "type": "string" },
+          "base_rule_id": {
+            "type": "string",
+            "description": "The rule_id in the base pack that this override tightens"
+          },
+          "override_type": {
+            "type": "string",
+            "enum": ["tolerance_tighten", "severity_escalate", "confidence_raise"],
+            "description": "Type of override — all overrides must be stricter than the base rule"
+          },
+          "original_value": {
+            "type": "number",
+            "description": "The base pack's threshold value (for audit trail)"
+          },
+          "override_value": {
+            "type": "number",
+            "description": "The institution's stricter threshold value"
+          },
+          "policy_citation": {
+            "type": "object",
+            "required": ["document_id", "section"],
+            "properties": {
+              "document_id": { "type": "string" },
+              "section": { "type": "string" },
+              "page": { "type": "string" },
+              "quote": {
+                "type": "string",
+                "description": "Verbatim quote from the policy document supporting this override"
+              }
+            }
+          },
+          "ai_suggested": {
+            "type": "boolean",
+            "description": "Whether this override was suggested by AI during profile creation"
+          },
+          "approved": {
+            "type": "boolean",
+            "description": "Whether a human compliance expert has approved this override"
+          }
+        }
+      }
+    },
+    "supplemental_rules": {
+      "type": "array",
+      "description": "Additional audit rules driven by institution policy that go beyond the base regulatory pack",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "rule_name", "rule_type", "policy_citation"],
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "description": "Prefixed with 'policy-' to distinguish from regulatory rules"
+          },
+          "rule_name": { "type": "string" },
+          "rule_type": {
+            "type": "string",
+            "enum": ["documentation_check", "approval_verification", "timing_requirement", "escalation_trigger", "data_quality_check", "custom"],
+            "description": "Category of the supplemental rule"
+          },
+          "description": { "type": "string" },
+          "comparison_type": {
+            "type": "string",
+            "enum": ["exact_match", "tolerance_absolute", "tolerance_percentage", "temporal", "expression", "document_presence", "approval_chain"],
+            "description": "Extends base comparison types with policy-specific types"
+          },
+          "expression": {
+            "type": "string",
+            "description": "CEL expression for complex policy logic"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "informational"]
+          },
+          "policy_citation": {
+            "type": "object",
+            "required": ["document_id", "section"],
+            "properties": {
+              "document_id": { "type": "string" },
+              "section": { "type": "string" },
+              "page": { "type": "string" },
+              "quote": { "type": "string" }
+            }
+          },
+          "ai_suggested": { "type": "boolean" },
+          "approved": { "type": "boolean" }
+        }
+      }
+    },
+    "procedural_checkpoints": {
+      "type": "array",
+      "description": "Documentation and procedural requirements from the institution's operating procedures",
+      "items": {
+        "type": "object",
+        "required": ["checkpoint_id", "checkpoint_name", "checkpoint_type", "policy_citation"],
+        "properties": {
+          "checkpoint_id": { "type": "string" },
+          "checkpoint_name": { "type": "string" },
+          "checkpoint_type": {
+            "type": "string",
+            "enum": ["document_present", "signature_required", "approval_required", "timing_deadline", "review_completed", "exception_documented"],
+            "description": "Category of the procedural checkpoint"
+          },
+          "description": { "type": "string" },
+          "verification_method": {
+            "type": "string",
+            "enum": ["ai_document_detection", "field_check", "manual_attestation"],
+            "description": "How this checkpoint is verified during the audit"
+          },
+          "deadline_expression": {
+            "type": "string",
+            "description": "CEL expression for timing-based checkpoints, e.g., 'days_between(closing_date, qc_review_date) <= 15'"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "informational"]
+          },
+          "policy_citation": {
+            "type": "object",
+            "required": ["document_id", "section"],
+            "properties": {
+              "document_id": { "type": "string" },
+              "section": { "type": "string" },
+              "page": { "type": "string" },
+              "quote": { "type": "string" }
+            }
+          },
+          "ai_suggested": { "type": "boolean" },
+          "approved": { "type": "boolean" }
+        }
+      }
+    },
+    "policy_to_regulation_traceability": {
+      "type": "array",
+      "description": "Mapping of each institution policy requirement to its regulatory basis",
+      "items": {
+        "type": "object",
+        "required": ["policy_requirement_id", "regulation_citation"],
+        "properties": {
+          "policy_requirement_id": {
+            "type": "string",
+            "description": "References an override_id, supplemental rule_id, or checkpoint_id"
+          },
+          "regulation_citation": {
+            "type": "string",
+            "description": "The regulation this policy requirement implements, e.g., '12 CFR 1003.4(a)(1)'"
+          },
+          "guidance_citation": {
+            "type": "string",
+            "description": "The guidance document this policy requirement addresses, e.g., 'CFPB HMDA Exam Procedures, p. 47'"
+          },
+          "traceability_type": {
+            "type": "string",
+            "enum": ["direct_implementation", "stricter_than_required", "beyond_regulatory_scope", "best_practice"],
+            "description": "How the policy requirement relates to the regulation"
+          }
+        }
+      }
+    },
+    "gap_analysis": {
+      "type": "array",
+      "description": "Regulatory requirements in the base pack for which no corresponding institution policy was found",
+      "items": {
+        "type": "object",
+        "properties": {
+          "base_rule_id": {
+            "type": "string",
+            "description": "The base pack rule with no policy coverage"
+          },
+          "gap_type": {
+            "type": "string",
+            "enum": ["no_policy_found", "policy_weaker_than_regulation", "policy_ambiguous"],
+            "description": "Nature of the gap"
+          },
+          "risk_level": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "recommendation": {
+            "type": "string",
+            "description": "AI-generated recommendation for addressing the gap"
+          },
+          "acknowledged": {
+            "type": "boolean",
+            "description": "Whether the institution has acknowledged this gap"
+          }
+        }
+      }
+    }
+  }
+}
+----
+
+=== Profile Lifecycle
+
+Institution Policy Profiles follow the same lifecycle states as packs: Draft → Published → Deprecated → Retired.
+
+.Institution Policy Profile Lifecycle
+[mermaid]
+----
+stateDiagram-v2
+    [*] --> Draft : AI generates draft from policy documents
+    Draft --> Draft : Human review / AI re-analysis
+    Draft --> Published : Compliance expert approval (RiskExec + Institution)
+    Published --> Deprecated : Policy updated OR base pack major version change
+    Deprecated --> Draft : New version initiated
+    Deprecated --> Retired : Grace period expired
+    Retired --> [*]
+----
+
+*Version pinning:* Each audit run is pinned to a specific (pack_version, profile_version) pair.
+If either artifact is updated, new audit runs use the new versions; existing runs are unaffected.
+
+*Compatibility:* The `base_pack_version_constraint` field in the profile ensures that a profile is only applied to compatible pack versions.
+When a new MAJOR pack version is published, existing profiles must be re-validated and potentially re-generated.
+
+[[sect-ai-policy-pipeline]]
+=== AI-Driven Policy Profile Creation Pipeline
+
+The Institution Policy Profile is created primarily by AI, with mandatory human review and approval.
+This pipeline dramatically compresses what would otherwise be weeks of manual policy analysis into days.
+
+.AI-Driven Policy Profile Creation Pipeline
+[mermaid]
+----
+graph TD
+  A["<b>Phase 1 — Document Intake</b><br/>Institution uploads policy &<br/>procedure documents"] --> B["<b>Phase 2 — AI Extraction</b><br/>AI extracts policy-level requirements<br/>(thresholds, procedures, exceptions)"]
+  B --> C["<b>Phase 3 — Regulatory Alignment</b><br/>AI maps policy requirements to<br/>base pack rules using RAG"]
+  C --> D["<b>Phase 4 — Draft Profile Generation</b><br/>AI assembles structured draft<br/>with confidence scores"]
+  D --> E["<b>Phase 5 — Human Review</b><br/>RiskExec + Institution compliance<br/>experts review and approve"]
+  E -->|Approved| F["<b>Phase 6 — Publication</b><br/>Profile published and available<br/>for audit runs"]
+  E -->|Revisions needed| B
+
+  G["<b>Ongoing — Policy Change Detection</b><br/>Institution re-uploads updated policies;<br/>AI performs diff analysis"] --> B
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style C fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style D fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style E fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style F fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style G fill:#4A6FA5,color:#fff,stroke:#2B4570
+----
+
+==== Phase 1 — Policy Document Intake and Classification
+
+The institution uploads their compliance policy and procedure documents.
+These may include:
+
+* Board-approved compliance policies (e.g., HMDA Data Integrity Policy)
+* Operating procedures (e.g., HMDA Data Collection Procedures)
+* Job aids and desk references
+* Board resolutions related to compliance
+* Risk appetite statements
+* Internal audit findings and corrective action plans
+
+AI classifies each uploaded document using the existing document processing pipeline (Docling-Graph — see <<sect-docling-graph>>).
+Classification assigns:
+
+* *Document type:* board_policy, compliance_policy, operating_procedure, job_aid, board_resolution, risk_appetite_statement
+* *Regulatory domain(s):* which regulations the document addresses (matched against the base pack's `regulation` field)
+* *Effective date and version:* extracted from document metadata or cover page
+* *Extraction confidence:* overall confidence score for the AI's ability to parse and extract from this document
+
+.Policy Document Intake — Detail Flow
+[mermaid]
+----
+graph LR
+  A["Institution<br/>uploads documents"] --> B["Docling-Graph<br/>document processing"]
+  B --> C["Document<br/>classification"]
+  C --> D["Policy document<br/>registry created"]
+  B --> E["Full-text extraction<br/>& chunking"]
+  E --> F["Embedding generation<br/>& vector indexing"]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style C fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style D fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style E fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style F fill:#7B3FA0,color:#fff,stroke:#5A2D78
+----
+
+The extracted text is chunked and embedded into the vector store (the same Qdrant instance used by the Regulatory Citation Engine — see <<sect-component-design>>).
+This enables RAG-based alignment in Phase 3.
+
+==== Phase 2 — AI-Driven Policy Requirement Extraction
+
+AI reads each classified policy document and extracts *policy-level requirements* — not loan-level field data.
+This is a distinct extraction task from the standard document processing pipeline.
+
+*What AI extracts from policy documents:*
+
+[cols="30%,35%,35%",options="header"]
+|===
+|Requirement Type |Description |Example
+
+|Thresholds and tolerances
+|Numeric limits that are stricter than the regulatory minimum
+|"Loan amount discrepancies exceeding $25 require supervisor escalation"
+
+|Procedural requirements
+|Steps or approvals mandated by the institution's procedures
+|"Rate-lock exceptions require dual sign-off from originator and branch manager within 24 hours"
+
+|Documentation requirements
+|Documents or records that must be present in the loan file
+|"Signed disclosure acknowledgment must be filed within 3 business days of application"
+
+|Exception criteria
+|Conditions under which standard procedures are overridden
+|"Manual overrides of automated underwriting require VP-level approval and written justification"
+
+|Internal escalation triggers
+|Conditions that trigger internal review or escalation
+|"Any HMDA data error rate exceeding 2% triggers a full population re-review"
+
+|Timing and deadline requirements
+|Institution-specific deadlines beyond regulatory requirements
+|"QC review must be completed within 15 days of closing"
+
+|Risk appetite parameters
+|Board-level risk tolerance statements affecting audit scope
+|"Zero tolerance for HMDA reporting errors on government-monitored loan types"
+|===
+
+Each extracted requirement carries:
+
+* A source citation (document_id, section, page, verbatim quote)
+* An extraction confidence score
+* A preliminary classification (threshold, procedural, documentation, exception, escalation, timing)
+
+==== Phase 3 — Regulation-to-Policy Alignment (RAG-Driven)
+
+This is the critical step where the base Regulatory Pack acts as the scaffold.
+AI takes each rule in the base pack and uses RAG to search the institution's policy documents for corresponding policy language.
+
+.RAG-Driven Policy-to-Pack Alignment
+[mermaid]
+----
+graph TD
+  subgraph "For Each Base Pack Rule"
+    A["Base pack rule<br/>(e.g., hmda-loan-amount-tolerance)"] --> B["Generate semantic<br/>query from rule"]
+    B --> C["RAG retrieval from<br/>policy vector store"]
+    C --> D{"Policy language<br/>found?"}
+    D -->|Yes| E["Classify alignment"]
+    D -->|No| F["Flag as gap"]
+    E --> G["Match<br/><i>Policy restates regulation</i>"]
+    E --> H["Tightening<br/><i>Policy is stricter</i>"]
+    E --> I["Extension<br/><i>Policy adds requirements</i>"]
+    F --> J["Gap finding<br/><i>No policy coverage</i>"]
+  end
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style C fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style D fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style E fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style F fill:#CC4444,color:#fff,stroke:#993333
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style I fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style J fill:#CC4444,color:#fff,stroke:#993333
+----
+
+*Alignment categories:*
+
+* *Match:* The policy restates or directly implements the regulatory requirement.
+No override is needed, but the policy citation is captured in the `policy_to_regulation_traceability` array for exam defensibility.
+* *Tightening:* The policy imposes a stricter threshold or higher severity than the regulation requires.
+A `threshold_override` entry is generated.
+* *Extension:* The policy adds requirements that go beyond the scope of the base pack rule (e.g., additional approval steps, documentation checks).
+A `supplemental_rule` or `procedural_checkpoint` entry is generated.
+* *Gap:* The base pack contains a regulatory rule, but no corresponding policy language was found in the institution's documents.
+A `gap_analysis` entry is generated.
+This is a valuable compliance finding — it may indicate the institution needs to strengthen its policy framework.
+
+*Alignment confidence:* Each alignment carries a confidence score based on the semantic similarity between the pack rule and the retrieved policy language.
+Low-confidence alignments are flagged for mandatory human review in Phase 5.
+
+Additionally, AI performs an *unanchored scan* — searching the policy documents for requirements that do not map to any existing base pack rule.
+These become candidate supplemental rules with no regulatory anchor, classified as `beyond_regulatory_scope` in the traceability mapping.
+
+==== Phase 4 — Draft Profile Generation
+
+AI assembles the structured draft Institution Policy Profile from the Phase 2 and Phase 3 outputs:
+
+* `policy_document_registry` — populated from Phase 1 classification
+* `threshold_overrides` — generated from Phase 3 tightenings
+* `supplemental_rules` — generated from Phase 2 extensions and Phase 3 unanchored findings
+* `procedural_checkpoints` — generated from Phase 2 procedural/documentation/timing requirements
+* `policy_to_regulation_traceability` — generated from Phase 3 alignments
+* `gap_analysis` — generated from Phase 3 gaps
+
+Every entry is tagged with `ai_suggested: true` and `approved: false`.
+No AI-generated entry becomes effective until a human sets `approved: true`.
+
+==== Phase 5 — Human Review and Approval
+
+The draft profile is reviewed jointly by a RiskExec compliance expert and the institution's compliance officer.
+
+.Human Review Workflow
+[mermaid]
+----
+graph TD
+  A["Draft profile<br/>presented to reviewers"] --> B["Review threshold<br/>overrides"]
+  B --> C["Review supplemental<br/>rules"]
+  C --> D["Review procedural<br/>checkpoints"]
+  D --> E["Review gap<br/>analysis findings"]
+  E --> F{"All entries<br/>reviewed?"}
+  F -->|No| B
+  F -->|Yes| G{"All approved<br/>or rejected?"}
+  G -->|Low-confidence items remain| H["Re-submit to AI<br/>with reviewer feedback"]
+  H --> B
+  G -->|Yes| I["Dual approval<br/>(RiskExec + Institution)"]
+  I --> J["Profile published"]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style C fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style D fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style E fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style F fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style G fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style H fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style I fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Review actions per entry:*
+
+* *Accept:* Entry is correct as generated.
+Reviewer sets `approved: true`.
+* *Modify:* Entry is directionally correct but needs adjustment (e.g., AI extracted the wrong threshold value).
+Reviewer edits the entry and sets `approved: true`.
+* *Reject:* Entry is incorrect or irrelevant.
+Entry is removed from the profile.
+* *Escalate:* Entry requires further analysis — the reviewer is unsure whether the policy language supports the AI's interpretation.
+Entry is flagged for deeper review.
+
+*Mandatory review triggers:*
+
+* Any entry with extraction confidence < 0.70
+* Any threshold override that changes severity from informational/low to high/critical
+* Any supplemental rule with `comparison_type: expression` (CEL-based)
+* All gap analysis findings (gaps require institution acknowledgment)
+
+*Dual approval requirement:* The profile requires approval from both a RiskExec compliance expert (validates regulatory accuracy) and an institution compliance officer (validates policy interpretation).
+Neither party alone can publish the profile.
+
+==== Phase 6 — Ongoing Policy Change Detection
+
+When an institution updates its policies or procedures, the profile must be re-evaluated.
+
+* The institution uploads the updated policy documents.
+* AI performs a diff analysis against the prior version of the policy documents.
+* AI identifies which profile entries are affected by the policy changes.
+* A draft profile update is generated containing only the deltas — new overrides, modified thresholds, removed entries.
+* The update goes through the same human review and dual approval process.
+* The profile version is incremented (MINOR for additions/tightenings, MAJOR for structural changes).
+
+*Trigger: Base pack update.*
+When RiskExec publishes a new version of the base Regulatory Pack, all Institution Policy Profiles linked to that pack are automatically flagged for re-validation.
+The AI pipeline re-runs Phase 3 (alignment) against the new pack rules and generates a delta report.
+
+[[sect-effective-rule-merge]]
+=== Effective Rule Set — Merge Logic
+
+The Effective Rule Set is computed deterministically at audit-instance creation time by merging the base Regulatory Pack with the Institution Policy Profile.
+
+.Effective Rule Set Merge Algorithm
+[mermaid]
+----
+graph TD
+  A["Load base Regulatory Pack<br/>(pack_id, pack_version)"] --> B["Load Institution Policy Profile<br/>(profile_id, profile_version)"]
+  B --> C["Validate profile compatibility<br/>(base_pack_version_constraint)"]
+  C --> D["Apply threshold overrides<br/><i>Only tightenings allowed</i>"]
+  D --> E["Inject supplemental rules<br/><i>Prefixed with 'policy-'</i>"]
+  E --> F["Inject procedural checkpoints<br/><i>Verification methods assigned</i>"]
+  F --> G["Tag all rules with origin<br/><i>regulatory | policy_tightened | policy_supplemental</i>"]
+  G --> H["Freeze Effective Rule Set<br/><i>Immutable for audit run duration</i>"]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style E fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style F fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Merge rules:*
+
+. *Threshold overrides are applied in one direction only.*
+A policy profile can reduce a tolerance (e.g., $50 → $25), escalate a severity (e.g., medium → high), or raise a confidence threshold.
+It cannot widen a tolerance, downgrade a severity, or lower a confidence threshold.
+If a profile attempts to weaken a regulatory rule, the merge rejects the override and logs a validation error.
+. *Supplemental rules are injected alongside base pack rules.*
+Supplemental rule IDs are prefixed with `policy-` to distinguish them from regulatory rules in findings and reports.
+Supplemental rules are executed by the same rule engine with the same confidence propagation model.
+. *Procedural checkpoints are injected as a distinct rule category.*
+Checkpoints may use `ai_document_detection` (the AI pipeline checks for the presence of a required document), `field_check` (deterministic field comparison), or `manual_attestation` (requires human attestation during the audit).
+. *Every rule in the Effective Rule Set is tagged with its origin:*
+* `regulatory` — rule from the base pack, unmodified
+* `policy_tightened` — base pack rule with a policy-driven threshold override
+* `policy_supplemental` — supplemental rule from the policy profile
+* `procedural_checkpoint` — procedural checkpoint from the policy profile
+. *The Effective Rule Set is immutable for the duration of the audit run.*
+If either the pack or the profile is updated mid-audit, the running audit continues with the original Effective Rule Set.
+New audit runs pick up the latest versions.
+
+*Finding attribution:* Every finding produced by the audit engine includes an `origin` field indicating whether it was triggered by a regulatory rule, a policy-tightened rule, a policy-supplemental rule, or a procedural checkpoint.
+This allows examiners to clearly distinguish regulatory violations from policy adherence issues in the exam-ready bundle.

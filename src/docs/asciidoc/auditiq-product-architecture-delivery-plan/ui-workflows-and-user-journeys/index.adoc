@@ -102,16 +102,8 @@ This workflow details the document processing pipeline from upload through field
 . *Document classification* — system identifies document type (CD, 1003, Appraisal, Title, Other)
 . *Docling conversion* — PDF → structured JSON using Docling layout understanding engine
 . *OCR processing* — `docling-tesseract` (Apache 2.0) extracts text from scanned/image-based regions
-. *AFC score computation* — 5 weighted signals combined into composite score per field:
-* `docling_page_grade` (0.15) — page-level conversion quality
-* `ocr_segment_confidence` (0.25) — OCR engine’s own confidence
-* `pattern_validity` (0.25) — regex/format validation
-* `layout_anchor_consistency` (0.20) — positional stability vs. template
-* `cross_doc_redundancy` (0.15) — cross-document corroboration
-. *Confidence routing:*
-* *AFC ≥ 0.85* → auto-confirm (no human review needed)
-* *0.50 ≤ AFC < 0.85* → human review queue (reviewer validates or overrides)
-* *AFC < 0.50* → manual entry required (value too unreliable)
+. *AFC score computation* — weighted signals combined into composite score per field (see <<sect-glossary, Canonical Glossary — AFC>> for the full signal formula and weights)
+. *Confidence routing* — per <<sect-glossary, Canonical Glossary — AFC Routing Thresholds>>: AFC ≥0.85 auto-confirm, 0.50–0.84 human review, <0.50 manual entry
 . *Reviewer validates* — for human-review fields, reviewer sees extracted value + confidence + source highlight
 . *Field confirmed* → value passes to schema mapping
 
@@ -360,7 +352,7 @@ ____
 
 * Complete screen inventory — 26 MVP screens across 10 categories
 * PlantUML wireframes following Flowbite design system conventions (sidebar navigation, card-based layouts, data tables, badge components, modal dialogs)
-* Consistent confidence badge color system (green ≥0.85, orange 0.50–0.84, red <0.50)
+* Consistent confidence badge color system (see <<sect-glossary, Canonical Glossary — UI Confidence Badge Colors>>)
 
 *Design Principles (Flowbite / Tailwind CSS):*
 
@@ -372,7 +364,7 @@ ____
 * *Form inputs* — labeled inputs with validation feedback for all data entry (Flowbite Forms)
 * *Breadcrumb navigation* — contextual breadcrumbs in top bar for deep navigation (Flowbite Breadcrumb)
 * *Toast notifications* — non-blocking status messages for async operations (Flowbite Toast)
-* *Confidence is visible everywhere* — color-coded badges (green ≥0.85, orange 0.50–0.84, red <0.50)
+* *Confidence is visible everywhere* — color-coded badges per <<sect-glossary, UI Confidence Badge Colors>>
 * *AI provenance is always one click away* — every AI-generated element links to its provenance record
 * *Effective challenge is enforced by design* — reviewer cannot approve without documenting their independent verification
 * *Audit trail is ambient* — every action generates an event; users see event count and last-event timestamp per artifact

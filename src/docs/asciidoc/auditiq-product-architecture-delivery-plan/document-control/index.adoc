@@ -22,6 +22,7 @@ _Built: {build-timestamp}_
 |0.12 |2026-03-05 |Erik Pieczkowski |UI Wireframes & Screen Inventory — added 26 PlantUML salt wireframes following Flowbite design system conventions; complete screen inventory table (26 MVP screens across 10 categories); wireframes cover: Audit Dashboard, Audit Configuration, Audit Progress Monitor, Document Upload, Processing Status, Field Extraction Review (split-pane AFC review), Document Viewer, Schema Mapping Review (two-layer confidence routing), Synonym Dictionary, Findings Review Queue, Finding Detail with Effective Challenge (SR 11-7), AI Narrative Approval, Manager Escalation, Remediation Tracking, Aging Dashboard, Report Generation, Exam-Ready Bundle Export, Findings Register, Executive Dashboard, Manager Dashboard, Drift Monitoring (Phase 2), User Management, Pack Management, Model Registry Admin, System Settings, and Audit Trail Viewer; updated Design Principles section with Flowbite component patterns (Sidebar, Card, Table, Badge, Modal, Form, Breadcrumb, Toast)
 |0.13 |2026-03-05 |Erik Pieczkowski |Phase 2+ wireframe: AI Rule Generation Studio — added WF-27 wireframe for AI-assisted rule creation from regulatory text with coverage gap detection, golden dataset testing, and human expert approval workflow; updated screen inventory to reflect Phase 2+ wireframe status
 |0.14 |2026-03-05 |Erik Pieczkowski |Wireframe contextualization — relocated 25 wireframes from centralized UI Workflows section into their functional context: ConOps (WF-01–03 audit lifecycle), Product Requirements by epic (WF-04–07 document processing, WF-08–09 schema mapping, WF-10–11/13–15 findings, WF-16–18 reporting, WF-22/25 admin), AI Governance (WF-12 AI narrative approval, WF-21 drift monitoring), Model Registry (WF-24), Audit Pack Specification (WF-23 pack management, WF-27 AI rule generation), and Immutability (WF-26 audit trail viewer); retained Screen Inventory, Global Layout, Workflow Diagrams 1–4, and Dashboard wireframes (WF-19, WF-20) in UI Workflows section
+|0.15 |2026-03-06 |Erik Pieczkowski |Major document restructuring — introduced seven-Part organization (Strategic Context, Operational Concept, Requirements & Specifications, Architecture & Design, AI & Governance, Delivery & Business, Reference); split Regulatory Compliance Hierarchy and Institution Policy Profiles out of Audit Pack Specification into standalone section (<<sect-regulatory-compliance>>); merged Key Architectural Concepts into Architecture Overview (<<sect-architecture-overview>>); merged MVP Decisions Locked into Architectural Decisions (<<sect-decisions>>); grouped AI sections consecutively (AI Governance, Model Registry, Model Deployment, Docling-Graph, Immutability); moved Glossary and Appendices to Reference part; de-duplicated confidence threshold tables, severity definitions, and AFC signal weights — replaced with cross-references to Canonical Glossary (<<sect-glossary>>)
 |===
 
 === Authors / Owners
@@ -48,18 +49,28 @@ _Built: {build-timestamp}_
 
 === How to Use This Document
 
+This document is organized into seven parts:
+
+* *Part I — Strategic Context:* Executive Summary, Problem Statement, Product Vision, Competitive Intelligence.
+* *Part II — Operational Concept:* Concept of Operations (ConOps) — audit modes, workflow states, finding lifecycle, PII redaction.
+* *Part III — Requirements & Specifications:* Product Requirements, Audit Pack Specification, Regulatory Compliance & Policy Management.
+* *Part IV — Architecture & Design:* Architecture Overview (including Key Concepts), Component-Level Design, Data Model, Scoring Framework.
+* *Part V — AI & Governance:* AI Governance & Model Risk Controls, Model Registry, Model Deployment, Docling-Graph Integration, Immutability vs. Correctability.
+* *Part VI — Delivery & Business:* Pricing & Packaging, Delivery Plan, Risks & Mitigations, Future Roadmap, UI Workflows & User Journeys.
+* *Part VII — Reference:* Architectural Decisions (including MVP Decisions Locked), Exam-Ready Bundle Specification, Canonical Glossary, Appendices.
+
 This document serves three audiences simultaneously:
 
-* *Engineering team:* Sprint-plan against <<sect-key-concepts, Key Architectural Concepts>>, <<sect-product-requirements, Product Requirements>>, <<sect-audit-pack-spec, Audit Pack Specification>>, <<sect-architecture-overview, Architecture Overview>>, <<sect-component-design, Component-Level Design>>, and <<sect-data-model, Data Model>>.
-Supplementary architecture sections include <<sect-mvp-decisions, MVP Decisions Locked>>, <<sect-immutability, Immutability vs. Correctability>>, <<sect-exam-ready-bundle, Exam-Ready Bundle>>, <<sect-ai-governance, AI Governance & Model Risk Controls>>, <<sect-ui-workflows, UI Workflows & User Journeys>>, <<sect-model-registry, Model Registry>>, <<sect-model-deployment, Model Deployment>>, and <<sect-docling-graph, Docling-Graph Integration>>.
+* *Engineering team:* Sprint-plan against Parts III and IV (<<sect-product-requirements, Product Requirements>>, <<sect-audit-pack-spec, Audit Pack Specification>>, <<sect-architecture-overview, Architecture Overview>>, <<sect-component-design, Component-Level Design>>, <<sect-data-model, Data Model>>).
+Part V (<<sect-ai-governance, AI Governance>>, <<sect-model-registry, Model Registry>>, <<sect-model-deployment, Model Deployment>>, <<sect-docling-graph, Docling-Graph>>, <<sect-immutability, Immutability>>) provides AI/ML architecture.
 Each section contains explicit contracts, schemas, and acceptance criteria that can be decomposed into user stories and tasks.
-* *Product / leadership:* Read <<sect-document-control, Document Control>> through <<sect-concept-of-operations, Concept of Operations>> for context and competitive positioning.
-Review <<sect-pricing, Pricing and Packaging>>, <<sect-delivery-plan, Delivery Plan>>, <<sect-mvp-decisions, MVP Decisions Locked>>, and the MVP Cutline for investment decisions.
-<<sect-risks-constraints, Risks, Constraints, and Mitigations>> and <<sect-decisions, Decisions and Open Questions>> provide risk and decision context.
-* *Compliance / regulatory stakeholders:* Focus on <<sect-scoring-framework, Scoring Framework>>, <<sect-immutability, Immutability vs. Correctability>>, <<sect-exam-ready-bundle, Exam-Ready Bundle>>, and <<sect-ai-governance, AI Governance & Model Risk Controls>> for regulatory defensibility.
-<<sect-model-registry, Model Registry>> and the <<sect-appendices, Glossary>> provide supporting reference material.
+* *Product / leadership:* Read Part I for context and competitive positioning.
+Review Part VI (<<sect-pricing, Pricing>>, <<sect-delivery-plan, Delivery Plan>>) and Part VII (<<sect-decisions, Decisions>>) for investment decisions.
+<<sect-risks-constraints, Risks, Constraints, and Mitigations>> provides risk context.
+* *Compliance / regulatory stakeholders:* Focus on Part V (<<sect-ai-governance, AI Governance>>, <<sect-immutability, Immutability>>) and Part VII (<<sect-exam-ready-bundle, Exam-Ready Bundle>>, <<sect-glossary, Canonical Glossary>>) for regulatory defensibility.
+<<sect-regulatory-compliance, Regulatory Compliance & Policy Management>> specifies the five-layer compliance hierarchy.
 
-*Canonical Glossary:* All confidence metrics (AFC, mapping_confidence, extraction_confidence, rule_confidence, combined_confidence), routing thresholds, severity definitions, and calibration criteria are defined in a *single source of truth*: the *Canonical Glossary* (<<sect-appendices, Appendix A>>).
+*Canonical Glossary:* All confidence metrics (AFC, mapping_confidence, extraction_confidence, rule_confidence, combined_confidence), routing thresholds, severity definitions, and calibration criteria are defined in a *single source of truth*: the *<<sect-glossary, Canonical Glossary>>*.
 If a threshold value elsewhere in this document conflicts with the Glossary, the Glossary governs.
 
 *Conventions used in this document:*
