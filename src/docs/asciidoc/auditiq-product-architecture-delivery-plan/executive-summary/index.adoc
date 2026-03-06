@@ -1,18 +1,30 @@
 [[sect-executive-summary]]
 == Executive Summary
 
-AuditIQ is a new module for the RiskExec platform that transforms how financial institutions perform lending quality control and compliance audits.
-It replaces manual “stare-and-compare” audit workflows — where reviewers tediously compare loan data fields against source documents using spreadsheets and email — with a structured, confidence-scored, evidence-managed platform that serves all three lines of defense (QC, compliance, and audit) in a single system.
+Financial institutions are bleeding time, money, and credibility on a compliance process that hasn't fundamentally changed in twenty years.
+Every day, thousands of compliance officers sit in front of dual monitors, toggling between PDFs and spreadsheets, manually comparing loan data fields against source documents — one cell at a time, one document at a time, one prayer at a time that they don't miss the discrepancy that triggers an enforcement action.
 
-*Why now:* Over 20% of existing RiskExec clients are already performing audit functions inside the platform using user-defined fields — a clear signal of unmet demand.
-The team is validating AuditIQ with 8–10 design partners and publishing credible launch timelines.
+*This is unacceptable.* And it is exactly the problem AuditIQ was built to kill.
 
-*What makes it different from the primary competitor:*
+AuditIQ is a new module for the RiskExec platform that replaces the "stare-and-compare" audit workflow — the drudgery of spreadsheets, email chains, and shared-drive archaeology — with a structured, confidence-scored, evidence-managed platform that serves all three lines of defense (QC, compliance, and audit) in a single system.
+It does not merely digitize the existing process; it fundamentally re-architects how compliance teams produce, manage, and defend their audit work.
 
-* Three-layer confidence scoring (mapping, extraction, rule application) gives reviewers quantified trust signals, not binary pass/fail.
-* Audit pack architecture makes the platform extensible by domain — each regulation gets a modular “pack” rather than hard-coded logic.
-* Governance-first AI: every AI output is advisory, explainable, human-approved, and immutably logged.
-* Three-lines-of-defense support in one system, vs. the primary competitor’s QC-only focus.
+*Why now — and why this cannot wait:*
+
+* Over 20% of existing RiskExec clients are already performing audit functions inside the platform using user-defined fields — hacking workarounds because nothing else on the market serves their needs.
+That is not a feature request; that is a fire alarm.
+* The team is validating AuditIQ with 8–10 design partners who have told us, in no uncertain terms, that they are ready to move.
+* The primary competitor is entrenched but vulnerable — bolted-on AI, QC-only scope, and a legacy architecture that cannot deliver what regulators now demand.
+The window to take market share is open _right now_, and it will not stay open forever.
+
+*What makes AuditIQ a category-defining product:*
+
+* *Three-layer confidence scoring* (mapping, extraction, rule application) gives reviewers quantified trust signals — not binary pass/fail, but genuine transparency into _why_ the system reached its conclusion and _how much_ to trust it.
+* *Audit pack architecture* makes the platform extensible by regulation — each regulatory domain gets a modular "pack" rather than hard-coded logic, enabling rapid expansion without re-engineering.
+* *Governance-first AI:* every AI output is advisory, explainable, human-approved, and immutably logged.
+This is not AI for AI's sake — this is AI that a regulator can examine and a compliance officer can defend.
+* *Three-lines-of-defense support* in one system, vs. the primary competitor's QC-only tunnel vision.
+QC, compliance, and audit teams share a single evidence repository, a unified audit trail, and a common language of confidence — for the first time.
 
 *Phase 1 MVP scope:* HMDA origination audit.
 Manual and OCR-assisted review modes.
@@ -20,8 +32,9 @@ Findings management with remediation tracking.
 Manager dashboards.
 AI-assisted reporting.
 Exam-ready export bundle.
-Target: June 30, 2026.
+Target: *June 30, 2026.*
 
 *Revenue opportunity:* $3–4M incremental ARR within 24 months at base-case 40 customers and $90K average ACV.
-Pricing model (<<sect-pricing>>) mirrors the primary competitor’s proven per-pack subscription tiers at 15–20% below incumbent rates, with AI governance controls included.
-The primary competitor’s ~141 customers average $135K ACV (banks: $167K; top logos: $481K–$934K); AuditIQ targets the same ACV range with superior value.
+Pricing model (<<sect-pricing>>) mirrors the primary competitor's proven per-pack subscription tiers at 15–20% below incumbent rates, with AI governance controls included — not as a premium add-on, but as table stakes.
+The primary competitor's ~141 customers average $135K ACV (banks: $167K; top logos: $481K–$934K); AuditIQ targets the same ACV range with demonstrably superior value.
+This is not speculative revenue — this is pent-up demand from clients who are already trying to build this themselves inside our platform.
