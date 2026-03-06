@@ -378,7 +378,7 @@ See <<sect-decision-d4, Decision D4>> for the original locked decision and <<sec
             "properties": {
               "trigger_id": { "type": "string" },
               "condition": { "type": "string" },
-              "required_role": { "enum": ["reviewer", "manager", "audit_lead"] }
+              "required_role": { "enum": ["qc_reviewer", "qc_manager", "compliance_analyst", "compliance_officer", "auditor", "audit_director"] }
             }
           }
         }
@@ -419,23 +419,80 @@ See <<sect-decision-d4, Decision D4>> for the original locked decision and <<sec
         }
       }
     },
+    "sampling_methodology": {
+      "type": "object",
+      "description": "FFIEC-aligned sampling configuration for this pack",
+      "properties": {
+        "default_sample_size": {
+          "type": "integer",
+          "description": "Default number of records in the initial sample (e.g., 50 for HMDA per FFIEC guidelines)"
+        },
+        "stratification_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fields used for stratified sampling (e.g., ['loan_type', 'action_taken', 'property_type'])"
+        },
+        "error_thresholds": {
+          "type": "object",
+          "description": "Stage 1 error rate thresholds that drive sample expansion decisions",
+          "properties": {
+            "initial_sample_threshold": {
+              "type": "number",
+              "description": "Error rate (0.0–1.0) that triggers expanded sample (e.g., 0.05 = 5% per FFIEC)"
+            },
+            "proximity_alert_pct": {
+              "type": "number",
+              "description": "Percentage of threshold at which proximity alert fires (e.g., 0.80 = alert at 80% of threshold)"
+            },
+            "expanded_sample_size": {
+              "type": "integer",
+              "description": "Number of records in the expanded sample when threshold is breached"
+            }
+          }
+        },
+        "key_data_field_count": {
+          "type": "integer",
+          "description": "Number of Key Data Fields used for error rate computation (37 for HMDA)"
+        }
+      }
+    },
     "test_cases": {
       "type": "array",
       "description": "Reference test data for pack validation harness",
       "items": {
         "type": "object",
+        "required": ["test_id", "description", "target_record", "expected_findings"],
         "properties": {
           "test_id": { "type": "string" },
           "description": { "type": "string" },
-          "target_record": { "type": "object" },
-          "source_documents": { "type": "array" },
-          "expected_findings": {
+          "testing_stage": {
+            "enum": ["stage_1", "stage_2"],
+            "description": "Whether this test validates Stage 1 (data integrity) or Stage 2 (substantive) rules"
+          },
+          "target_record": {
+            "type": "object",
+            "description": "Complete HMDA LAR record with all fields populated"
+          },
+          "source_documents": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
+                "doc_type": { "type": "string" },
+                "fields": { "type": "object" }
+              }
+            },
+            "description": "Source document field extractions keyed by document type"
+          },
+          "expected_findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["rule_id", "expected_result"],
+              "properties": {
                 "rule_id": { "type": "string" },
-                "expected_result": { "enum": ["match", "mismatch", "unable_to_determine"] }
+                "expected_result": { "enum": ["match", "mismatch", "unable_to_determine"] },
+                "expected_severity": { "enum": ["critical", "high", "medium", "low", "informational"] }
               }
             }
           }
@@ -515,6 +572,23 @@ See <<sect-decision-d4, Decision D4>> for the original locked decision and <<sec
           "enum": ["regulatory", "policy_tightened", "policy_supplemental", "procedural_checkpoint"],
           "default": "regulatory",
           "description": "Origin tag set by the Effective Rule Set merge — indicates whether this rule comes from the base regulatory pack or the institution policy profile"
+        },
+        "testing_stage": {
+          "type": "string",
+          "enum": ["stage_1", "stage_2"],
+          "default": "stage_1",
+          "description": "Stage 1 = data integrity (field-level comparison against source documents). Stage 2 = substantive/transactional testing (professional judgment required). Stage 1 discrepancies count toward the FFIEC error rate threshold."
+        },
+        "defense_line_scope": {
+          "type": "string",
+          "enum": ["first_line_qc", "second_line_compliance", "third_line_audit", "all_lines"],
+          "default": "all_lines",
+          "description": "Which defense line executes this rule. First Line (QC) runs Stage 1 data integrity rules; Second Line (Compliance) runs Stage 2 substantive rules; Third Line (Audit) reviews both. Default 'all_lines' means the rule is available to all defense lines."
+        },
+        "key_data_field": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, discrepancies on this rule's target field count toward the FFIEC Stage 1 error rate threshold (37 Key Data Fields for HMDA)"
         },
         "enabled": { "type": "boolean", "default": true }
       }
@@ -628,6 +702,78 @@ Circular dependencies are rejected at pack validation time.
 *Maximum chain depth:* 5 levels.
 Packs with deeper chains are rejected at validation time.
 This prevents runaway complexity while supporting real-world audit logic.
+
+[[sect-stage-2-rules]]
+===== Stage 2 Substantive Testing Rules
+
+Stage 2 rules evaluate whether reported data reflects the underlying transaction correctly — beyond field-level comparison.
+These rules require professional judgment and are typically executed by Second Line (Compliance) reviewers.
+Stage 2 rules are tagged with `testing_stage: "stage_2"` and `defense_line_scope: "second_line_compliance"`.
+
+*Rule structure — Action Taken Code Validation:*
+
+[source,json]
+----
+{
+  "rule_id": "hmda-action-taken-substantive",
+  "rule_name": "Action Taken Code Substantive Validation",
+  "target_field": "action_taken",
+  "comparison_type": "expression",
+  "expression": "target.action_taken == '1' && source.application_status != 'originated'",
+  "testing_stage": "stage_2",
+  "defense_line_scope": "second_line_compliance",
+  "severity": "critical",
+  "base_confidence": 0.85,
+  "regulation_citation": "12 CFR 1003.4(a)(8)",
+  "key_data_field": true
+}
+----
+
+*Execution semantics:*
+
+. Stage 2 rules execute after Stage 1 comparison is complete for the record.
+. The rule evaluates whether the action-taken code is consistent with the application's full disposition history — not just whether the code matches a source document.
+. If the action-taken code is "1" (originated) but underwriting notes or application status indicate the application was withdrawn or denied, the rule flags a substantive finding.
+. Stage 2 findings always require human review regardless of confidence score, because they involve professional judgment.
+
+*Rule structure — Denial Reason Cross-Check:*
+
+[source,json]
+----
+{
+  "rule_id": "hmda-denial-reason-crosscheck",
+  "rule_name": "Denial Reason Consistency with Underwriting Notes",
+  "target_field": "denial_reason_1",
+  "comparison_type": "expression",
+  "depends_on": ["hmda-action-taken-check"],
+  "expression": "results['hmda-action-taken-check'].value == '3' && (target.denial_reason_1 == '' || target.denial_reason_1 == null)",
+  "testing_stage": "stage_2",
+  "defense_line_scope": "second_line_compliance",
+  "severity": "high",
+  "base_confidence": 0.80,
+  "regulation_citation": "12 CFR 1003.4(a)(16)",
+  "key_data_field": true
+}
+----
+
+*Rule structure — Rate Spread Recalculation:*
+
+[source,json]
+----
+{
+  "rule_id": "hmda-rate-spread-recalc",
+  "rule_name": "Rate Spread Recalculation from APR and APOR",
+  "target_field": "rate_spread",
+  "comparison_type": "expression",
+  "expression": "abs(target.rate_spread - (source.apr - source.apor)) > 0.25",
+  "testing_stage": "stage_2",
+  "defense_line_scope": "second_line_compliance",
+  "severity": "high",
+  "base_confidence": 0.90,
+  "regulation_citation": "12 CFR 1003.4(a)(12)",
+  "key_data_field": true
+}
+----
 
 [[sect-temporal-rules]]
 ===== Temporal and Date Logic
@@ -1248,6 +1394,25 @@ This section specifies the complete field-by-field coverage for the HMDA Origina
 The HMDA LAR schema defines ~80 data points per the MISMO-aligned HMDA Reporting Dataset.
 Each field is mapped to its source document(s), comparison type, target confidence, and phase availability.
 
+[[sect-37-key-data-fields]]
+==== 37 Key Data Fields
+
+The FFIEC designates 37 of the ~80 HMDA LAR fields as *Key Data Fields* — the fields examiners scrutinize first and that trigger resubmission orders when error rates exceed 5% (see <<sect-concept-of-operations, Two-Stage Testing Model>>).
+The HMDA audit pack tags these fields with `key_data_field: true` in the target schema.
+Stage 1 error rate tracking (FR-4.7) counts discrepancies only against Key Data Fields.
+
+The 37 Key Data Fields span all categories in the coverage matrix below.
+In the Detailed Field Matrix tables, Key Data Fields are marked with *[K]* in the HMDA Field column.
+
+*Key Data Fields by category:*
+
+* *Borrower/Co-Borrower (8):* Borrower Name, Co-Borrower Name, Borrower Age, Borrower Race, Borrower Ethnicity, Borrower Sex, Borrower Income, Borrower Credit Score
+* *Loan Information (10):* Loan Amount, Loan Type, Loan Purpose, Interest Rate, Rate Spread, Loan Term, Lien Status, Amortization Type, Total Loan Costs, Origination Charges
+* *Property Information (5):* Property Address, Property Value, Property Type, Census Tract, County Code
+* *Action Taken / Disposition (4):* Action Taken, Action Taken Date, Denial Reason(s), Application Date
+* *Pricing Information (6):* Total Points and Fees, APR, HOEPA Status, Mortgage Insurance Premium, Negative Amortization, Balloon Payment
+* *Other (4):* Preapproval, Occupancy Type, Construction Method, Introductory Rate Period
+
 ==== Coverage Summary
 
 [cols="25%,15%,15%,15%,15%,15%",options="header"]
@@ -1339,7 +1504,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |===
 |HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
 
-|Borrower Name
+|*[K]* Borrower Name
 |`BorrowerFullName`
 |CD, URLA
 |1 (CD)
@@ -1347,7 +1512,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.90
 |High
 
-|Co-Borrower Name
+|*[K]* Co-Borrower Name
 |`CoBorrowerFullName`
 |CD, URLA
 |1 (CD)
@@ -1355,7 +1520,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.85
 |High
 
-|Borrower Age
+|*[K]* Borrower Age
 |`BorrowerAge`
 |URLA
 |2
@@ -1363,7 +1528,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.85
 |Medium
 
-|Borrower Race (collected)
+|*[K]* Borrower Race (collected)
 |`BorrowerRaceType`
 |URLA, GMI
 |2
@@ -1371,7 +1536,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |N/A (manual)
 |Medium
 
-|Borrower Ethnicity (collected)
+|*[K]* Borrower Ethnicity (collected)
 |`BorrowerEthnicityType`
 |URLA, GMI
 |2
@@ -1379,7 +1544,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |N/A (manual)
 |Medium
 
-|Borrower Sex (collected)
+|*[K]* Borrower Sex (collected)
 |`BorrowerSexType`
 |URLA, GMI
 |2
@@ -1387,7 +1552,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |N/A (manual)
 |Medium
 
-|Borrower Income
+|*[K]* Borrower Income
 |`BorrowerTotalMonthlyIncome`
 |URLA, pay stubs
 |2
@@ -1395,7 +1560,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.80
 |High
 
-|Borrower Credit Score
+|*[K]* Borrower Credit Score
 |`BorrowerCreditScore`
 |Credit report, LOS
 |1 (LOS)
@@ -1442,7 +1607,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |===
 |HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
 
-|Loan Amount
+|*[K]* Loan Amount
 |`LoanAmount`
 |CD, LE, URLA, LOS
 |1 (CD+LOS)
@@ -1450,7 +1615,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.92
 |Critical
 
-|Loan Type
+|*[K]* Loan Type
 |`MortgageLoanType`
 |CD, LOS
 |1 (CD)
@@ -1458,7 +1623,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.90
 |Critical
 
-|Loan Purpose
+|*[K]* Loan Purpose
 |`LoanPurposeType`
 |CD, URLA, LOS
 |1 (CD)
@@ -1466,7 +1631,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.90
 |Critical
 
-|Interest Rate
+|*[K]* Interest Rate
 |`NoteRatePercent`
 |CD, LOS
 |1 (CD)
@@ -1474,7 +1639,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.88
 |High
 
-|Rate Spread
+|*[K]* Rate Spread
 |`RateSpread`
 |LOS
 |1 (LOS)
@@ -1482,7 +1647,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |High
 
-|Loan Term
+|*[K]* Loan Term
 |`LoanTermMonths`
 |CD, LOS
 |1 (CD)
@@ -1490,7 +1655,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.88
 |Medium
 
-|Introductory Rate Period
+|*[K]* Introductory Rate Period
 |`IntroductoryRatePeriodMonths`
 |CD, LOS
 |1 (CD)
@@ -1498,7 +1663,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.85
 |Medium
 
-|Lien Status
+|*[K]* Lien Status
 |`LienStatusType`
 |Title, LOS
 |1 (LOS)
@@ -1506,7 +1671,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |High
 
-|Amortization Type
+|*[K]* Amortization Type
 |`AmortizationType`
 |CD, LOS
 |1 (CD)
@@ -1530,7 +1695,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |Medium
 
-|Total Loan Costs
+|*[K]* Total Loan Costs
 |`TotalLoanCosts`
 |CD
 |1 (CD)
@@ -1538,7 +1703,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.85
 |High
 
-|Origination Charges
+|*[K]* Origination Charges
 |`OriginationCharges`
 |CD
 |1 (CD)
@@ -1569,7 +1734,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |===
 |HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
 
-|Property Address
+|*[K]* Property Address
 |`PropertyAddress`
 |CD, appraisal, LOS
 |1 (CD)
@@ -1577,7 +1742,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.85
 |High
 
-|Property Value
+|*[K]* Property Value
 |`PropertyValuationAmount`
 |Appraisal, LOS
 |2 (appraisal)
@@ -1585,7 +1750,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.85
 |High
 
-|Property Type
+|*[K]* Property Type
 |`PropertyType`
 |LOS
 |1 (LOS)
@@ -1593,7 +1758,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |High
 
-|Construction Method
+|*[K]* Construction Method
 |`ConstructionMethodType`
 |LOS
 |1 (LOS)
@@ -1601,7 +1766,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |Medium
 
-|Occupancy Type
+|*[K]* Occupancy Type
 |`OccupancyType`
 |URLA, LOS
 |1 (LOS)
@@ -1617,7 +1782,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |Medium
 
-|Census Tract
+|*[K]* Census Tract
 |`CensusTractIdentifier`
 |LOS, geocoding
 |1 (LOS)
@@ -1625,7 +1790,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |Critical
 
-|County Code
+|*[K]* County Code
 |`CountyFIPSCode`
 |CD, LOS
 |1 (CD)
@@ -1640,7 +1805,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |===
 |HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
 
-|Action Taken
+|*[K]* Action Taken
 |`ActionTakenType`
 |LOS
 |1 (LOS)
@@ -1648,7 +1813,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |Critical
 
-|Action Taken Date
+|*[K]* Action Taken Date
 |`ActionTakenDate`
 |LOS
 |1 (LOS)
@@ -1656,7 +1821,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |High
 
-|Denial Reason(s)
+|*[K]* Denial Reason(s)
 |`DenialReasonType`
 |LOS, denial letter
 |1 (LOS)
@@ -1664,7 +1829,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |High
 
-|Application Date
+|*[K]* Application Date
 |`ApplicationDate`
 |LOS
 |1 (LOS)
@@ -1672,7 +1837,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |1.0 (structured)
 |Medium
 
-|Preapproval
+|*[K]* Preapproval
 |`PreapprovalType`
 |LOS
 |1 (LOS)
@@ -1687,7 +1852,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |===
 |HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
 
-|Total Points and Fees
+|*[K]* Total Points and Fees
 |`TotalPointsAndFees`
 |CD, LOS
 |1 (CD)
@@ -1695,7 +1860,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.85
 |High
 
-|APR
+|*[K]* APR
 |`APR`
 |CD, TIL
 |1 (CD)
@@ -1703,7 +1868,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.88
 |Critical
 
-|HOEPA Status
+|*[K]* HOEPA Status
 |`HOEPAStatusType`
 |CD, LOS
 |1 (CD)
@@ -1711,7 +1876,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.85
 |Critical
 
-|Mortgage Insurance Premium
+|*[K]* Mortgage Insurance Premium
 |`MortgageInsurancePremium`
 |CD
 |1 (CD)
@@ -1735,7 +1900,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.85
 |Medium
 
-|Balloon Payment
+|*[K]* Balloon Payment
 |`BalloonPaymentIndicator`
 |CD, LOS
 |1 (CD)
@@ -1751,7 +1916,7 @@ Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
 |≥0.88
 |Medium
 
-|Negative Amortization
+|*[K]* Negative Amortization
 |`NegativeAmortizationIndicator`
 |CD, LOS
 |1 (CD)
@@ -1802,6 +1967,65 @@ Because this is a derived comparison, confidence is the minimum of all input fie
 If LOS data is unavailable, geocoding service derives census tract from property address with a separate confidence score.
 |===
 
+==== Multi-Document Corroboration Map
+
+The following Key Data Fields appear on multiple source documents and use `multi_doc_corroboration` rules or benefit from cross-document consistency checking.
+Fields validated against multiple sources produce higher confidence scores (see <<sect-multi-doc-corroboration>>).
+
+[cols="20%,30%,15%,35%",options="header"]
+|===
+|HMDA Field |Source Documents |Min Sources |Corroboration Notes
+
+|Loan Amount
+|CD, LE, URLA, LOS
+|2
+|Core corroboration field; tolerance ±$0.50; all four sources must agree within tolerance
+
+|Interest Rate
+|CD, LOS
+|2
+|CD extracted rate vs. LOS structured rate; tolerance ±0.125%
+
+|Property Address
+|CD, Appraisal, LOS
+|2
+|Fuzzy match with USPS CASS normalization; address standardization before comparison
+
+|Loan Type
+|CD, LOS
+|2
+|Lookup validation on both sources; must agree exactly
+
+|Loan Purpose
+|CD, URLA, LOS
+|2
+|Lookup validation; CD and URLA both carry this field
+
+|Total Loan Costs
+|CD
+|1
+|Single-source (CD only); no corroboration available in Phase 1
+
+|Borrower Name
+|CD, URLA
+|2
+|Fuzzy match; name formatting variations expected (middle name, suffix)
+
+|APR
+|CD, TIL
+|1
+|CD is primary source; TIL as corroboration when available
+
+|Total Points and Fees
+|CD, LOS
+|2
+|CD extracted vs. LOS structured; tolerance ±$50
+|===
+
+*Coverage note:* In Phase 1, multi-doc corroboration is available for ~8 fields where CD extraction overlaps with LOS structured data.
+Phase 2 (URLA/1003 extraction) expands corroboration to ~20 fields.
+Fields with only one available source rely solely on extraction confidence (AFC) without cross-document validation.
+
 === Cross-References
 
 * *<<sect-key-concepts>>:* Audit Packs as the "Brain" Plugin Model; Target vs. Source Schema Definitions; Three-Layer Confidence Scoring
@@ -1821,7 +2045,7 @@ If LOS data is unavailable, geocoding service derives census tract from property
 *Purpose:* Manage audit pack templates — view versions, rules, lifecycle status.
 RiskExec-exclusive authoring model: packs authored by RiskExec, deployed to customer tenants.
 
-*Roles:* Manager, IT Admin (view); RiskExec Admin (author/deploy).
+*Roles:* `qc_manager`, `compliance_officer`, `audit_director`, `it_admin` (view); RiskExec Admin (author/deploy).
 
 *Flowbite components:* Table, Badge, Modal, Accordion, Button.
 
@@ -1848,9 +2072,9 @@ RiskExec-exclusive authoring model: packs authored by RiskExec, deployed to cust
       Version | v1.0
       Author | RiskExec
       Regulation | HMDA (Regulation C)
-      Fields Covered | 82 / ~110 HMDA fields
-      Rules | 47 comparison rules
-      Severity Distribution | 5 Critical, 12 High, 18 Medium, 8 Low, 4 Info
+      Fields Covered | ~80 HMDA fields (37 Key Data Fields)
+      Rules | 47 comparison rules (33 Stage 1, 14 Stage 2)
+      Severity Distribution | 7 Critical, 15 High, 19 Medium, 4 Low, 2 Info
       Last Updated | 2026-02-01
     }
     ---
