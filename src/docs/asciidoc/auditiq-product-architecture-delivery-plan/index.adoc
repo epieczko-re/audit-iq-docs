@@ -2,15 +2,13 @@
 :subtitle: RiskExec — Comprehensive Specification v0.15
 :doctype: book
 :author: Erik Pieczkowski
-:revnumber: 0.23
+:revnumber: 0.24
 :revdate: 2026-03-06
 :build-timestamp: local build
 :toc:
 :toclevels: 3
 :sectnums:
 :sectnumlevels: 4
-
-include::document-control/index.adoc[]
 
 // ============================================================
 // Part I: Strategic Context
@@ -105,3 +103,5 @@ include::exam-ready-bundle-specification/index.adoc[]
 include::glossary/index.adoc[]
 
 include::appendices/index.adoc[]
+
+include::document-control/index.adoc[]
