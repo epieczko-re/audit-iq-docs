@@ -22,7 +22,7 @@ It is a core capability woven into every workflow: extraction, scoring, narrativ
 Every AI output is governed, traceable, and human-approved — not because we think AI is dangerous, but because we know regulators need to trust it before they will accept it.
 When an examiner asks "how does your AI work and how do you control it?", AuditIQ customers will have an answer that no competitor can match.
 Regulators will not just tolerate AuditIQ — they will _trust_ it.
-* *Additive, not replacement* — AuditIQ extends the RiskExec platform that 300+ institutions already rely on.
+* *Additive, not replacement* — AuditIQ extends the RiskExec platform that 200+ institutions already rely on.
 It does not require a new vendor relationship, a new SSO integration, a new data migration, or a new training cycle.
 It turns existing compliance customers into audit customers, increasing deal size by 20–30% without a separate sales cycle.
 That is not just good product design — it is a distribution advantage that no startup competitor can replicate and no legacy vendor can match.
