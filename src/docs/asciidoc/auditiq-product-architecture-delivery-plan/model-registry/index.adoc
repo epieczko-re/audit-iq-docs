@@ -417,3 +417,74 @@ This output carries the mandatory disclaimer "AI-Drafted — Requires Human Veri
 * *<<sect-ai-governance, External Expertise>>:* Third-party model validation per SR 11-7
 * *<<sect-confidence-calibration>>:* Calibrator model versions tracked in registry
 * *Canonical Glossary (Appendix):* Confidence thresholds that calibrator models must satisfy
+
+'''
+
+[[wf-model-registry-admin]]
+=== WF-24: Model Registry Admin
+
+*Purpose:* Manage the AI model registry — view registered models, lifecycle status, validation metrics, and approval history.
+Implements SR 11-7 model inventory requirement.
+
+*Roles:* Manager, IT Admin, ML Engineer.
+
+*Flowbite components:* Table, Badge, Form, Timeline, Modal, Button.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Model Registry</b>
+  { Home > Admin > Model Registry }
+  ===
+  { ^Type: All^ | ^Status: All^ | ^Risk Tier: All^ | "Search models...        " [Search] }
+  ---
+  {#
+    <b>Type</b> | <b>Name</b> | <b>Version</b> | <b>Provider</b> | <b>Status</b> | <b>Risk Tier</b> | <b>Approved By</b> | <b>Actions</b>
+    LLM | gpt-4-turbo | 2024-04-09 | OpenAI | <color:Green>Approved</color> | <color:Red>High</color> | T. Wilson | [View] [Deprecate]
+    Prompt | narrative_finding | v1.2 | Internal | <color:Green>Approved</color> | <color:Orange>Medium</color> | T. Wilson | [View] [Deprecate]
+    Prompt | summary_report | v1.0 | Internal | <color:Green>Approved</color> | <color:Orange>Medium</color> | T. Wilson | [View] [Deprecate]
+    Schema Matcher | hybrid_heuristic | v1.0 | Internal | <color:Green>Approved</color> | <color:Orange>Medium</color> | T. Wilson | [View] [Deprecate]
+    RAG Corpus | hmda_rules_v2 | 2026-01-15 | Internal | <color:Green>Approved</color> | <color:Orange>Medium</color> | T. Wilson | [View] [Deprecate]
+    Calibrator | temp_scaling | v0.1 | Internal | <color:RoyalBlue>Staging</color> | <color:Orange>Medium</color> | — | [View] [Approve]
+  }
+  ---
+  {+
+    <b>Model Detail: gpt-4-turbo (2024-04-09)</b>
+    {
+      {#
+        Model ID | 550e8400-e29b-41d4-a716-446655440000
+        Type | LLM (third-party)
+        Provider | OpenAI
+        Risk Tier | High
+        Status | Approved
+        Approved By | Tom Wilson (Manager)
+        Approved At | 2026-01-20 14:00 UTC
+      }
+      |
+      {
+        <b>Validation Metrics</b>
+        {#
+          <b>Metric</b> | <b>Score</b> | <b>Threshold</b> | <b>Pass</b>
+          Hallucination Rate | 3.2% | < 5% | <color:Green>Yes</color>
+          Citation Accuracy | 87% | >= 80% | <color:Green>Yes</color>
+          Override Rate | 8% | < 10% | <color:Green>Yes</color>
+        }
+      }
+    }
+    ---
+    <b>Lifecycle:</b> draft -> staging -> <b>approved</b> -> deprecated -> retired
+  }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *[View]* expands model detail showing metadata, validation metrics, configuration, and lifecycle history
+* *[Approve]* (staging models) opens approval form requiring validation dataset reference, metrics, and approval notes
+* *[Deprecate]* opens form with successor model selection and deprecation reason
+* *Risk Tier* badges: High (red), Medium (orange), Low (green)
+* *Status* badges: Draft (gray), Staging (blue), Approved (green), Deprecated (orange), Retired (red)
+* Lifecycle state machine displayed as progress indicator showing current state
+* Cross-reference: <<sect-model-registry>> for full schema and API contracts

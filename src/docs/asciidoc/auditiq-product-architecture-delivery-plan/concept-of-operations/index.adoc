@@ -199,3 +199,176 @@ sequenceDiagram
   Manager->>System: Final approval
   Manager->>System: Generate report
 ----
+
+'''
+
+[[wf-audit-dashboard]]
+=== WF-01: Audit Dashboard
+
+*Purpose:* Primary landing screen after login.
+Shows all audits the user has access to, with status indicators, progress metrics, and quick actions.
+
+*Roles:* All roles (filtered by RBAC — Reviewer sees assigned audits only; Manager sees all).
+
+*Flowbite components:* Card (summary metrics), Table (audit list), Badge (status/severity), Button (actions), Dropdown (filters).
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Audit Dashboard</b>
+  ---
+  {#
+    <b>Active Audits</b> | <b>Pending Review</b> | <b>Completed</b> | <b>Total Findings</b>
+    <color:RoyalBlue><b>12</b></color> | <color:Orange><b>4</b></color> | <color:Green><b>28</b></color> | <color:Gray><b>347</b></color>
+  }
+  ---
+  { [+ Create New Audit] | ^Filter by Status: All^ | ^Pack: All^ | "Search audits...              " }
+  ---
+  {#
+    <b>Audit Name</b> | <b>Pack</b> | <b>Status</b> | <b>Progress</b> | <b>Findings</b> | <b>Created</b> | <b>Actions</b>
+    HMDA Q1 2026 Origination | hmda-origination v1.0 | <color:RoyalBlue>In Progress</color> | 67% | 23 (2 Critical) | 2026-02-15 | [View] [Resume]
+    HMDA Q4 2025 Review | hmda-origination v1.0 | <color:Orange>Review Complete</color> | 100% | 18 (0 Critical) | 2026-01-10 | [View] [Finalize]
+    CRA Assessment 2025 | cra-assessment v0.9 | <color:Green>Finalized</color> | 100% | 12 (1 Critical) | 2025-12-01 | [View] [Export]
+    TRID Compliance Check | trid-disclosure v1.0 | <color:Gray>Created</color> | 0% | — | 2026-03-01 | [Configure] [Delete]
+  }
+  ---
+  { Showing 1–4 of 40 audits | [< Prev] [1] [2] [3] [Next >] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *[+ Create New Audit]* opens <<wf-audit-config, Audit Configuration>> screen
+* *Status badge* colors: Created (gray), In Progress (blue), Review Complete (orange), Reporting (purple), Finalized (green)
+* *Findings* column shows total count with critical count in red if >0
+* *Progress* column shows percentage based on audit phase completion
+* Table is sortable by all columns; filterable by status, pack, and date range
+
+'''
+
+[[wf-audit-config]]
+=== WF-02: Audit Configuration
+
+*Purpose:* Create and configure a new audit run.
+User selects pack, defines scope, uploads target dataset, and sets review parameters.
+
+*Roles:* Manager, Audit Lead.
+
+*Flowbite components:* Form (inputs), Select (pack/scope), DatePicker (audit period), Slider (confidence threshold), File Upload (dataset), Button (actions).
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Create New Audit</b>
+  { Home > Audits > Create New }
+  ===
+  {+
+    <b>Audit Details</b>
+    {
+      Audit Name        | "HMDA Q1 2026 Origination Review       "
+      Pack Template     | ^hmda-origination v1.0              ^
+      Audit Scope       | ^Origination                        ^
+      Execution Mode    | (X) OCR-Assisted  () Manual  () Automated
+    }
+  }
+  ---
+  {+
+    <b>Audit Period & Sample</b>
+    {
+      Start Date        | "2026-01-01  "
+      End Date          | "2026-03-31  "
+      Loan Sample Size  | "50           "
+      Sampling Method   | ^Random Stratified               ^
+    }
+  }
+  ---
+  {+
+    <b>Review Parameters</b>
+    {
+      Confidence Threshold | "0.85         " | (Auto-confirm findings above this threshold)
+      Second Review %      | "15            " | (% of findings requiring independent second review)
+      Escalation Rules     | [X] Auto-escalate Critical findings  [] Custom rules
+    }
+  }
+  ---
+  {+
+    <b>Target Dataset</b>
+    {
+      Upload Method | (X) CSV Upload  () API Import  () RiskExec Import
+      .
+      [ Drag & drop CSV file here, or click to browse ]
+      .
+      Schema         | ^hmda-lar-2024                      ^
+      Max file size: 100 MB
+    }
+  }
+  ===
+  { [Cancel] | . | . | . | [Save as Draft] | [Create Audit & Continue >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Pack Template* dropdown shows only packs with `status = 'approved'` from pack registry
+* *Confidence Threshold* slider (0.50–1.00) controls finding auto-confirm cutoff; defaults to 0.85
+* *[Create Audit & Continue >>]* validates all fields, creates audit run, navigates to <<wf-doc-upload, Document Upload>>
+* Dataset upload triggers validation (schema check, record count, encoding); errors shown inline
+
+'''
+
+[[wf-audit-progress]]
+=== WF-03: Audit Progress Monitor
+
+*Purpose:* Real-time view of audit execution progress across all phases.
+Shows document processing status, extraction completion, mapping progress, and findings generation.
+
+*Roles:* All roles with access to the audit.
+
+*Flowbite components:* Progress Bar, Timeline, Badge, Card, Table.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Audit Progress: HMDA Q1 2026 Origination</b>
+  { Home > Audits > AUD-2026-001 > Progress }
+  ===
+  {+
+    <b>Phase Progress</b>
+    {#
+      <b>Phase</b> | <b>Status</b> | <b>Progress</b> | <b>Details</b>
+      1. Dataset Upload      | <color:Green>Complete</color>    | 100% | 50 records validated
+      2. Document Upload      | <color:Green>Complete</color>    | 100% | 127 documents classified
+      3. Extraction (Docling) | <color:RoyalBlue>Running</color> | 78%  | 99/127 documents processed
+      4. Schema Mapping       | <color:Orange>Pending</color>    | 12%  | 6/50 records mapped
+      5. Rules Engine         | <color:Gray>Not Started</color>  | 0%   | —
+      6. Findings Review      | <color:Gray>Not Started</color>  | 0%   | —
+      7. Finalization         | <color:Gray>Not Started</color>  | 0%   | —
+    }
+  }
+  ---
+  {+
+    <b>Extraction Summary</b>
+    {#
+      <b>Metric</b> | <b>Count</b> | <b>%</b>
+      Fields auto-confirmed (AFC >= 0.85)     | 1,247 | 72%
+      Fields requiring review (0.50–0.84)     | 389   | 22%
+      Fields requiring manual entry (< 0.50)  | 104   | 6%
+      Cloud OCR fallbacks triggered            | 12    | —
+    }
+  }
+  ---
+  { [<< Back to Audit] | [View Extraction Queue] | [View Mapping Queue] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* Progress bars update in real-time via WebSocket or polling (30-second interval)
+* Clicking a phase row drills into the detailed view for that phase
+* *Extraction Summary* card shows AFC routing distribution, updated as documents process

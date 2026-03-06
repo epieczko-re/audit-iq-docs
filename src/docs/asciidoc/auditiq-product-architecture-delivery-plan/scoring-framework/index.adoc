@@ -41,31 +41,14 @@ combined_confidence = min(
 )
 ....
 
-*Interpretation:*
-
-* *≥0.85:* High confidence.
-Auto-confirm if desired; does not require human review.
-* *0.50–0.84:* Medium confidence.
-Recommend human verification; display in UI for secondary review.
-* *<0.50:* Low confidence.
-Reject finding; flag for manual re-review if critical issue.
+*Interpretation and routing thresholds:* See <<sect-glossary, Canonical Glossary — Routing Thresholds>> for the authoritative threshold bands (≥0.85 auto-confirm, 0.50–0.84 human review, <0.50 reject) and <<sect-glossary, UI Confidence Badge Colors>>.
 
 === Severity Scoring (Pack-Defined)
 
 *Severity defines regulatory importance, not system confidence.
 Orthogonal to confidence.*
 
-*Severity levels (per HMDA pack):*
-
-[cols="13%,17%,16%,27%,27%",options="header"]
-|===
-|Level |Definition |Examples |Action Required |Review Timeline
-|*Critical* |Regulatory violation with potential enforcement action; data misrepresentation; prohibited conduct |Action Taken code wrong, pricing discrimination pattern, missing disclosure |Immediate remediation, escalation to Compliance Officer |Within 1 day
-|*High* |Potentially reportable discrepancy; regulatory attention likely if unresolved |Loan Amount mismatch >2%, co-applicant name inconsistent |Prompt investigation; remediation within 3 days |Within 3 days
-|*Medium* |Compliance or data quality issue; non-trivial to fix; not immediately reportable |Property address formatting inconsistent, fee description unclear |Standard remediation workflow |Within 7 days
-|*Low* |Minor data quality issue; cosmetic; no regulatory impact |Whitespace extra, trailing zeros |Log and monitor; no urgent action required |Within 14 days
-|*Informational* |Data point of interest; no action required |Historical note, data type conversion artifact |Log only; no action |Informational only
-|===
+For the canonical severity definitions table (Critical, High, Medium, Low, Informational) with examples, required actions, and review timelines, see <<sect-glossary, Canonical Glossary — Severity Definitions>>.
 
 *Severity is assigned by:* 1.
 Pack rule definition (default severity) 2.
