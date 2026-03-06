@@ -19,6 +19,7 @@ _Built: {build-timestamp}_
 |0.2 |2026-03-05 |Erik Pieczkowski |All sections brought to implementation-ready detail: complete component architecture, Audit Pack Specification with Rule Engine and HMDA field coverage, Regulatory Compliance Hierarchy with Institution Policy Profiles, Delivery Plan rescoped for 4-person team (Mar–Jun timeline), 26 UI wireframes contextualized into functional sections, and CI/CD tooling (linting, build timestamps, .editorconfig).
 
 |0.3 |2026-03-06 |Erik Pieczkowski |Reorganized into seven-Part structure; expanded Future Roadmap with GRC competitive positioning, Compliance Framework Library, module pricing, and TAM analysis ($200M → $15B+); added platform extensibility hooks for complaint/policy management; rewrote executive messaging with stronger market-window framing; added reinforcement learning roadmap; relocated Document Control to end of document with daily-update rules; named ACES as the incumbent competitor in three strategic locations (Problem Statement, Competitive Intelligence, Executive Summary) while keeping remaining references generic.
+Rewrote Problem Statement to align HMDA validation narrative with FFIEC Examiner Transaction Testing Guidelines: replaced all-files-all-fields framing with accurate sample-based methodology, 37 Key Data Fields focus, and two-stage testing process.
 |===
 
 === Authors / Owners
