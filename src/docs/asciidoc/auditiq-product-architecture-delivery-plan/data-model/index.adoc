@@ -257,9 +257,82 @@ CREATE INDEX idx_evidence_finding ON audits.evidence(finding_id);
 CREATE INDEX idx_evidence_hash ON audits.evidence(sha256_hash);
 ----
 
+[[sect-policy-documents-table]]
+==== policy_documents (First-Class Policy Library)
+
+*Strategic rationale:* The Institution Policy Profile (<<sect-institution-policy-profile>>) currently embeds a `policy_document_registry` array inside the profile JSON.
+This table promotes policy documents to a first-class entity, decoupled from any specific audit or policy profile.
+This decoupling enables three future capabilities at near-zero marginal cost:
+
+. *Standalone Policy Library:* Institutions can manage their policy document inventory, review cycles, and version chains without creating an audit or a policy profile — delivering immediate value during onboarding, before the first audit runs.
+. *Document Control Workflows:* The `status` lifecycle and `next_review_date` field enable a policy review cycle engine using the same state-machine and event-publishing infrastructure as audit runs and findings.
+. *Cross-Audit Policy Reuse:* Multiple audit packs and policy profiles can reference the same policy document without duplication, maintaining a single source of truth for policy version chains.
+
+[source,sql]
+----
+CREATE TABLE compliance.policy_documents (
+  document_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  institution_id UUID NOT NULL,
+
+  -- Document identity
+  title VARCHAR(512) NOT NULL,                 -- e.g., 'ABC Bank HMDA Data Integrity Policy v3.2'
+  document_type VARCHAR(50) NOT NULL,          -- 'board_policy', 'compliance_policy', 'operating_procedure', 'job_aid', 'board_resolution', 'risk_appetite_statement'
+  regulations_addressed TEXT[] NOT NULL,        -- e.g., '{12 CFR 1003, Reg C}'
+
+  -- Version chain
+  version VARCHAR(50),
+  effective_date DATE NOT NULL,
+  supersedes_document_id UUID,                 -- Previous version in the chain
+  superseded_by_document_id UUID,              -- Next version (populated when superseded)
+
+  -- Ownership & review cycle
+  owner VARCHAR(255),                          -- Department or individual responsible
+  department VARCHAR(255),
+  review_cycle_months INT DEFAULT 12,          -- Board-mandated review cadence
+  next_review_date DATE,                       -- Computed: effective_date + review_cycle_months; triggers review workflow when approaching
+  last_reviewed_date DATE,
+  last_reviewed_by UUID,
+
+  -- Lifecycle
+  status VARCHAR(50) DEFAULT 'draft',          -- 'draft', 'under_review', 'approved', 'published', 'expired', 'retired'
+
+  -- Storage & extraction
+  storage_reference VARCHAR(512),              -- URI to document in Azure Blob / institution's document store
+  sha256_hash VARCHAR(64),                     -- Integrity verification
+  ai_extraction_confidence DECIMAL(3,2),       -- Overall confidence from AI extraction pipeline
+
+  -- Audit trail link
+  audit_event_id UUID,                         -- Link to event store for full lifecycle history
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (supersedes_document_id) REFERENCES compliance.policy_documents(document_id),
+  FOREIGN KEY (superseded_by_document_id) REFERENCES compliance.policy_documents(document_id)
+);
+CREATE INDEX idx_policy_docs_tenant ON compliance.policy_documents(tenant_id, institution_id);
+CREATE INDEX idx_policy_docs_status ON compliance.policy_documents(status);
+CREATE INDEX idx_policy_docs_review ON compliance.policy_documents(next_review_date) WHERE status = 'published';
+CREATE INDEX idx_policy_docs_regulation ON compliance.policy_documents USING GIN (regulations_addressed);
+----
+
+*Relationship to Institution Policy Profile:* The Policy Profile's `policy_document_registry` array references `document_id` values from this table.
+This table is the source of truth for document metadata; the profile captures the point-in-time snapshot used for a specific audit overlay.
+
+*Review cycle engine (Phase 2+):* When `next_review_date` approaches (configurable alert window, default 30 days), the Workflow Engine creates a review workflow event.
+The review follows the same dual-approval pattern as Policy Profile review (<<sect-ai-policy-pipeline>>, Phase 5).
+Every review event is recorded in `audit_trail.events` with `entity_type = 'policy_document'`.
+
 ==== audit_trail.events (Immutable Log)
 
 NOTE: This schema must match the authoritative definition in <<sect-audit-trail-event-store>>.
+
+*Platform extensibility note:* The `entity_type` and `audit_id` columns are deliberately generic.
+`entity_type` is a VARCHAR discriminator — not an enum — so that future platform modules (complaint management, standalone policy management, document control workflows) can store events in the same immutable log without schema migration.
+`audit_id` is nullable for non-audit entities (e.g., standalone policy lifecycle events, complaint intake events).
+This design ensures that the audit trail infrastructure built for MVP serves as the enterprise-grade event backbone for all future modules, avoiding costly event store duplication.
 
 [source,sql]
 ----
@@ -267,9 +340,9 @@ CREATE TABLE audit_trail.events (
   event_id UUID PRIMARY KEY,                   -- UUID v7 (time-sortable)
   tenant_id UUID NOT NULL,                     -- Multi-tenant isolation
   sequence_id BIGINT NOT NULL,                 -- Global monotonic per tenant
-  audit_id UUID NOT NULL,
+  audit_id UUID,                               -- Nullable: non-audit entities (complaints, policy lifecycle) have no audit_id
   timestamp TIMESTAMPTZ NOT NULL,              -- Server-assigned only; no client timestamps
-  entity_type VARCHAR(50) NOT NULL,
+  entity_type VARCHAR(50) NOT NULL,            -- Extensible discriminator: 'finding', 'mapping', 'evidence', 'audit_run', 'policy_document', 'complaint', etc.
   entity_id VARCHAR(255) NOT NULL,
   event_type VARCHAR(100) NOT NULL,
 
@@ -291,12 +364,14 @@ CREATE TABLE audit_trail.events (
   schema_version VARCHAR(20) NOT NULL DEFAULT '1.0',
 
   UNIQUE (tenant_id, sequence_id),             -- Enforces monotonic per tenant
-  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id)
+  -- audit_id FK is NOT enforced: allows non-audit entities (policy_document, complaint) to use the event store
+  -- Application-level validation ensures audit_id references a valid audit_run when entity_type is audit-scoped
 );
 
 -- Performance indexes
-CREATE INDEX idx_events_audit ON audit_trail.events(audit_id, timestamp);
+CREATE INDEX idx_events_audit ON audit_trail.events(audit_id, timestamp) WHERE audit_id IS NOT NULL;
 CREATE INDEX idx_events_entity ON audit_trail.events(entity_id);
+CREATE INDEX idx_events_entity_type ON audit_trail.events(entity_type, timestamp);
 CREATE INDEX idx_events_actor ON audit_trail.events(actor_id);
 CREATE INDEX idx_tenant_sequence ON audit_trail.events(tenant_id, sequence_id);
 CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE is_anchor = TRUE;

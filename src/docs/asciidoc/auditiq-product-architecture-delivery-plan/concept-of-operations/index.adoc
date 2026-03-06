@@ -165,6 +165,20 @@ stateDiagram-v2
 *Audit trail:* Every state transition emits an immutable audit event with `actor_id`, `timestamp`, `disposition`, and `rationale`.
 The complete finding remediation history is included in the exam-ready bundle (<<sect-exam-ready-bundle>>).
 
+[[sect-remediation-extensibility]]
+==== Platform Extensibility: Complaint Management and Beyond
+
+The 9-state remediation lifecycle is intentionally designed as a generic workflow primitive — not an audit-specific construct.
+The state machine (Identified → Triaged → Assigned → Corrected → Retested → Closed), the SLA-driven due dates, the severity classification, the evidence attachments, and the immutable event trail are structurally identical to what a complaint management system, a corrective action tracker, or a regulatory response workflow requires.
+
+*Finding origin extensibility:* Every finding is tagged with an `origin` field indicating what triggered it (see <<sect-effective-rule-merge>>).
+The MVP defines four origins: `regulatory`, `policy_tightened`, `policy_supplemental`, and `procedural_checkpoint`.
+A fifth origin — `complaint` — is reserved for future complaint management integration.
+This enables bi-directional linking: a finding can trigger a complaint (e.g., pattern of HMDA errors affecting borrowers suggests a fair lending issue), and a complaint can trigger an audit (e.g., customer alleges rate discrimination, triggering a targeted HMDA review using existing packs).
+
+*Architectural implication:* Because the remediation lifecycle, audit trail, evidence store, and approval workflow are all entity-type-agnostic (see <<sect-policy-documents-table>> and the event store's extensible `entity_type` discriminator), extending to complaint management requires new UI screens and a Complaint Pack — not new backend infrastructure.
+The same Workflow Engine, Event Store, and RBAC model serve both audit findings and complaint records.
+
 === Audit Workflow: Automated Pre-Scan (“Target-to-Source” / “Record-to-Record”)
 
 For structured data audits (e.g., HMDA LAR against LOS database extract), the full audit can be automated:

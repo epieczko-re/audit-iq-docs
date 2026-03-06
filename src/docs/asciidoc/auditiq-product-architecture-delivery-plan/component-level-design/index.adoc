@@ -942,7 +942,7 @@ interface AuditEvent {
   sequence_id: number;                 // Global monotonic per tenant (NOT per audit)
   timestamp: string;                   // Server-assigned ISO 8601; client timestamps rejected
   audit_id: string;
-  entity_type: 'finding' | 'mapping' | 'evidence' | 'audit_run' | 'user_action' | 'ai_action' | 'system';
+  entity_type: 'finding' | 'mapping' | 'evidence' | 'audit_run' | 'policy_document' | 'complaint' | 'user_action' | 'ai_action' | 'system';  // Extensible: new entity types added without schema migration
   entity_id: string;
 
   event_type: string;                  // e.g., 'FindingCreated', 'FindingTriaged', 'FindingClosed'

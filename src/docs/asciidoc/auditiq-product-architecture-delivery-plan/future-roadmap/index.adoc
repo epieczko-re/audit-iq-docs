@@ -162,12 +162,22 @@ The question is not _whether_ the data supports RL, but _when_ sufficient volume
 * Monetization: Revenue share on vendor packs (80/20 or 70/30 split TBD)
 * Example packs: ECOA/FHA audits, FCRA disputes, loan matrix validation, LIBOR remediation
 
-*Policy Management Module*
+*Policy Management & Document Control Module*
 
-* Spin-off product: Audit policies, rule versioning, change tracking
-* Regulators demand traceability of “which rule version was in effect when”
-* Feature: Policy library (CRA, ECOA, HMDA, fair lending) + versioning + audit trail
+* Spin-off product: standalone policy library, document control workflows, review cycle automation, and regulatory change impact monitoring
+* Regulators demand traceability of “which rule version was in effect when” — the immutable event store already provides this
+* Feature: Policy library (CRA, ECOA, HMDA, fair lending) + versioning + audit trail + review cycle engine + gap analysis dashboard
 * Integration: Packs reference policies; policy changes auto-trigger pack version updates
+* *MVP foundation already built:* The first-class `compliance.policy_documents` table (<<sect-policy-documents-table>>), the AI-Driven Policy Profile Creation Pipeline (<<sect-ai-policy-pipeline>>), and the extensible event store enable this module as primarily a UI and workflow addition — not new backend architecture
+
+*Complaint Management Module*
+
+* Extends the 9-state Finding Remediation Lifecycle (<<sect-remediation-extensibility>>) to complaint intake, response drafting, and regulatory reporting
+* Reuses the same immutable event store, evidence/document store, RBAC model, and approval workflow infrastructure
+* Complaint Packs (modeled identically to Regulatory Packs) encode intake classification rules, regulatory response SLAs, required response content, and escalation triggers
+* Bi-directional finding-complaint linking: findings can trigger complaints (pattern detection), complaints can trigger targeted audits using existing packs
+* AI pipeline (same as Policy Profile creation) drafts complaint response letters with regulatory citations; mandatory human approval before issuance
+* *MVP foundation already built:* The `complaint` origin type on findings, the extensible `entity_type` discriminator on the event store, and the generic remediation state machine mean this module requires a new Complaint Pack type and UI screens — not new infrastructure
 
 *Audit Data Warehouse & BI*
 
@@ -192,8 +202,54 @@ The question is not _whether_ the data supports RL, but _when_ sufficient volume
 
 === Strategic Rationale
 
+==== Build Once, Sell Three Times: The Platform Leverage Story
+
+AuditIQ's MVP is not just an audit product.
+It is a compliance infrastructure platform whose core primitives — immutable event store, AI extraction pipeline, declarative pack engine, confidence scoring, approval workflows, and policy analysis — are the building blocks of three distinct product lines that share the same backend:
+
+. *Audit Automation* (MVP) — the initial product, generating immediate revenue from HMDA compliance auditing
+. *Policy Management & Document Control* (Phase 3) — a standalone compliance tool that institutions use year-round, not just during audits
+. *Complaint Management* (Phase 3) — a regulatory response system that closes the loop between audit findings and customer impact
+
+This is the key strategic insight: *three deliberate architectural decisions made during MVP development make the Phase 3 modules an extension of existing infrastructure rather than a net-new build:*
+
+[cols="10%,35%,25%,30%",options="header"]
+|===
+|# |MVP Decision |Cost to Build Now |What It Unlocks Later
+
+|1
+|Generic `entity_type` discriminator on the immutable event store (<<sect-data-model>>) — VARCHAR, not enum; `audit_id` nullable for non-audit entities
+|One column change; zero runtime cost
+|Complaint lifecycle events, policy document lifecycle events, and document control workflows all use the same event store without migration
+
+|2
+|First-class `compliance.policy_documents` table (<<sect-policy-documents-table>>) decoupled from the Institution Policy Profile JSON
+|One additional table; referenced by existing profile pipeline
+|Standalone policy library UI, review cycle automation, and document control workflows — deliverable before a customer runs their first audit
+
+|3
+|`complaint` reserved as a finding origin type alongside `regulatory`, `policy_tightened`, `policy_supplemental`, and `procedural_checkpoint` (<<sect-remediation-extensibility>>)
+|One enum value; zero runtime cost
+|Bi-directional finding-complaint linking from day one; complaint-triggered audits reuse existing packs and workflows
+|===
+
+*Why this matters for sales and positioning:*
+
+* *Immediate onboarding value:* The standalone policy library gives institutions a reason to upload their policy documents and engage with the platform before their first audit.
+This front-loads the data that feeds the AI-Driven Policy Profile Creation Pipeline (<<sect-ai-policy-pipeline>>), accelerating time-to-value for the audit product.
+* *Year-round engagement:* Audits are periodic; policy management and complaint handling are continuous.
+Adding these modules transforms AuditIQ from a tool institutions use quarterly into a platform they use daily — dramatically increasing retention and switching costs.
+* *Cross-sell motion:* Every audit finding that reveals a policy gap is a natural upsell into the policy management module.
+Every pattern of findings that suggests systemic borrower impact is a natural trigger for the complaint management module.
+The product creates its own demand for the next product.
+* *Competitive differentiation:* No competing audit platform (CaseWare, TeamMate, AuditBoard, Diligent, DataSnipper, MindBridge, Fieldguide) offers integrated audit + policy management + complaint management on a shared compliance infrastructure.
+This is a category-defining positioning opportunity.
+
+==== Additional Strategic Drivers
+
 *Network effects:* Pack marketplace + community contributions accelerate audit coverage and reduce pack development cost for platform.
 
-*Platform stickiness:* Copilot + predictive rules + policy integration make AuditIQ harder to replace once adopted.
+*Platform stickiness:* Copilot + predictive rules + policy integration + complaint management make AuditIQ harder to replace once adopted.
 
 *Data moat:* Audit data warehouse becomes increasingly valuable as customer base grows; enables predictive models that smaller competitors cannot match.
+Adding policy management and complaint data to the warehouse creates the richest compliance dataset in the market — a moat that deepens with every customer.
