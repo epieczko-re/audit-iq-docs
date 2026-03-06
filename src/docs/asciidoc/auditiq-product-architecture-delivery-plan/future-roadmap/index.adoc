@@ -3,9 +3,11 @@
 
 === Carry-Forward from v0.1: Platform Expansion Vision
 
-*AuditIQ is positioned as the foundational audit automation layer.* Future modules leverage the pack engine, immutable audit trail, and scoring framework:
+*AuditIQ is not just an audit product — it is a compliance infrastructure platform.*
+The pack engine, immutable audit trail, AI extraction pipeline, confidence scoring, and policy analysis primitives built for MVP are the foundation for a multi-product compliance ecosystem.
+Each phase below builds on MVP infrastructure, not alongside it.
 
-=== Phase 2: Expansion (Q3 2026, Jul–Sep)
+=== Phase 2: Intelligence & Multi-Pack (Q3 2026, Jul–Sep)
 
 *Conversational Copilot*
 
@@ -152,17 +154,9 @@ The question is not _whether_ the data supports RL, but _when_ sufficient volume
 * Findings merge, confidence scoring aggregates across packs
 * Dependency tracking (e.g., “HMDA finding prerequisites CRA data”)
 
-=== Phase 3 & Beyond: Platform Ecosystem (Q4 2026+)
+=== Phase 3: Compliance Platform Modules (Q4 2026, Oct–Dec)
 
-*Pack Marketplace*
-
-* Community-driven pack registry (GitHub-based or proprietary platform)
-* Vendor packs from compliance consultants, audit firms
-* Rating & review system for pack quality
-* Monetization: Revenue share on vendor packs (80/20 or 70/30 split TBD)
-* Example packs: ECOA/FHA audits, FCRA disputes, loan matrix validation, LIBOR remediation
-
-*Policy Management & Document Control Module*
+==== Policy Management & Document Control Module
 
 * Spin-off product: standalone policy library, document control workflows, review cycle automation, and regulatory change impact monitoring
 * Regulators demand traceability of “which rule version was in effect when” — the immutable event store already provides this
@@ -170,7 +164,7 @@ The question is not _whether_ the data supports RL, but _when_ sufficient volume
 * Integration: Packs reference policies; policy changes auto-trigger pack version updates
 * *MVP foundation already built:* The first-class `compliance.policy_documents` table (<<sect-policy-documents-table>>), the AI-Driven Policy Profile Creation Pipeline (<<sect-ai-policy-pipeline>>), and the extensible event store enable this module as primarily a UI and workflow addition — not new backend architecture
 
-*Complaint Management Module*
+==== Complaint Management Module
 
 * Extends the 9-state Finding Remediation Lifecycle (<<sect-remediation-extensibility>>) to complaint intake, response drafting, and regulatory reporting
 * Reuses the same immutable event store, evidence/document store, RBAC model, and approval workflow infrastructure
@@ -179,26 +173,191 @@ The question is not _whether_ the data supports RL, but _when_ sufficient volume
 * AI pipeline (same as Policy Profile creation) drafts complaint response letters with regulatory citations; mandatory human approval before issuance
 * *MVP foundation already built:* The `complaint` origin type on findings, the extensible `entity_type` discriminator on the event store, and the generic remediation state machine mean this module requires a new Complaint Pack type and UI screens — not new infrastructure
 
-*Audit Data Warehouse & BI*
+[[sect-compliance-framework-library]]
+==== Compliance Framework Library & Cross-Framework Mapping
+
+*Market context:* Financial institutions manage compliance across dozens of overlapping regulatory frameworks simultaneously.
+The FFIEC Cybersecurity Assessment Tool (CAT) sunset in August 2025 forced every regulated institution to migrate to alternative frameworks (NIST CSF 2.0, CRI Cyber Profile, CIS Controls).
+This created a wave of framework management demand — and validated that institutions will pay for tools that manage framework crosswalks, control mapping, and coverage analysis.
+
+*Competitive urgency:* In January 2026, Wolters Kluwer acquired StandardFusion (~€32M) specifically to integrate its 150+ compliance framework library into TeamMate — one of AuditIQ's named competitors (<<sect-competitive-intelligence>>).
+This means TeamMate will soon offer integrated audit + GRC + framework management.
+AuditIQ must have a credible framework library strategy or risk losing the platform positioning advantage.
+
+*Why AuditIQ's architecture is uniquely suited to this:*
+
+AuditIQ's Regulatory Pack architecture (<<sect-audit-pack-spec>>) is already a compliance framework engine — it encodes regulatory logic declaratively, maps controls to evidence, and scores compliance confidence.
+The three-artifact design (Regulatory Pack + Institution Policy Profile + Effective Rule Set) already performs framework crosswalking: the Pack represents the regulatory framework, the Policy Profile represents the institution's internal controls, and the Effective Rule Set is the crosswalk between them.
+
+Extending this to a general-purpose framework library requires three additions:
+
+. *Framework Packs:* A new pack category alongside Regulatory Packs.
+Framework Packs encode compliance frameworks (ISO 27001, SOC 2, NIST CSF 2.0, CRI Cyber Profile, FFIEC IT Handbook, OCC Heightened Standards) as declarative JSON artifacts using the same pack schema — controls as rules, requirements as comparison expressions, evidence requirements as source schemas.
+The Pack Engine interprets them identically.
+. *Cross-Framework Mapping Engine:* A crosswalk layer that maps controls between Framework Packs.
+Example: ISO 27001 Annex A.5.1 (Information Security Policies) maps to NIST CSF GV.PO (Policy), SOC 2 CC1.1 (Control Environment), and CRI Cyber Profile GV.SP-1.1 (Cybersecurity Program Strategy).
+Crosswalks are authored as structured mapping artifacts — like pack rules — with confidence scores on each mapping.
+AI-assisted crosswalk generation uses RAG over framework text to suggest mappings; human compliance experts approve.
+. *Unified Control Register:* A single view where one control maps to requirements across multiple frameworks.
+This eliminates the “spreadsheet crosswalk” problem that consumes weeks of compliance effort.
+Coverage and gap dashboards show which frameworks are satisfied by existing controls, and which have gaps — reusing the gap analysis pattern from the Institution Policy Profile (<<sect-institution-policy-profile>>).
+
+*Financial services framework priority list:*
+
+[cols=”35%,35%,30%”,options=”header”]
+|===
+|Framework |Relevance |Pack Priority
+
+|HMDA / Reg C (12 CFR 1003)
+|Core lending compliance; MVP pack
+|Phase 1 (MVP) — shipped
+
+|CRA (Community Reinvestment Act)
+|Lending + investment compliance
+|Phase 2 — planned
+
+|SBL / Section 1071
+|Small business lending data collection
+|Phase 2 — planned
+
+|ECOA / Reg B / Fair Lending
+|Anti-discrimination; examiner focus area
+|Phase 2–3
+
+|TRID (TILA-RESPA Integrated Disclosure)
+|Loan disclosure compliance
+|Phase 3
+
+|NIST CSF 2.0
+|Cybersecurity framework; post-FFIEC CAT migration
+|Phase 3 — framework pack
+
+|CRI Cyber Profile v2.1
+|Financial-services-specific cyber framework; FFIEC CAT replacement
+|Phase 3 — framework pack
+
+|FFIEC IT Examination Handbook
+|IT governance and controls for banking
+|Phase 3 — framework pack
+
+|OCC Heightened Standards
+|Risk governance for large banks
+|Phase 3–4 — framework pack
+
+|SOC 2 (Trust Services Criteria)
+|Vendor and third-party risk
+|Phase 4 — framework pack
+
+|ISO 27001:2022
+|Information security management system
+|Phase 4 — framework pack
+
+|BSA/AML (Bank Secrecy Act)
+|Anti-money laundering compliance
+|Phase 4
+
+|GLBA / Reg P (Privacy)
+|Financial privacy
+|Phase 4 — framework pack
+|===
+
+*Monetization model:* Framework Packs follow the same per-pack subscription pricing as Regulatory Packs (<<sect-pricing>>).
+Cross-framework mapping is included in the Professional and Enterprise platform tiers.
+This extends AuditIQ's ACV from per-audit-pack to per-framework-pack — a significant TAM expansion because institutions managing 5–10 frameworks pay 5–10× the per-pack subscription.
+
+==== Audit Data Warehouse & BI
 
 * Customer data lake: Aggregated audit results, trends, metrics
 * Example: “What % of commercial loan audits failed CRA pricing component in 2025?”
 * BI dashboards: Risk heat maps, audit metrics by region, examiner prep reports
 * Data residency & encryption respected; opt-in for analytics
 
-*Third-Party Integrations*
+=== Phase 4: Platform Ecosystem (Q1 2027+)
+
+==== Pack Marketplace
+
+* Community-driven pack registry (GitHub-based or proprietary platform)
+* Vendor packs from compliance consultants, audit firms, and framework specialists
+* Rating & review system for pack quality
+* Monetization: Revenue share on vendor packs (80/20 or 70/30 split TBD)
+* Example packs: ECOA/FHA audits, FCRA disputes, loan matrix validation, LIBOR remediation, NIST 800-53 control families, CIS Controls benchmarks
+
+==== Third-Party Integrations
 
 * LMS (Loan Management System): Pre-populate loan data into audit
+* GRC platform connectors: Import controls and risk registers from existing GRC tools (Archer, LogicGate, ServiceNow GRC) for institutions that already have GRC investments
 * Regulatory reporting: Export findings to FDIC/OCC submission tools
 * Workflow engines: Zapier, Make, RPA tools for audit orchestration
 * API-first strategy ensures extensibility
 
-*Vertical Expansion Beyond Lending*
+==== Vertical Expansion Beyond Lending
 
 * Insurance audits: Policy compliance, claims validation
-* Credit unions: Regulatory exam preparation
+* Credit unions: Regulatory exam preparation (NCUA focus)
 * Fund management: Compliance audits, valuation verification
 * Vertical teams (Q4+) develop packs; core platform scales
+
+==== GRC Convergence: From Audit Platform to Compliance Operating System
+
+The long-term positioning is the convergence of AuditIQ's module portfolio into a unified compliance operating system:
+
+.GRC Convergence — From Audit Tool to Compliance Operating System
+[mermaid]
+----
+graph TB
+  subgraph “Phase 1 — MVP”
+    A[“<b>Audit Automation</b><br/>HMDA pack, findings,<br/>remediation, exam bundle”]
+  end
+
+  subgraph “Phase 2 — Intelligence”
+    B[“<b>Multi-Pack Audits</b><br/>CRA, SBL, Origination”]
+    C[“<b>AI Copilot</b><br/>Conversational, predictive,<br/>adaptive learning”]
+  end
+
+  subgraph “Phase 3 — Compliance Platform”
+    D[“<b>Policy Management</b><br/>Document control,<br/>review cycles, gap analysis”]
+    E[“<b>Complaint Management</b><br/>Intake, response drafting,<br/>regulatory reporting”]
+    F[“<b>Framework Library</b><br/>NIST CSF, CRI, ISO 27001,<br/>cross-framework mapping”]
+  end
+
+  subgraph “Phase 4 — Ecosystem”
+    G[“<b>Pack Marketplace</b><br/>Third-party packs,<br/>vendor ecosystem”]
+    H[“<b>GRC Integrations</b><br/>Archer, LogicGate,<br/>ServiceNow connectors”]
+    I[“<b>Compliance OS</b><br/>Unified risk, audit, policy,<br/>complaint, framework management”]
+  end
+
+  A --> B
+  A --> C
+  B --> D
+  B --> E
+  C --> F
+  D --> I
+  E --> I
+  F --> G
+  F --> H
+  G --> I
+  H --> I
+
+  style A fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style E fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style F fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style G fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style H fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style I fill:#1B3A5C,color:#fff,stroke:#0F2440
+----
+
+*The key differentiator vs. pure GRC platforms (StandardFusion, Archer, LogicGate):* Those platforms manage frameworks and controls abstractly — they track what _should_ happen.
+AuditIQ starts from the evidence — it proves what _actually_ happened, with AI-extracted data, confidence scores, and immutable audit trails.
+The framework library is a natural extension of this evidence-first approach: instead of tracking controls in a spreadsheet, AuditIQ _tests_ controls against actual documents, data, and audit evidence.
+This is the difference between a compliance checklist and a compliance engine.
+
+*The key differentiator vs. TeamMate + StandardFusion:* TeamMate's StandardFusion acquisition is a bolt-on integration of two architecturally distinct systems — an audit workpaper tool and a GRC control register.
+AuditIQ's pack architecture was designed from the ground up as a declarative framework engine.
+Framework Packs, Regulatory Packs, and Complaint Packs are all the same artifact type, processed by the same engine, scored by the same confidence model, and stored in the same immutable event store.
+This architectural unity cannot be achieved by acquisition integration — it must be built from first principles.
 
 === Strategic Rationale
 
@@ -210,6 +369,7 @@ It is a compliance infrastructure platform whose core primitives — immutable e
 . *Audit Automation* (MVP) — the initial product, generating immediate revenue from HMDA compliance auditing
 . *Policy Management & Document Control* (Phase 3) — a standalone compliance tool that institutions use year-round, not just during audits
 . *Complaint Management* (Phase 3) — a regulatory response system that closes the loop between audit findings and customer impact
+. *Compliance Framework Library* (Phase 3–4) — a framework management and cross-framework mapping engine that turns AuditIQ from an audit tool into a compliance operating system, competing directly with the GRC market
 
 This is the key strategic insight: *three deliberate architectural decisions made during MVP development make the Phase 3 modules an extension of existing infrastructure rather than a net-new build:*
 
@@ -245,11 +405,32 @@ The product creates its own demand for the next product.
 * *Competitive differentiation:* No competing audit platform (CaseWare, TeamMate, AuditBoard, Diligent, DataSnipper, MindBridge, Fieldguide) offers integrated audit + policy management + complaint management on a shared compliance infrastructure.
 This is a category-defining positioning opportunity.
 
+==== TAM Expansion: From Audit Market to GRC Market
+
+The audit QC market for financial services is a ~$200M addressable market.
+The GRC market is a $15B+ market growing at 14% CAGR.
+By expanding from audit-only to audit + policy + complaint + framework management, AuditIQ moves from a vertical point solution into the GRC platform category — competing for a share of the 75× larger market.
+
+Critically, AuditIQ enters the GRC market from a position of strength that pure GRC platforms cannot match: *evidence-based compliance verification.*
+StandardFusion, Archer, and LogicGate track what controls _exist_.
+AuditIQ proves what controls _work_ — with AI-extracted evidence, confidence scores, and immutable audit trails.
+This is an insurmountable advantage for regulated financial institutions where examiners demand proof, not attestation.
+
 ==== Additional Strategic Drivers
 
-*Network effects:* Pack marketplace + community contributions accelerate audit coverage and reduce pack development cost for platform.
+*Network effects:* Pack marketplace + community contributions accelerate audit and framework coverage and reduce pack development cost for platform.
+Every Framework Pack created by one institution's compliance team is reusable across the entire customer base.
 
-*Platform stickiness:* Copilot + predictive rules + policy integration + complaint management make AuditIQ harder to replace once adopted.
+*Platform stickiness:* Copilot + predictive rules + policy integration + complaint management + framework library make AuditIQ harder to replace once adopted.
+An institution managing 8 frameworks, 3 audit packs, a policy library, and complaint workflows on AuditIQ faces extreme switching costs.
 
 *Data moat:* Audit data warehouse becomes increasingly valuable as customer base grows; enables predictive models that smaller competitors cannot match.
-Adding policy management and complaint data to the warehouse creates the richest compliance dataset in the market — a moat that deepens with every customer.
+Adding policy management, complaint data, and cross-framework control effectiveness data to the warehouse creates the richest compliance dataset in the market — a moat that deepens with every customer and every framework.
+
+*Regulatory tailwinds:*
+
+* *FFIEC CAT sunset (Aug 2025):* Every regulated financial institution must adopt a new cybersecurity framework.
+AuditIQ's Framework Pack for CRI Cyber Profile or NIST CSF 2.0 arrives precisely when institutions are migrating.
+* *OCC Heightened Standards enforcement:* Large banks face increasing scrutiny on risk governance.
+Framework Packs that map OCC expectations to testable controls are high-value.
+* *$4.6B in financial penalties (2024):* A 522% year-over-year increase in banking fines creates urgency for compliance platforms that prove coverage, not just claim it.

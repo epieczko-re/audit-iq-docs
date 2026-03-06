@@ -133,6 +133,77 @@ AuditIQ includes confidence scoring, evidence management, and AI controls at the
 |TENA |Servicing-focused |AuditIQ origination-first with expansion path
 |===
 
+[[sect-grc-competitive-landscape]]
+=== GRC Platform Competitive Landscape
+
+As AuditIQ expands from audit automation into policy management, complaint management, and compliance framework coverage (<<sect-compliance-framework-library>>), it enters the GRC market.
+The competitive landscape here is fundamentally different from the audit QC market — larger ($15B+), more fragmented, and increasingly consolidated through acquisition.
+
+==== Critical Market Event: Wolters Kluwer Acquires StandardFusion (January 2026)
+
+In January 2026, Wolters Kluwer completed the acquisition of StandardFusion (~€32M) — a cloud-based GRC platform with 150+ compliance framework library, cross-framework control mapping, and modules for risk, compliance, incident, vendor, policy, privacy, audit, and business continuity.
+StandardFusion is being integrated into *TeamMate*, Wolters Kluwer's audit management platform and one of AuditIQ's named competitors.
+
+*What this means for AuditIQ:*
+
+* *Validation:* A $5B enterprise spending ~€32M to bolt GRC capabilities onto an audit platform confirms that integrated audit + GRC is the market direction.
+AuditIQ's "Build Once, Sell Three Times" strategy (<<sect-future-roadmap>>) is architecturally aligned with where the market is heading.
+* *Threat:* TeamMate + StandardFusion will offer audit workpapers + 150 compliance frameworks + policy management in a single vendor relationship.
+Institutions evaluating audit platforms in Q3–Q4 2026 will expect framework management capabilities.
+* *Opportunity:* The TeamMate + StandardFusion integration is a bolt-on — two architecturally distinct systems joined by API connectors and shared login.
+AuditIQ's pack architecture was designed as a declarative framework engine from the ground up.
+Framework Packs, Regulatory Packs, and Complaint Packs are the same artifact type, processed by the same engine, with the same confidence scoring and immutable audit trail.
+This architectural unity is the competitive moat.
+
+==== GRC Platform Comparison
+
+[cols="18%,18%,18%,18%,28%",options="header"]
+|===
+|Platform |Framework Library |AI Capability |Audit Depth |AuditIQ Advantage
+
+|*StandardFusion* (now TeamMate)
+|150+ frameworks; cross-framework mapping
+|None (control tracking only)
+|Shallow (workpaper-based)
+|AuditIQ tests controls against evidence with AI + confidence scores; StandardFusion tracks controls in a register
+
+|*Archer (RSA)*
+|50+ frameworks; enterprise GRC
+|Limited (rule-based automation)
+|Minimal (IT audit focus)
+|AuditIQ purpose-built for financial services regulatory compliance; Archer is horizontal enterprise GRC
+
+|*LogicGate*
+|Custom framework support; no pre-built library
+|Workflow automation
+|None (risk management focus)
+|AuditIQ's pre-built Regulatory Packs provide out-of-box compliance; LogicGate requires custom configuration
+
+|*AuditBoard*
+|SOX, SOC 2, custom frameworks
+|AI-assisted risk assessment
+|Internal audit workpapers
+|AuditIQ's document extraction + confidence scoring provides evidence-based verification vs. attestation-based compliance
+
+|*ServiceNow GRC*
+|Custom frameworks; ITSM integration
+|AI-powered risk scoring
+|IT audit workflow
+|AuditIQ purpose-built for financial regulatory compliance; ServiceNow is IT-centric GRC
+|===
+
+*Positioning statement:* GRC platforms manage what controls _exist_.
+AuditIQ proves what controls _work_ — with AI-extracted evidence, three-layer confidence scoring, and immutable audit trails.
+For regulated financial institutions where examiners demand proof, this is the difference between a compliance checklist and a compliance engine.
+
+==== Regulatory Framework Market Timing
+
+The FFIEC Cybersecurity Assessment Tool (CAT) sunset in August 2025 forced every regulated financial institution to adopt alternative frameworks.
+The industry is converging on the *CRI Cyber Profile v2.1* as the primary crosswalk and harmonization tool for financial services, with NIST CSF 2.0 as the underlying foundation.
+CRI Profile v2.1 maps to guidance from the Federal Reserve, OCC, FDIC, FFIEC, CFTC, IOSCO, and international bodies.
+
+This creates a framework management demand wave that AuditIQ can capture with Framework Packs (<<sect-compliance-framework-library>>) that encode CRI Profile diagnostic statements as testable rules — not just checkboxes.
+
 === AuditIQ Competitive Differentiation
 
 This is not a feature comparison — it is an architectural gap that widens over time:
