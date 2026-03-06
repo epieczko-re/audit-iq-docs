@@ -295,6 +295,24 @@ graph TD
   style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
   style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
+
+*Isolation enforcement by layer:*
+
+* *Database (PostgreSQL RLS):* Every table containing tenant data has an RLS policy that filters rows by `current_setting('app.tenant_id')`.
+The tenant ID is set on each database connection by the API middleware before any query executes.
+Even if application code omits a `WHERE tenant_id = ...` clause, RLS silently filters rows.
+RLS policies are enforced for all roles except the superuser migration role, which is used only for schema migrations and is not accessible to application services.
+* *Blob Storage (per-tenant containers):* Each tenant's documents are stored in a dedicated Azure Blob container named `tenant-{tenant_id}`.
+SAS tokens are scoped to the tenant's container with a 1-hour expiry.
+Container-level access policies prevent cross-tenant enumeration.
+* *Search (per-tenant Elasticsearch indices):* Each tenant has a dedicated index with a naming convention of `auditiq-{tenant_id}-{entity_type}`.
+Index-level security aliases ensure queries are routed to the correct tenant index.
+Cross-index search is disabled at the API layer.
+* *API Gateway (JWT tenant extraction):* The API Gateway extracts `tenant_id` from the JWT `org_id` claim and injects it as a request header.
+Backend services trust this header (Gateway is the only ingress point).
+Requests without a valid `tenant_id` claim are rejected with 401 Unauthorized.
+* *Vector Store (Qdrant):* Regulation embeddings are shared across tenants (public regulatory corpus).
+Institution-specific policy embeddings are stored in per-tenant collections, with payload-level filtering by `tenant_id`.
 [start=7]
 . *Reproducibility:* Identical inputs + pack version + configuration = identical deterministic outputs.
 
@@ -466,69 +484,94 @@ US data residency guaranteed — no data leaves US Azure regions.
 
 ==== Non-Functional Requirements
 
-[cols="25%,25%,25%,25%",options="header"]
+[cols="18%,18%,18%,22%,24%",options="header"]
 |===
-|Category |Requirement |Target |Measurement
+|Category |Requirement |Target |Measurement |Justification
 
 |*Availability*
 |Platform uptime SLA
 |99.95% (≤ 4.4 hours downtime/year)
 |Azure Monitor availability metric, monthly
+|Matches Azure AKS + PostgreSQL Flexible Server combined SLA.
+Financial institution customers expect ≥ 99.9% for compliance-critical systems per FFIEC guidance.
 
 |*Recovery Point Objective (RPO)*
 |Maximum data loss on failure
 |< 15 minutes
 |WAL archiving lag to Azure Blob
+|Continuous WAL archiving to Azure Blob achieves ~1-minute RPO in practice.
+15-minute ceiling accounts for worst-case network delays.
+FFIEC BCP Handbook requires RPOs aligned to data criticality.
 
 |*Recovery Time Objective (RTO)*
 |Time to restore service after failure
 |< 1 hour
 |DR drill quarterly; automated failover for DB
+|PostgreSQL automatic failover achieves < 60 seconds for AZ-level failures.
+1-hour RTO covers full-region failover, including DNS propagation.
+Aligns with FFIEC expectation that critical systems restore within business-day boundaries.
 
 |*Latency — API*
 |P95 API response time
 |< 500ms (CRUD operations)
 |Application Insights, per-endpoint
+|User experience research indicates perceived responsiveness degrades above 500ms for interactive applications.
+Allows headroom for API Gateway overhead (~50ms) and RLS policy evaluation (~10ms).
 
 |*Latency — Document Processing*
 |Per-page extraction time
 |< 2 seconds (standard pipeline)
 |Custom metric, per-document
+|Derived from Docling benchmark: ~1.2s/page on 8-vCPU nodes with standard document complexity.
+2-second ceiling provides 67% headroom for complex layouts (multi-table, rotated scans).
 
 |*Latency — Search*
 |P95 search response time
 |< 500ms
 |Elasticsearch metrics
+|Consistent with API latency target.
+Elasticsearch benchmarks on comparable index sizes (10M documents) show P95 < 200ms, providing 2.5× headroom.
 
 |*Throughput — Ingestion*
 |Records per minute (structured data)
 |≥ 5,000 records/minute
 |Load test, quarterly
+|Largest anticipated single-upload: 50,000-record HMDA LAR file.
+At 5,000 records/min, ingestion completes in ≤ 10 minutes — within user tolerance for batch upload.
 
 |*Throughput — Document Processing*
 |Pages per day (single AKS node)
 |≥ 175,000 pages/day
 |Benchmark, per pipeline pool node
+|Derived from Docling benchmark: ~1.2s/page × 86,400s/day ÷ 0.6 utilization factor = ~172,800 pages/day on a single 8-vCPU node.
+With 3–6 pipeline nodes, cluster capacity is 525K–1.05M pages/day.
 
 |*Concurrent Users*
 |Simultaneous active users
 |500 per AKS cluster
 |Load test, quarterly
+|Phase 1 projection: ~20 institutions × ~25 active users each = ~500 peak concurrent users.
+Validated against AKS system pool capacity (3× D4s_v5 = 12 vCPU for API/auth workloads).
 
 |*Concurrent Audits*
 |Active audits across all tenants
 |1,000+
 |Database query, real-time dashboard
+|Phase 1 projection: ~20 institutions × ~50 active audits each = ~1,000 concurrent audits.
+Each audit consumes ~2 MB working memory in orchestration; 1,000 audits = ~2 GB, within system pool capacity.
 
 |*Storage — Document Retention*
 |Regulatory retention period
 |7 years (hot → cool → archive)
 |Azure Blob lifecycle policy
+|HMDA record retention requirement: 3 years for data collected (12 CFR 1003.5(a)), but source documents supporting audit findings should be retained for the full examination cycle.
+7-year retention aligns with common bank record retention schedules and FFIEC examination lookback periods.
 
 |*Storage — Event Retention*
 |Audit trail retention
 |7 years (PostgreSQL + Elasticsearch)
 |ILM policy + DB retention trigger
+|Matches document retention to ensure audit trail and evidence are available for the same examination lookback period.
 |===
 
 ==== Security Architecture
@@ -591,47 +634,94 @@ Every query is scoped to `current_setting('app.tenant_id')`.
 
 *Threat model (STRIDE summary):*
 
-[cols="20%,40%,40%",options="header"]
+[cols="15%,20%,25%,20%,20%",options="header"]
 |===
-|Threat |Risk |Mitigation
+|Threat |Risk |Mitigation |Example Attack Scenario |Detection Strategy
 
 |Spoofing
 |Attacker impersonates user or service
-|AAD + OAuth 2.0; Managed Identity for services; MFA
+|AAD + OAuth 2.0; Managed Identity for services; MFA enforced via Conditional Access
+|Attacker obtains stolen session token and attempts to access audit data as a legitimate user.
+|Failed MFA challenges logged in AAD sign-in logs.
+Anomalous login patterns (geo-impossible travel, new device) trigger Conditional Access block and alert.
 
 |Tampering
 |Attacker modifies audit data
-|Immutable event store (hash-chained); WORM storage for anchors; CMK encryption
+|Immutable event store (hash-chained); WORM storage for anchors; CMK encryption; TDE on database
+|Compromised database credentials used to modify finding severity from "high" to "low" before regulatory examination.
+|Hash-chain verification on event store detects any gap or modification in the event sequence.
+Nightly integrity check job validates all hash chains and alerts on mismatch.
 
 |Repudiation
 |Actor denies performing action
-|Append-only audit trail; actor_id on every event; digital signatures on finalized reports
+|Append-only audit trail; `actor_id` on every event; digital signatures on finalized reports
+|Reviewer claims they never approved a finding closure.
+Event store contains `FindingClosed` event with reviewer's `actor_id`, timestamp, and IP address.
+|All state transitions require authenticated actor context.
+Events missing `actor_id` are rejected by the event store write path.
 
 |Information Disclosure
 |Cross-tenant data leakage
 |RLS; per-tenant containers; NSG isolation; Private Endpoints; no public DB access
+|Application bug in a new API endpoint omits tenant filtering, potentially exposing another tenant's findings.
+|RLS policies enforce filtering at the database level regardless of application code.
+Quarterly penetration testing includes cross-tenant access attempts.
+Anomalous query patterns (e.g., queries returning data for multiple `tenant_id` values) trigger alerts.
 
 |Denial of Service
 |Platform unavailability
-|DDoS Protection Standard; rate limiting at APIM; AKS autoscaling; multi-AZ
+|DDoS Protection Standard; rate limiting at APIM (1,000 req/min per tenant); AKS autoscaling; multi-AZ
+|Attacker floods the API with document upload requests to exhaust pipeline processing capacity.
+|APIM rate limiting rejects excess requests (429).
+Azure DDoS Protection Standard mitigates volumetric attacks at the network edge.
+Queue depth monitoring alerts when document processing backlog exceeds threshold.
 
 |Elevation of Privilege
 |User accesses resources beyond their role
-|RBAC enforcement at API Gateway; segregation of duties; least-privilege Managed Identity
+|RBAC enforcement at API Gateway; segregation of duties; least-privilege Managed Identity; Three-Lines-of-Defense role separation
+|First-line QC reviewer attempts to access audit director endpoints to approve their own findings.
+|API Gateway rejects requests where JWT role claims do not match endpoint authorization requirements.
+Role escalation attempts logged and alerted.
+Quarterly access reviews verify role assignments against organizational hierarchy.
 |===
 
 ==== Disaster Recovery
 
 *Strategy:* Multi-AZ within East US 2 (primary), with async replication to West US 2 (secondary) for PostgreSQL and Blob Storage.
 
-*Failover procedure:*
+*Failover procedure — AZ-level failure (automated, RTO < 5 minutes):*
 
 [arabic]
-. Azure Monitor detects primary region failure (automated alert).
-. PostgreSQL Flexible Server automatic failover to standby replica (< 60 seconds).
-. AKS pods auto-restart on healthy nodes within the AZ (< 5 minutes).
-. If full-region failure: manual failover to West US 2 secondary.
-DNS update via Azure Traffic Manager (RTO: < 1 hour).
+. Azure Monitor detects AZ-level degradation via health probes and triggers P1 alert to on-call engineer.
+. PostgreSQL Flexible Server performs automatic failover to standby replica in the surviving AZ (< 60 seconds).
+Connection strings do not change; PgBouncer reconnects transparently.
+. AKS scheduler reschedules pods from the failed AZ onto healthy nodes in surviving AZs (< 2 minutes).
+Pod disruption budgets ensure minimum replicas remain available during rescheduling.
+. On-call engineer verifies service health via Platform Health dashboard.
+Confirms replication lag has caught up (< 30 seconds after failover).
+. Incident logged in event store with `disaster_recovery_failover` event type for post-incident review.
+
+*Failover procedure — full-region failure (manual, RTO < 1 hour):*
+
+[arabic]
+. Azure Monitor detects sustained East US 2 region failure (no healthy AZs for > 10 minutes).
+P1 alert escalates to Engineering Lead and DevOps.
+. Engineering Lead authorizes failover to West US 2 secondary (decision checkpoint — prevents accidental failover).
+. DevOps initiates PostgreSQL geo-failover to West US 2 read replica (promotes to primary, < 5 minutes).
+Data loss limited to async replication lag (typically < 1 minute, worst case < 15 minutes per RPO target).
+. DevOps triggers AKS deployment in West US 2 from GitOps repository (Flux/ArgoCD reconciles desired state, < 10 minutes).
+. DNS update via Azure Traffic Manager routes traffic to West US 2 (TTL: 60 seconds, propagation < 5 minutes).
+. Post-failover validation: smoke tests confirm API health, tenant data accessibility, and audit processing pipeline.
+. Communication: status page updated and customer notification sent within 30 minutes of failover initiation.
+
+*Failback procedure (after primary region recovery):*
+
+[arabic]
+. Verify East US 2 region is stable for ≥ 1 hour.
+. Re-establish async replication from West US 2 (now primary) back to East US 2.
+. Wait for full replication catch-up (monitor replication lag until < 1 second).
+. Schedule maintenance window and failback during low-traffic period.
+. Follow the same failover steps in reverse, with Engineering Lead authorization.
 
 *Backup schedule:*
 
@@ -675,8 +765,8 @@ Results documented and reviewed by Engineering Lead and DevOps.
 Phase 2: partitioned by tenant group for scale.
 * *Database:* Vertical scaling (Phase 1).
 Read replicas for dashboard queries.
-Connection pooling via PgBouncer.
-Phase 2: consider Citus for horizontal sharding if > 100 tenants.
+Connection pooling via PgBouncer (max 200 connections per pool, transaction-mode pooling).
+Phase 2: Citus horizontal sharding if > 100 tenants (see <<sect-database-scaling-roadmap>> below).
 * *Document Processing:* Most compute-intensive pipeline.
 Dedicated node pool with autoscaling (3–6 nodes).
 GPU nodes optional for VLM inference (Phase 2).
@@ -687,3 +777,291 @@ ILM policies manage index lifecycle.
 
 *Phase 0 deliverable:* Publish Terraform modules for infrastructure-as-code deployment by March 31, 2026.
 Owner: Junior Dev (infrastructure track, <<sect-delivery-plan>>).
+
+[[sect-database-scaling-roadmap]]
+==== Database Scaling Roadmap
+
+This roadmap defines the scaling strategy for PostgreSQL as tenant count and data volume grow.
+
+*Phase 1 — Vertical Scaling (1–50 tenants):*
+
+* Single PostgreSQL Flexible Server instance: 8 vCPU, 64 GB RAM.
+* PgBouncer connection pooling: transaction-mode, max 200 connections per pool, 20 reserved per tenant.
+* 1 read replica dedicated to dashboard queries, search indexing, and report generation.
+* Estimated cardinalities: ~50 tenants, ~500 users, ~2,000 audits/year, ~10M findings/year, ~50M events/year.
+* Table partitioning by `tenant_id` on `findings`, `events`, and `audit_records` tables for query isolation.
+
+*Phase 2 — Horizontal Sharding (50–500 tenants):*
+
+* Citus extension for distributed PostgreSQL.
+* Sharding key: `tenant_id` (colocates all tenant data on the same shard for join-local queries).
+* Distribution strategy: hash-based distribution across 32 initial shards, rebalancing via `rebalance_table_shards()`.
+* Reference tables (non-tenant-specific): `regulations`, `pack_definitions`, `system_config` replicated to all nodes.
+* Connection pooling scales to per-coordinator routing with Citus-aware PgBouncer.
+
+*Phase 3 — Multi-Region (500+ tenants):*
+
+* Geo-sharded Citus deployment across Azure regions.
+* Tenant affinity routing: tenants assigned to the nearest region at onboarding.
+* Cross-region reads via read replicas; writes pinned to tenant's home region.
+
+==== Observability & Monitoring
+
+AuditIQ implements a comprehensive observability strategy across three pillars: metrics, logs, and traces.
+
+*Telemetry Stack:*
+
+* *Metrics:* Azure Monitor collects infrastructure and application metrics.
+Application Insights provides per-request telemetry for all API endpoints.
+* *Logs:* Centralized log aggregation via Azure Log Analytics workspace.
+All AKS pods emit structured JSON logs with `tenant_id`, `audit_id`, `correlation_id`, and `severity` fields.
+* *Traces:* Distributed tracing via OpenTelemetry SDK instrumented in all services.
+Trace context propagates across service boundaries using W3C Trace Context headers.
+Application Insights serves as the trace backend.
+
+*Key Metrics per Component:*
+
+[cols="30%,40%,30%",options="header"]
+|===
+|Component |Key Metrics |Alert Threshold
+
+|API Gateway (APIM)
+|Request rate, P95 latency, error rate (4xx/5xx), throttled requests
+|Error rate > 1% or P95 > 1s for 5 min
+
+|Document Processing (Docling)
+|Pages/min, extraction latency (P95), AFC score distribution, queue depth
+|Queue depth > 500 or P95 latency > 5s
+
+|Schema Mapping Service
+|Mappings/min, mapping confidence distribution, rejection rate
+|Rejection rate > 20% for 10 min
+
+|Comparison & Rules Engine
+|Findings/min, rule execution latency, error rate
+|Error rate > 0.5% for 5 min
+
+|PostgreSQL
+|Active connections, query latency (P95), replication lag, dead tuples, WAL generation rate
+|Replication lag > 30s or connections > 80% capacity
+
+|Elasticsearch
+|Index rate, search latency (P95), JVM heap usage, shard count
+|Search P95 > 1s or heap > 85%
+
+|Qdrant
+|Query latency (P95), collection size, memory usage
+|Query P95 > 500ms
+
+|AKS Cluster
+|Node CPU/memory utilization, pod restart count, pending pods
+|Node CPU > 80% for 10 min or any pod restart loop
+|===
+
+*Alerting & Escalation:*
+
+* *P1 (Critical):* Platform unavailable or data loss risk.
+Auto-page on-call engineer via PagerDuty.
+Response SLA: 15 minutes.
+* *P2 (High):* Degraded performance affecting audit processing.
+Slack notification to `#auditiq-ops`.
+Response SLA: 1 hour.
+* *P3 (Medium):* Non-critical anomalies (elevated error rates, slow queries).
+Ticket created in backlog.
+Response SLA: next business day.
+* *P4 (Low):* Informational alerts (capacity thresholds approaching).
+Weekly ops review.
+
+*Dashboards:*
+
+* *Platform Health:* Real-time overview of all services, error rates, and SLA compliance.
+* *Audit Processing:* Document throughput, extraction confidence trends, finding generation rates.
+* *Tenant Activity:* Per-tenant resource consumption, concurrent audits, storage usage.
+* *Security:* Authentication failures, RLS policy violations, anomalous access patterns.
+
+==== Failure Modes & Resilience Patterns
+
+AuditIQ implements defense-in-depth resilience to ensure audit processing continues under degraded conditions.
+
+*Circuit Breaker Pattern:*
+
+All inter-service calls use circuit breakers with three states:
+
+* *Closed (normal):* Requests flow through.
+Failure count tracked per 60-second window.
+* *Open (tripped):* After 5 consecutive failures or > 50% error rate in a window, the circuit opens.
+All requests immediately return a fallback response for 30 seconds.
+* *Half-Open (probing):* After the cooldown, one probe request is sent.
+Success closes the circuit; failure reopens it.
+
+*Retry Policies:*
+
+* *Idempotent operations* (reads, status checks): Retry up to 3 times with exponential backoff (1s, 2s, 4s) and jitter.
+* *Non-idempotent operations* (writes, state transitions): No automatic retry.
+Failed operations are logged and surfaced to the Audit Orchestration Service for manual or workflow-driven retry.
+
+*Component Failure Scenarios:*
+
+[cols="25%,35%,40%",options="header"]
+|===
+|Failure Scenario |Impact |Mitigation
+
+|Document Processing (Docling) unavailable
+|New document extraction halts; in-flight extractions fail
+|Circuit breaker trips after 5 failures.
+Queued documents retry when service recovers.
+Already-extracted documents unaffected.
+Cloud OCR fallback available as degraded-mode option (lower accuracy, higher cost).
+
+|PostgreSQL primary failure
+|All write operations fail
+|Automatic failover to standby replica (< 60 seconds).
+Read replica continues serving dashboard queries during failover.
+Connection pool drains and reconnects automatically.
+
+|Elasticsearch cluster degraded
+|Search and full-text queries slow or unavailable
+|Search results degrade gracefully: API returns cached results or a "search temporarily unavailable" indicator.
+Core audit processing (ingestion, extraction, comparison) continues unaffected.
+
+|Qdrant unavailable
+|Regulatory citation lookups fail
+|Citation Engine returns "citations pending" status.
+Findings are generated without citations; citations backfill when Qdrant recovers.
+Audit processing is not blocked.
+
+|Azure Blob Storage throttled
+|Document uploads/downloads slow
+|Exponential backoff with retry.
+Upload queue absorbs burst traffic.
+Lifecycle tiering paused during throttling.
+
+|API Gateway (APIM) overloaded
+|User requests rejected (429 Too Many Requests)
+|Rate limiting protects backend services.
+Azure Front Door absorbs traffic spikes.
+Auto-scaling triggers additional APIM capacity units.
+
+|AKS node failure
+|Pods on failed node restart on healthy nodes
+|Pod disruption budgets ensure minimum replicas remain available during rescheduling.
+Stateless services recover in < 30 seconds.
+Stateful services (Workflow, Orchestration) perform leader re-election in < 60 seconds.
+|===
+
+*Graceful Degradation Hierarchy:*
+
+When multiple components degrade simultaneously, AuditIQ prioritizes in this order:
+
+[arabic]
+. *Data integrity:* Immutable event store and audit trail are never compromised.
+. *In-progress audits:* Active audit runs continue processing with available data.
+. *New audit creation:* New audits may be queued but not lost.
+. *Search and reporting:* Non-critical features degrade last and recover first.
+
+==== Configuration & Deployment Management
+
+*Deployment Strategy:*
+
+AuditIQ uses a blue-green deployment model on AKS to achieve zero-downtime releases.
+
+* *Blue environment:* Current production workload.
+* *Green environment:* New release deployed to a parallel set of pods.
+* *Cutover:* After health checks pass on green, the API Gateway routes traffic to green.
+Blue remains available for instant rollback for 1 hour.
+* *Rollback:* If post-deployment health checks fail, traffic reverts to blue within 30 seconds via APIM routing update.
+
+*Canary Releases (Phase 2):*
+
+* New versions deployed to 5% of traffic initially.
+* Automated analysis of error rates and latency for 15 minutes.
+* Progressive rollout: 5% → 25% → 50% → 100% over 1 hour if metrics remain healthy.
+* Automatic rollback if error rate exceeds baseline by > 2×.
+
+*Configuration Management:*
+
+* *Application configuration:* Stored in Kubernetes ConfigMaps and Secrets.
+Changes applied via rolling restart (zero downtime).
+* *NFR targets:* Defined in ConfigMaps.
+Alert thresholds, rate limits, and scaling parameters are updatable without redeployment.
+* *Audit Pack configuration:* Managed by the Audit Pack Manager service.
+Pack updates are versioned and deployed independently of platform releases.
+* *Infrastructure configuration:* Terraform modules in a dedicated `infra` repository.
+All changes go through PR review and `terraform plan` approval before apply.
+
+*Configuration Drift Detection:*
+
+* Azure Policy enforces compliance rules on all resources (e.g., encryption enabled, public access disabled).
+* Weekly automated drift scan compares live infrastructure state against Terraform state.
+* Drift alerts route to the `#auditiq-ops` Slack channel for investigation.
+
+*Dependency Upgrade Procedures:*
+
+* Dependabot monitors all runtime dependencies for security vulnerabilities.
+* Critical CVEs (CVSS ≥ 9.0): patch within 24 hours.
+* High CVEs (CVSS 7.0–8.9): patch within 7 days.
+* AKS Kubernetes version: upgrade within 30 days of new stable release.
+* PostgreSQL major version: upgrade during quarterly maintenance window with full regression testing.
+
+==== Regulatory-to-Architecture Compliance Mapping
+
+This subsection maps key architectural decisions to the regulatory and compliance requirements they satisfy.
+For the full compliance framework, see <<sect-regulatory-compliance, Regulatory Compliance & Policy Management>>.
+
+[cols="30%,35%,35%",options="header"]
+|===
+|Architectural Decision |Compliance Requirement |How It Satisfies the Requirement
+
+|Multi-AZ deployment with automated failover
+|GLBA Safeguards Rule — availability of customer information
+|Ensures continuous access to audit data and customer records during infrastructure failures.
+RPO < 15 min and RTO < 1 hour meet FFIEC business continuity expectations.
+
+|PostgreSQL Row-Level Security (RLS)
+|GLBA / Regulation P — access controls on customer PII
+|Enforces tenant-scoped data access at the database level.
+Every query is filtered by `tenant_id`, preventing cross-tenant data exposure regardless of application-layer bugs.
+
+|Per-tenant Blob containers with SAS token scoping
+|GLBA — safeguarding customer records and information
+|Source documents containing customer PII are isolated per tenant.
+SAS tokens expire after 1 hour and are scoped to the tenant's container only.
+
+|Immutable event store with hash-chaining
+|FFIEC examination defensibility — audit trail integrity
+|Regulators can verify that no audit events were altered after the fact.
+Hash-chaining provides cryptographic tamper evidence for the full event history.
+
+|AES-256 encryption at rest with CMK
+|GLBA Safeguards Rule — encryption of customer information
+|All customer data (database, blob storage) is encrypted with Customer-Managed Keys stored in Azure Key Vault.
+Key rotation is automated on a 90-day cycle.
+
+|TLS 1.2+ enforced on all endpoints
+|GLBA Safeguards Rule — encryption in transit
+|All data in motion between users, services, and storage is encrypted.
+Legacy TLS versions (1.0/1.1) are disabled.
+
+|MFA enforced via AAD Conditional Access
+|FFIEC Authentication Guidance — multi-factor authentication
+|All human users must authenticate with MFA.
+Service-to-service communication uses Managed Identity (no stored credentials).
+
+|RBAC with Three-Lines-of-Defense role separation
+|IIA Three Lines Model — independent assurance
+|Platform enforces role-based access that prevents first-line users from approving their own findings.
+Second-line and third-line roles have independent review authority.
+
+|7-year document and event retention
+|HMDA record retention requirements (12 CFR 1003.5)
+|Loan application records and supporting documentation retained for the regulatory minimum.
+Lifecycle tiering (hot → cool → archive) manages storage costs while maintaining compliance.
+
+|SOC 2 Type II readiness (target: June 30, 2026)
+|Customer due diligence — third-party risk management
+|Provides institutional customers with independently audited assurance of AuditIQ's security controls, availability, and processing integrity.
+
+|Digital signatures on finalized reports
+|FFIEC examination defensibility — report authenticity
+|Finalized audit reports carry digital signatures that prove authorship and prevent post-finalization tampering.
+|===
