@@ -26,8 +26,12 @@ The document is built into HTML, PDF, and DOCX formats via a GitHub Actions CI/C
 
 ## Version History Protocol
 
-**Always update the version history** in `src/docs/asciidoc/auditiq-product-architecture-delivery-plan/document-control/index.adoc` when making changes.
-Increment the minor version and add a row to the Version History table describing the changes.
+**Update the version history** in `src/docs/asciidoc/auditiq-product-architecture-delivery-plan/document-control/index.adoc` using these rules:
+
+- **One entry per calendar day.** If a row already exists for today's date, update it. Otherwise, increment the minor version and add a new row.
+- **High-level business impact only.** Describe _what_ changed and _why_ it matters in one to three sentences. Do not list formatting fixes, file renames, CSS tweaks, or implementation details — those belong in git history, not the version table.
+- **Examples of good entries:** "Added Compliance Framework Library with 13-framework priority list and cross-framework mapping engine" or "Reorganized document into seven-Part structure for clearer audience navigation."
+- **Examples of bad entries:** "Fixed linting violations in section 17" or "Replaced broken @font-face declarations with Google Fonts CDN."
 
 ## Build
 
