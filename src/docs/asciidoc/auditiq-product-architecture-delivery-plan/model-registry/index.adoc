@@ -54,6 +54,16 @@ In AuditIQ, the following components are registered as models:
 |`hmda_rules_v2`, `trid_rules_v1`
 |Domain SME
 |Medium — retrieval context for narratives
+
+|*Sentence transformer (embedding)*
+|Domain-fine-tuned SBERT v1.0
+|ML Engineer
+|Medium — shared embedding model for citation retrieval, policy sentence indexing, and policy-to-regulation alignment (<<sect-embedding-domain-finetuning>>)
+
+|*Ontology embedding*
+|OWL2Vec* / on2vec compliance graph embeddings v1.0
+|Data Architect
+|Medium — structural + semantic node embeddings for the unified compliance knowledge graph (<<sect-two-layer-embeddings>>)
 |===
 
 === Storage: `model_registry` Table
@@ -344,6 +354,18 @@ The following models are pre-registered at system deployment:
 |2026-01-15
 |approved
 |HMDA regulation rules for RAG context
+
+|sentence_transformer
+|sbert_compliance
+|v1.0
+|approved
+|Domain-fine-tuned SBERT for citation retrieval and policy alignment (<<sect-embedding-domain-finetuning>>)
+
+|ontology_embedding
+|owl2vec_compliance_graph
+|v1.0
+|approved
+|OWL2Vec* node embeddings for unified compliance graph (<<sect-two-layer-embeddings>>)
 |===
 
 === Example Prompt Template: `narrative_finding` v1.2

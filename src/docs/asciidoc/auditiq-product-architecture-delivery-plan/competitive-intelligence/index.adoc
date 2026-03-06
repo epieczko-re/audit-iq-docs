@@ -213,7 +213,7 @@ This is not a feature comparison — it is an architectural gap that widens over
 The incumbent cannot retrofit this without a fundamental architecture change.
 . *Three-layer confidence scoring* vs. binary pass/fail — Reviewers get quantified trust signals that tell them where to focus.
 Binary pass/fail wastes expert time on cases the system already knows are correct.
-. *Three-lines-of-defense* vs. first-line-only — One platform for QC, compliance, and internal audit.
+. *Three-lines-of-defense* vs. first-line-only — One platform serving QC, compliance, and internal audit from a shared evidence base, with each line maintaining independent authority.
 The incumbent serves first-line only; customers buy separate tools for the rest.
 . *Audit pack extensibility* vs. hard-coded logic — New regulations ship as pack configurations, not platform releases.
 AuditIQ can enter new markets (CRA, ECOA, SBL) without rewriting the engine.

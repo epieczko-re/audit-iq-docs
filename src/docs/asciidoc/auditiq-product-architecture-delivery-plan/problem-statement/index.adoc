@@ -5,12 +5,20 @@
 
 Here is what compliance looks like at most financial institutions in 2026 — and it should make everyone in this room uncomfortable.
 
-A compliance officer sits down on Monday morning with a stack of 50 HMDA loan files to review.
-Each file requires validating 110 reportable data fields against a pile of source documents — Closing Disclosures, Loan Estimates, URLAs, Promissory Notes, credit reports, and AUS findings.
-For _each field_, she opens the source document, locates the relevant value, compares it against the LAR entry, and records whether it matches.
-*Two to five minutes per field.* One hundred and ten fields per record.
-Fifty records this week.
-Do the math: that is _hundreds of hours_ of a trained professional's time spent on what is essentially a human-as-a-diff-engine exercise.
+Every HMDA Loan Application Register record contains 110 reportable data fields — from loan amount and property type to ethnicity, rate-spread, and denial reasons.
+The FFIEC designates 37 of those as Key Data Fields: the ones examiners will scrutinize first, the ones that trigger resubmission orders when error rates exceed 5%.
+Validating even those 37 fields means opening the corresponding source documents — Closing Disclosures, Loan Estimates, URLAs, Promissory Notes, credit reports, and AUS findings — locating each value, and comparing it against the LAR entry.
+
+No institution reviews every file.
+The FFIEC Examiner Transaction Testing Guidelines prescribe a _sample-based_ methodology: a two-stage statistical sample whose size scales with LAR volume.
+A mid-size lender with a few thousand originations will see examiners pull 50–80 files; a large institution with 100,000+ entries still faces a sample of 159.
+Internally, compliance teams typically mirror this approach — quarterly self-audits of 30–60 files, with additional targeted pulls whenever a new risk signal emerges.
+
+But even a sample of 50 files is punishing at the field level.
+Thirty-seven key fields per record.
+Two to five minutes per field for complex documents.
+That is 30 to 150 hours of a trained professional's time _per review cycle_ — spent on what is essentially a human-as-a-diff-engine exercise.
+And when Stage 1 errors breach the Initial Sample Threshold, examiners expand to the full sample and the clock starts again.
 
 The process is not just slow — it is _corrosive_:
 
@@ -33,14 +41,24 @@ The opportunity cost is staggering, and the regulatory risk of human fatigue and
 
 === The Three-Lines-of-Defense Gap
 
-Regulators do not ask whether you have _a_ control framework.
-They ask whether your three lines of defense are _coordinated_ — whether QC, compliance, and audit are working from the same evidence, the same standards, and the same audit trail.
+The IIA's Three Lines Model is built on a non-negotiable principle: each line must maintain independent judgment.
+First-line QC owns the risk.
+Second-line compliance sets the standards and monitors adherence.
+Third-line internal audit provides independent assurance that the first two lines are working.
+Collapse those boundaries and the model fails — which is precisely why regulators scrutinize whether each line can demonstrate its independence.
+
+But independence of _judgment_ does not require independence of _data_.
+In fact, the 2020 IIA update to the Three Lines Model explicitly calls for "alignment, communication, coordination, and collaboration" — while preserving each line's autonomous authority.
+What regulators want to see is that all three lines are working from the _same evidence base_, applying their _independent_ assessments to a _common_ set of facts, and producing audit trails that tell a coherent story.
 
 The reality at most institutions is a painful distance from that expectation.
-First-line QC teams, second-line compliance teams, and third-line internal audit teams operate in silos — using separate tools, or worse, the same spreadsheets in parallel with no shared evidence repository, no unified finding taxonomy, and no common audit trail.
-The result: duplicated effort, contradictory findings, gaps in coverage, and an examiner who sees disorganization where the institution intended rigor.
+First-line QC teams, second-line compliance teams, and third-line internal audit teams operate in silos — using separate tools, separate copies of the same documents, and separate tracking systems.
+Each line reconstructs its own evidence from scratch.
+Each line applies its own taxonomy to the same findings.
+Each line maintains its own audit trail in its own format.
+The result: duplicated effort, contradictory findings, gaps in coverage, and an examiner who sees fragmentation where the institution intended rigor.
 
-When an examiner asks "show me your three-lines-of-defense coordination," the honest answer at most institutions is a wince and a binder.
+When an examiner asks "show me how your three lines of defense each reached their independent conclusions," the honest answer at most institutions is a wince and three incompatible binders.
 That is not a sustainable posture in a $4.6B penalty environment.
 
 === The Competitive Landscape Gap

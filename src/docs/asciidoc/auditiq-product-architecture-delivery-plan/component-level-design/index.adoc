@@ -652,7 +652,7 @@ Target: ≤25% override rate on CD-supported fields by end of Phase 1b UAT.
 
 *DECISION LOCKED:* Hybrid heuristic matcher with two-layer confidence for v1. See <<sect-decision-d2, Decision D2>> for go/kill criteria and Phase 2 upgrade path.
 
-*Phase 2 upgrade path:* Embedding-based candidate expansion → LLM-based reranking → LogMap ontology track → isotonic regression calibration.
+*Phase 2 upgrade path:* Embedding-based candidate expansion (using the shared domain-fine-tuned sentence transformer — see <<sect-embedding-domain-finetuning>>) → LLM-based reranking → LogMap ontology track (leveraging the unified compliance graph — see <<sect-two-layer-embeddings>>) → isotonic regression calibration.
 
 === Normalization Engine
 
@@ -1678,7 +1678,8 @@ graph LR
 |Current examination procedures
 |===
 
-*Embedding model:* Open-source embedding model (Nomic Embed v1.5 or BGE-large-en-v1.5).
+*Embedding model:* Domain-fine-tuned sentence transformer (SBERT) shared across the Regulatory Citation Engine and the Policy Alignment Pipeline (see <<sect-embedding-domain-finetuning>>).
+Fine-tuned on financial regulatory language for negation sensitivity, numeric threshold context, and deontic language precision.
 Self-hosted on Azure Container Instances for cost predictability and data sovereignty.
 No regulation text leaves the tenant's Azure environment.
 

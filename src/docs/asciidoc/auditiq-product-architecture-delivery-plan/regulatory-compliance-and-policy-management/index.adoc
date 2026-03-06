@@ -425,7 +425,7 @@ The Institution Policy Profile is a versioned JSON artifact with the following s
     },
     "gap_analysis": {
       "type": "array",
-      "description": "Regulatory requirements in the base pack for which no corresponding institution policy was found",
+      "description": "Regulatory requirements in the base pack for which no corresponding institution policy was found via structural graph traversal or vector fallback",
       "items": {
         "type": "object",
         "properties": {
@@ -435,16 +435,51 @@ The Institution Policy Profile is a versioned JSON artifact with the following s
           },
           "gap_type": {
             "type": "string",
-            "enum": ["no_policy_found", "policy_weaker_than_regulation", "policy_ambiguous"],
-            "description": "Nature of the gap"
+            "enum": ["no_policy_found", "structurally_unanchored", "policy_weaker_than_regulation", "policy_ambiguous"],
+            "description": "Nature of the gap. 'structurally_unanchored' means the regulation node exists in the graph but no policy sentences anchor to any concept in its subgraph — evidence of absence, not absence of evidence"
           },
           "risk_level": {
             "type": "string",
             "enum": ["high", "medium", "low"]
           },
+          "graph_traversal_path": {
+            "type": "array",
+            "description": "The ontology nodes inspected during structural alignment — makes the gap auditable by showing exactly which regulatory concepts were checked",
+            "items": {
+              "type": "object",
+              "properties": {
+                "node_id": {
+                  "type": "string",
+                  "description": "Ontology node URI (e.g., 'fibo:LoanAmount', 'finregont:§1003.4(a)(7)')"
+                },
+                "node_label": {
+                  "type": "string",
+                  "description": "Human-readable label for the node"
+                },
+                "hop_distance": {
+                  "type": "integer",
+                  "description": "Number of hops from the regulation node in the graph traversal"
+                },
+                "anchored_sentences_found": {
+                  "type": "integer",
+                  "description": "Number of PolicySentence edges found on this node (0 for a gap)"
+                }
+              }
+            }
+          },
+          "vector_fallback_attempted": {
+            "type": "boolean",
+            "description": "Whether vector fallback (RAG) was attempted after structural traversal yielded no results"
+          },
+          "vector_fallback_top_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Highest semantic similarity score from vector fallback, if attempted. Scores below the alignment threshold confirm the gap"
+          },
           "recommendation": {
             "type": "string",
-            "description": "AI-generated recommendation for addressing the gap"
+            "description": "AI-generated recommendation referencing the specific ontology concept the institution's policy needs to address"
           },
           "acknowledged": {
             "type": "boolean",
@@ -480,6 +515,88 @@ If either artifact is updated, new audit runs use the new versions; existing run
 *Compatibility:* The `base_pack_version_constraint` field in the profile ensures that a profile is only applied to compatible pack versions.
 When a new MAJOR pack version is published, existing profiles must be re-validated and potentially re-generated.
 
+[[sect-embedding-architecture]]
+=== Sentence Transformer Embedding Architecture
+
+The AI-Driven Policy Profile Creation Pipeline (<<sect-ai-policy-pipeline>>) depends on a two-layer embedding architecture that bridges unstructured policy language and the structured compliance knowledge graph.
+Neither layer works well alone: the graph tells you what concepts exist and how they relate; the embeddings tell you which sentences in messy, unstructured policy documents are _about_ those concepts.
+
+[[sect-embedding-domain-finetuning]]
+==== Domain-Fine-Tuned Sentence Transformer
+
+All embedding operations — regulatory citation retrieval, policy sentence indexing, and policy-to-regulation alignment — share a single sentence transformer (SBERT) fine-tuned on financial regulatory language.
+This model is registered once in the Model Registry (see <<sect-model-registry>>) and versioned alongside the regulatory corpus.
+
+General-purpose embedding models (e.g., Nomic Embed, BGE-large) are insufficient for compliance text because they fail on three critical dimensions:
+
+* *Negation sensitivity.* "Loan amount shall match" and "loan amount shall not exceed" have opposite compliance implications but high cosine similarity in general embedding space.
+A fine-tuned model learns that negation inverts the compliance vector.
+* *Numeric threshold context.* "$25" and "$50" are near-identical to a general model but represent materially different compliance postures.
+A fine-tuned model encodes threshold magnitude as a salient feature.
+* *Deontic language.* "Must," "shall," "may," and "should" carry precise legal meanings — mandatory obligation, permissive option, aspirational guidance — that general models treat as soft synonyms.
+A fine-tuned model places these terms far apart in compliance embedding space.
+
+The fine-tuning corpus and training signal are bootstrapped from the graph itself (see <<sect-training-data-bootstrap>>).
+
+[[sect-two-layer-embeddings]]
+==== Two Embedding Layers, One Graph
+
+.Two-Layer Embedding Architecture
+[mermaid]
+----
+graph TD
+  subgraph "Layer 1 — Ontology Node Embeddings"
+    A["FIBO classes<br/>FinRegOnt sections<br/>MISMO fields"] --> B["OWL2Vec* / on2vec<br/>Graph walks + label semantics"]
+    B --> C["Node embedding<br/><i>Encodes graph position +<br/>textual description</i>"]
+  end
+
+  subgraph "Layer 2 — Document Sentence Embeddings"
+    D["Regulation sentences<br/>Guidance sentences<br/>Policy sentences<br/>Procedure sentences"] --> E["Domain-fine-tuned<br/>Sentence Transformer (SBERT)"]
+    E --> F["Sentence embedding<br/><i>Encodes compliance semantics</i>"]
+  end
+
+  C --> G["Cross-space<br/>cosine similarity"]
+  F --> G
+  G --> H["Graph anchoring edge<br/>PolicySentence ──implements──→ GraphNode"]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style E fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style F fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style G fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Layer 1 — Ontology node embeddings (structural):* Each node in the unified compliance graph — every FIBO class, every FinRegOnt regulation section, every MISMO field definition — receives an embedding that encodes both its _position in the graph_ (subclass hierarchy, equivalence relations, restriction edges) and its _label and textual description_.
+OWL2Vec* generates these embeddings by walking the OWL graph structure and combining structural features with label semantics.
+The on2vec approach extends this by integrating GNN-based graph structure with sentence transformer text features into a single embedding.
+
+*Layer 2 — Document sentence embeddings (textual):* Every sentence extracted from a regulation, guidance document, institution policy, or procedure is embedded using the domain-fine-tuned sentence transformer.
+Embeddings are stored in Qdrant (the same vector store used by the Regulatory Citation Engine — see <<sect-component-design>>) with metadata tagging the source document, sentence position, and document type.
+Sentence-level granularity is required because individual policy sentences carry distinct obligations that paragraph-level chunking would conflate.
+
+*Cross-space anchoring:* When a policy sentence is embedded, it is not stored as a free-floating vector.
+It is _anchored_ to the nearest graph node(s) via cosine similarity between the sentence embedding (Layer 2) and the ontology node embeddings (Layer 1).
+Top-_k_ candidate nodes are identified by similarity, then an LLM reranker confirms the anchor ("is this sentence genuinely about this regulatory concept?").
+Confirmed anchors create a graph edge: `PolicySentence ──implements──→ GraphNode`.
+
+This anchoring is what makes the graph _useful_ rather than merely _correct_.
+The graph provides the structural scaffold; the embeddings provide the glue that attaches messy, unstructured institutional language to precise regulatory concepts.
+
+[[sect-embedding-boundary-guardrail]]
+==== Design Guardrail — Embedding Boundaries
+
+[IMPORTANT]
+====
+Embeddings are used _only_ at the boundary where unstructured text meets structured knowledge.
+
+Inside the graph, relationships — subclass, equivalence, `owl:sameAs`, FinRegOnt-to-FIBO mappings — are traversed via SPARQL and graph queries, not approximated as embedding distances.
+Structural relationships are _exact_; embedding similarity is _approximate_.
+Substituting one for the other introduces false positives where embedding similarity says two concepts are "close" but the graph knows they are structurally unrelated.
+====
+
 [[sect-ai-policy-pipeline]]
 === AI-Driven Policy Profile Creation Pipeline
 
@@ -508,7 +625,7 @@ graph TD
   style G fill:#4A6FA5,color:#fff,stroke:#2B4570
 ----
 
-==== Phase 1 — Policy Document Intake and Classification
+==== Phase 1 — Policy Document Intake, Classification, and Graph Anchoring
 
 The institution uploads their compliance policy and procedure documents.
 These may include:
@@ -531,12 +648,16 @@ Classification assigns:
 .Policy Document Intake — Detail Flow
 [mermaid]
 ----
-graph LR
+graph TD
   A["Institution<br/>uploads documents"] --> B["Docling-Graph<br/>document processing"]
   B --> C["Document<br/>classification"]
   C --> D["Policy document<br/>registry created"]
-  B --> E["Full-text extraction<br/>& chunking"]
-  E --> F["Embedding generation<br/>& vector indexing"]
+  B --> E["Sentence-level<br/>extraction"]
+  E --> F["Domain-fine-tuned<br/>Sentence Transformer"]
+  F --> G["Sentence embeddings<br/>stored in Qdrant"]
+  F --> H["Cross-space cosine sim<br/>against ontology node<br/>embeddings (Layer 1)"]
+  H --> I["LLM reranker<br/>confirms anchors"]
+  I --> J["Graph anchoring edges<br/>PolicySentence ──implements──→<br/>GraphNode"]
 
   style A fill:#4A6FA5,color:#fff,stroke:#2B4570
   style B fill:#7B3FA0,color:#fff,stroke:#5A2D78
@@ -544,10 +665,19 @@ graph LR
   style D fill:#2E8B57,color:#fff,stroke:#1B5E3B
   style E fill:#7B3FA0,color:#fff,stroke:#5A2D78
   style F fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style G fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style H fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style I fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
 
-The extracted text is chunked and embedded into the vector store (the same Qdrant instance used by the Regulatory Citation Engine — see <<sect-component-design>>).
-This enables RAG-based alignment in Phase 3.
+Extracted text is segmented at sentence-level granularity — not paragraph-level — because individual policy sentences carry distinct obligations that paragraph chunking would conflate.
+Each sentence is embedded using the domain-fine-tuned sentence transformer (see <<sect-embedding-domain-finetuning>>) and stored in Qdrant with metadata tagging the source document, sentence position, and document type.
+
+Simultaneously, each sentence embedding is compared against the ontology node embeddings (Layer 1) via cross-space cosine similarity.
+Top-_k_ candidate graph nodes are identified and passed through an LLM reranker to confirm the anchor.
+Confirmed anchors create graph edges (`PolicySentence ──implements──→ GraphNode`), attaching the unstructured policy language to precise concepts in the compliance knowledge graph.
+Sentences that do not anchor to any graph node above a configurable confidence threshold are stored in the vector index only — they remain available for RAG fallback in Phase 3 but do not participate in structural alignment.
 
 ==== Phase 2 — AI-Driven Policy Requirement Extraction
 
@@ -594,39 +724,63 @@ Each extracted requirement carries:
 * A source citation (document_id, section, page, verbatim quote)
 * An extraction confidence score
 * A preliminary classification (threshold, procedural, documentation, exception, escalation, timing)
+* A *graph anchor reference* — the ontology node(s) to which the requirement's source sentence was anchored in Phase 1, with anchoring confidence scores
 
-==== Phase 3 — Regulation-to-Policy Alignment (RAG-Driven)
+The graph anchor reference is critical because it links the extracted requirement to a precise concept in the compliance knowledge graph, not just to a document location.
+A requirement whose source sentence anchors strongly to a known regulatory concept (e.g., `fibo:LoanAmount` linked to `finregont:§1003.4(a)(7)`) is inherently more trustworthy than one that floats unanchored in the vector store.
+The anchoring confidence is factored into the alignment confidence in Phase 3.
 
-This is the critical step where the base Regulatory Pack acts as the scaffold.
-AI takes each rule in the base pack and uses RAG to search the institution's policy documents for corresponding policy language.
+==== Phase 3 — Regulation-to-Policy Alignment (Graph-First, Vector-Fallback)
 
-.RAG-Driven Policy-to-Pack Alignment
+This is the critical step where the compliance knowledge graph acts as the structural scaffold.
+For each rule in the base Regulatory Pack, alignment proceeds in two passes: a structural graph traversal first, then a vector-based fallback only if the graph yields no result.
+
+.Graph-First Policy-to-Pack Alignment
 [mermaid]
 ----
 graph TD
-  subgraph "For Each Base Pack Rule"
-    A["Base pack rule<br/>(e.g., hmda-loan-amount-tolerance)"] --> B["Generate semantic<br/>query from rule"]
-    B --> C["RAG retrieval from<br/>policy vector store"]
-    C --> D{"Policy language<br/>found?"}
-    D -->|Yes| E["Classify alignment"]
-    D -->|No| F["Flag as gap"]
-    E --> G["Match<br/><i>Policy restates regulation</i>"]
-    E --> H["Tightening<br/><i>Policy is stricter</i>"]
-    E --> I["Extension<br/><i>Policy adds requirements</i>"]
-    F --> J["Gap finding<br/><i>No policy coverage</i>"]
+  subgraph "Pass 1 — Structural Graph Traversal"
+    A["Base pack rule<br/>(e.g., hmda-loan-amount-tolerance)"] --> B["Resolve rule to<br/>ontology node(s)<br/><i>FinRegOnt § → FIBO concept<br/>→ MISMO field</i>"]
+    B --> C["Query graph for<br/>PolicySentence edges<br/>anchored to node(s)"]
+    C --> D{"Anchored policy<br/>sentences found?"}
+    D -->|Yes| E["Classify alignment<br/>from graph edges"]
   end
 
+  subgraph "Pass 2 — Vector Fallback"
+    D -->|No| F["Generate semantic<br/>query from rule"]
+    F --> G["RAG retrieval from<br/>policy vector store"]
+    G --> H{"Policy language<br/>found?"}
+    H -->|Yes| I["Classify alignment<br/>from RAG results"]
+  end
+
+  subgraph "Gap Detection"
+    H -->|No| J["Confirmed gap<br/><i>Structural + semantic<br/>evidence of absence</i>"]
+  end
+
+  E --> K["Match / Tighten / Extend"]
+  I --> K
+
   style A fill:#4A6FA5,color:#fff,stroke:#2B4570
-  style B fill:#7B3FA0,color:#fff,stroke:#5A2D78
-  style C fill:#7B3FA0,color:#fff,stroke:#5A2D78
-  style D fill:#7B3FA0,color:#fff,stroke:#5A2D78
-  style E fill:#7B3FA0,color:#fff,stroke:#5A2D78
-  style F fill:#CC4444,color:#fff,stroke:#993333
-  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
-  style H fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style E fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style F fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style G fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style H fill:#7B3FA0,color:#fff,stroke:#5A2D78
   style I fill:#8B5E3C,color:#fff,stroke:#5C3A1E
   style J fill:#CC4444,color:#fff,stroke:#993333
+  style K fill:#2E8B57,color:#fff,stroke:#1B5E3B
 ----
+
+*Pass 1 — Structural graph traversal:* Each base pack rule maps to one or more ontology nodes via the compliance knowledge graph (e.g., rule `hmda-loan-amount-tolerance` → `finregont:§1003.4(a)(7)` → `fibo:LoanAmount` → `mismo:LoanPrincipalAmount`).
+The system queries the graph for any `PolicySentence ──implements──→` edges attached to these nodes — sentences that were anchored during Phase 1 intake.
+If anchored policy sentences exist, alignment classification proceeds directly from the structured relationship.
+This is the preferred path because it produces _structurally grounded_ alignments, not probabilistic retrieval results.
+
+*Pass 2 — Vector fallback:* If the graph traversal finds no anchored policy sentences for a given rule's concept nodes, the system falls back to semantic search.
+A query is generated from the rule's description and regulatory citation, and RAG retrieval searches the full policy sentence vector store in Qdrant.
+Results from the fallback path carry lower alignment confidence because they lack structural grounding.
 
 *Alignment categories:*
 
@@ -636,14 +790,42 @@ No override is needed, but the policy citation is captured in the `policy_to_reg
 A `threshold_override` entry is generated.
 * *Extension:* The policy adds requirements that go beyond the scope of the base pack rule (e.g., additional approval steps, documentation checks).
 A `supplemental_rule` or `procedural_checkpoint` entry is generated.
-* *Gap:* The base pack contains a regulatory rule, but no corresponding policy language was found in the institution's documents.
-A `gap_analysis` entry is generated.
-This is a valuable compliance finding — it may indicate the institution needs to strengthen its policy framework.
+* *Gap:* Neither structural traversal nor vector fallback found corresponding policy language.
+A `gap_analysis` entry is generated with the full graph path that was inspected — which regulatory concept was checked, which FIBO/MISMO nodes were traversed, and what the search yielded.
+This dual-pass failure constitutes _evidence of absence_, not just _absence of evidence_, because the graph provides structural completeness: the system knows every regulatory concept that should have coverage.
 
-*Alignment confidence:* Each alignment carries a confidence score based on the semantic similarity between the pack rule and the retrieved policy language.
-Low-confidence alignments are flagged for mandatory human review in Phase 5.
+[[sect-alignment-confidence]]
+*Alignment confidence:* Each alignment carries a composite confidence score incorporating four signals:
 
-Additionally, AI performs an *unanchored scan* — searching the policy documents for requirements that do not map to any existing base pack rule.
+[cols="30%,15%,55%",options="header"]
+|===
+|Signal |Weight |Description
+
+|Graph anchor strength
+|0.35
+|Cosine similarity between the policy sentence embedding and the ontology node embedding at anchoring time.
+Higher values indicate the sentence is semantically close to the formal concept.
+
+|LLM reranker confirmation
+|0.25
+|Confidence from the LLM reranker that confirmed the anchor in Phase 1.
+Measures whether the sentence genuinely addresses the regulatory concept, not just superficially resembles it.
+
+|Structural distance
+|0.20
+|Inverse of the hop count between the regulation node (the pack rule's origin) and the anchored concept node in the graph.
+Direct matches (zero hops) score 1.0; multi-hop traversals decay.
+
+|Semantic similarity (RAG)
+|0.20
+|Cosine similarity from the vector store retrieval.
+For Pass 1 (graph-resolved) alignments, this signal is computed but weighted lower.
+For Pass 2 (fallback) alignments, this is the primary signal.
+|===
+
+Low-confidence alignments (composite score < 0.70) are flagged for mandatory human review in Phase 5.
+
+Additionally, AI performs an *unanchored scan* — searching for policy sentences that were embedded but did not anchor to any graph node above the confidence threshold.
 These become candidate supplemental rules with no regulatory anchor, classified as `beyond_regulatory_scope` in the traceability mapping.
 
 ==== Phase 4 — Draft Profile Generation
@@ -727,6 +909,55 @@ When an institution updates its policies or procedures, the profile must be re-e
 *Trigger: Base pack update.*
 When RiskExec publishes a new version of the base Regulatory Pack, all Institution Policy Profiles linked to that pack are automatically flagged for re-validation.
 The AI pipeline re-runs Phase 3 (alignment) against the new pack rules and generates a delta report.
+
+[[sect-training-data-bootstrap]]
+=== Training Data Bootstrapping from the Graph
+
+The domain-fine-tuned sentence transformer (see <<sect-embedding-domain-finetuning>>) requires training pairs that teach the model how compliance language clusters.
+The compliance knowledge graph generates its own training signal, creating a self-improving loop.
+
+==== Pair Generation Strategy
+
+[cols="20%,40%,40%",options="header"]
+|===
+|Pair Type |Construction |Example
+
+|Positive (same concept)
+|Two sentences anchored to the same graph node — one from a regulation, one from a policy.
+The model learns that these sentences, despite different surface language, address the same compliance concept.
+|Regulation: "The loan amount reported shall be verified against the closing disclosure within a tolerance of $50." +
+Policy: "Loan principal discrepancies exceeding $25 require supervisor escalation." +
+Label: same_concept
+
+|Negative (different concept)
+|Two sentences anchored to different graph nodes.
+The model learns that superficial similarity (both mention loans, both mention dates) does not imply conceptual equivalence.
+|Regulation: "Action taken date must be reported within 30 calendar days." +
+Policy: "QC review must be completed within 15 business days of closing." +
+Label: different_concept
+
+|Hard negative (same domain, different obligation)
+|Sentences anchored to sibling nodes in the ontology (e.g., two different HMDA fields under the same CFR section).
+These are the most valuable training pairs because they force the model to distinguish between closely related but distinct compliance obligations.
+|Regulation: "The applicant's ethnicity shall be reported as observed or stated." +
+Policy: "Demographic data collection follows applicant self-identification procedures for race." +
+Label: different_concept (ethnicity ≠ race in HMDA)
+|===
+
+==== Self-Improving Loop
+
+As more institution policy documents are processed through the pipeline, the graph accumulates more anchored sentences.
+Each new anchoring event generates additional training pairs.
+The fine-tuning cycle operates as follows:
+
+. *Accumulate:* Policy documents from multiple institutions are processed; graph anchoring edges accumulate.
+. *Extract pairs:* Positive pairs from same-node anchors; negative and hard-negative pairs from different-node anchors within the same regulatory domain.
+. *Fine-tune:* When the training corpus reaches a minimum threshold (≥ 500 labeled pairs — aligned with the calibration thresholds in <<sect-component-design>>), the sentence transformer is fine-tuned and a new version is registered in the Model Registry.
+. *Re-anchor:* Optionally, existing policy sentences are re-embedded with the improved model and re-anchored, improving alignment quality for previously processed institutions.
+. *Repeat:* Each cycle produces a model that anchors more accurately, which generates higher-quality training pairs for the next cycle.
+
+*Cold-start strategy:* Before the system has processed enough institution documents to generate 500 training pairs, the sentence transformer operates with a warm-start fine-tune on publicly available regulatory text (CFR corpus, FFIEC examination procedures, published consent orders).
+This provides baseline deontic and threshold sensitivity while the institution-specific training signal accumulates.
 
 [[sect-effective-rule-merge]]
 === Effective Rule Set — Merge Logic

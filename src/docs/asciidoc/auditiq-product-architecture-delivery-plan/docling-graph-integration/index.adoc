@@ -120,9 +120,33 @@ Docling-Graph produces a directed knowledge graph where each extracted entity is
 }
 ----
 
-*Step 2: Graph edges for cross-document corroboration*
+*Step 2: Graph edges*
 
-When multiple documents reference the same loan (matched by `graph_id_fields`), Docling-Graph creates edges:
+The knowledge graph supports two distinct edge types, serving different layers of the architecture:
+
+[[sect-graph-edge-taxonomy]]
+===== Graph Edge Type Taxonomy
+
+[cols="18%,22%,30%,30%",options="header"]
+|===
+|Edge Type |Relationship |Purpose |Created By
+
+|*corroborates*
+|`DocumentNode ──corroborates──→ DocumentNode`
+|Links extracted field values across documents for the same loan (e.g., loan_amount matching across CD and LE).
+Drives `graph_corrob_score` in AFC v2 and boosts `mapping_confidence`.
+|Docling-Graph extraction pipeline (Phase 1 document processing)
+
+|*implements*
+|`PolicySentence ──implements──→ OntologyNode`
+|Anchors an unstructured policy or procedure sentence to a precise concept in the compliance knowledge graph (FIBO class, FinRegOnt section, or MISMO field).
+Drives graph-first alignment in the Policy Profile Creation Pipeline (<<sect-ai-policy-pipeline>>).
+|Sentence transformer anchoring pipeline (<<sect-embedding-architecture>>)
+|===
+
+===== `corroborates` Edge Schema
+
+When multiple documents reference the same loan (matched by `graph_id_fields`), Docling-Graph creates `corroborates` edges:
 
 [source,json]
 ----
@@ -135,6 +159,40 @@ When multiple documents reference the same loan (matched by `graph_id_fields`), 
   "match_strength": 0.97
 }
 ----
+
+===== `implements` Edge Schema
+
+When a policy sentence is anchored to an ontology node via the two-layer embedding architecture (<<sect-two-layer-embeddings>>), an `implements` edge is created:
+
+[source,json]
+----
+{
+  "edge_id": "anchor_001",
+  "source_node": "policy_sentence_42",
+  "target_node": "fibo:LoanAmount",
+  "relationship": "implements",
+  "source_metadata": {
+    "document_id": "doc_policy_abc",
+    "document_type": "compliance_policy",
+    "sentence_text": "Loan principal discrepancies exceeding $25 require supervisor escalation",
+    "sentence_position": 42,
+    "institution_id": "inst_12345"
+  },
+  "anchoring_metadata": {
+    "embedding_model_id": "sbert_compliance",
+    "embedding_model_version": "v1.0",
+    "ontology_embedding_model_id": "owl2vec_compliance_graph",
+    "ontology_embedding_model_version": "v1.0",
+    "cosine_similarity": 0.87,
+    "llm_reranker_score": 0.92,
+    "anchor_confidence": 0.89
+  }
+}
+----
+
+*Edge provenance:* Both edge types carry full provenance metadata.
+For `corroborates` edges, provenance traces to the Docling-Graph extraction run and Pydantic template versions.
+For `implements` edges, provenance traces to the sentence transformer model version, ontology embedding model version, and LLM reranker confirmation — all registered in the Model Registry (<<sect-model-registry>>).
 
 *Step 3: Mapping service uses graph for mapping decisions*
 
@@ -189,4 +247,6 @@ Packs opt into Docling-Graph by setting this flag and providing template referen
 * *<<sect-schema-mapping-service>>:* Schema Mapping Service — existing heuristic matcher, now graph-aware
 * *<<sect-audit-pack-spec>>:* Audit Pack Specification — pack manifest schema
 * *<<sect-exam-ready-bundle>>:* Exam-Ready Bundle — graph exports as evidence artifacts
-* *<<sect-model-registry>>:* Model Registry — Pydantic template versions registered as model artifacts
+* *<<sect-model-registry>>:* Model Registry — Pydantic template versions, sentence transformer, and ontology embedding models registered as model artifacts
+* *<<sect-embedding-architecture>>:* Sentence Transformer Embedding Architecture — two-layer embedding model that produces `implements` edges
+* *<<sect-regulatory-compliance>>:* Regulatory Compliance & Policy Management — Policy Profile Creation Pipeline that consumes `implements` edges for graph-first alignment
