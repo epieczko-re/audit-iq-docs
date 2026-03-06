@@ -45,7 +45,7 @@ That is not a sustainable posture in a $4.6B penalty environment.
 
 === The Competitive Landscape Gap
 
-The primary competitor dominates the lending QC software market with ~141 customers and a defensibility rating of MEDIUM-HIGH.
+The incumbent — ACES Quality Management & Control — dominates the lending QC software market with ~141 customers and a defensibility rating of MEDIUM-HIGH.
 They own the space — but they own it with a product that is _incomplete_.
 
 Critical limitations that create AuditIQ's opening:

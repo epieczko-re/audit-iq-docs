@@ -2,7 +2,7 @@
 == Competitive Intelligence
 
 The audit QC market is not empty — but it is underserved.
-The dominant player has built a strong business on enterprise relationships and switching costs, but the architecture is aging and the AI strategy is reactive.
+The dominant player — ACES Quality Management & Control — has built a strong business on enterprise relationships and switching costs, but the architecture is aging and the AI strategy is reactive.
 AuditIQ enters this market with structural advantages that are difficult to replicate: governance-first AI, three-lines-of-defense coverage, and a pack-based extensibility model that the incumbent cannot match without a rewrite.
 
 [[sect-primary-competitor]]

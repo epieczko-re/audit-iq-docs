@@ -14,7 +14,7 @@ It does not merely digitize the existing process; it fundamentally re-architects
 * Over 20% of existing RiskExec clients are already performing audit functions inside the platform using user-defined fields — hacking workarounds because nothing else on the market serves their needs.
 That is not a feature request; that is a fire alarm.
 * The team is validating AuditIQ with 8–10 design partners who have told us, in no uncertain terms, that they are ready to move.
-* The primary competitor is entrenched but vulnerable — bolted-on AI, QC-only scope, and a legacy architecture that cannot deliver what regulators now demand.
+* The incumbent (ACES) is entrenched but vulnerable — bolted-on AI, QC-only scope, and a legacy architecture that cannot deliver what regulators now demand.
 The window to take market share is open _right now_, and it will not stay open forever.
 
 *What makes AuditIQ a category-defining product:*
