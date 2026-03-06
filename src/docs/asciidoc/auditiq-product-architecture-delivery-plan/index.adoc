@@ -24,8 +24,6 @@ include::problem-statement/index.adoc[]
 
 include::product-vision-and-strategic-positioning/index.adoc[]
 
-include::competitive-intelligence/index.adoc[]
-
 // ============================================================
 // Part II: Operational Model
 // ============================================================
@@ -113,6 +111,8 @@ include::future-roadmap/index.adoc[]
 = Part VIII: Reference
 
 include::appendices/index.adoc[]
+
+include::competitive-intelligence/index.adoc[]
 
 include::decisions-and-open-questions/index.adoc[]
 

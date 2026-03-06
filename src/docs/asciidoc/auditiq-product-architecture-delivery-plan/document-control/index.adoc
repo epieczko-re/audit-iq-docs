@@ -36,6 +36,7 @@ Added Architecture by Workflow Stage section mapping each workflow stage to comp
 Added Workflow Delivery Matrix to Delivery Plan mapping every screen and service to sprints, owners, and acceptance criteria.
 Added Quick Start for the 4-Person Team with top 10 MVP screens, 6-sprint plan, and top 5 technical risks.
 Moved How to Use This Document from Part II to Part I (Section 2, immediately after Executive Summary) so the reading guide appears up front; updated Document Structure Overview and cross-references to reflect the new placement.
+Moved Competitive Intelligence from Part I to Part VIII (Reference) to keep the strategic front matter focused on vision and problem framing while preserving competitive analysis as a reference resource.
 Moved Canonical Glossary to Part IV (Requirements & Specifications) as single source of truth co-located with FR tables.
 |===
 
