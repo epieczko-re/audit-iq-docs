@@ -1,51 +1,21 @@
 /* ==========================================================================
-   Barlow Font Declarations
+   Barlow Font — loaded from Google Fonts for reliable web delivery
    ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
 
-/* Barlow Regular */
-@font-face {
-    font-family: 'Barlow';
-    src: url('../fonts/barlow/Barlow-Regular.ttf') format('truetype');
-    font-weight: 400;
-    font-style: normal;
-    font-display: swap;
-}
-
-/* Barlow Medium */
-@font-face {
-    font-family: 'Barlow';
-    src: url('../fonts/barlow/Barlow-Medium.ttf') format('truetype');
-    font-weight: 500;
-    font-style: normal;
-    font-display: swap;
-}
-
-/* Barlow SemiBold */
-@font-face {
-    font-family: 'Barlow';
-    src: url('../fonts/barlow/Barlow-SemiBold.ttf') format('truetype');
-    font-weight: 600;
-    font-style: normal;
-    font-display: swap;
-}
-
-/* Barlow Bold */
-@font-face {
-    font-family: 'Barlow';
-    src: url('../fonts/barlow/Barlow-Bold.ttf') format('truetype');
-    font-weight: 700;
-    font-style: normal;
-    font-display: swap;
-}
-
-/* Barlow Italic */
-@font-face {
-    font-family: 'Barlow';
-    src: url('../fonts/barlow/Barlow-Italic.ttf') format('truetype');
-    font-weight: 400;
-    font-style: italic;
-    font-display: swap;
-}
+/* ==========================================================================
+   RiskExec Brand Palette (matches PDF theme)
+   --------------------------------------------------------------------------
+   --re-blue:        #002C73   primary blue (headings, links, TOC)
+   --re-blue-mid:    #113D89   section blue (h3, h4)
+   --re-blue-light:  #5271b6   accents
+   --re-blue-lighter:#728bc2   subtle borders
+   --re-blue-bg:     #E7EBF4   light backgrounds
+   --re-orange:      #FF7E2D   accent / CTA
+   --re-orange-light:#FFAA34   admonition icons
+   --re-text:        #333333   body text
+   --re-text-sec:    #666666   secondary text
+   ========================================================================== */
 
 /*! normalize.css v2.1.2 | MIT License | git.io/normalize */
 /* ========================================================================== HTML5 display definitions ========================================================================== */
@@ -168,7 +138,7 @@ textarea { overflow: auto; /* 1 */ vertical-align: top; /* 2 */ }
 
 /* ========================================================================== Tables ========================================================================== */
 /** Remove most spacing between table cells. */
-table { border-collapse: collapse; border-spacing: 0; }
+table { border-collapse: collapse; border-spacing: 0; border-color: #728bc2; }
 
 meta.foundation-mq-small { font-family: "only screen and (min-width: 768px)"; width: 768px; }
 
@@ -183,7 +153,7 @@ html, body { font-size: 100%; }
 /* Updated body typography with Barlow font */
 body {
     background: white;
-    color: #222222;
+    color: #333333;
     padding: 0;
     margin: 0;
     font-family: 'Barlow', "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
@@ -239,9 +209,9 @@ p.lead { font-size: 1.21875em; line-height: 1.6; }
 /* Typography resets */
 div, dl, dt, dd, ul, ol, li, h1, h2, h3, #toctitle, .sidebarblock > .content > .title, h4, h5, h6, pre, form, p, blockquote, th, td { margin: 0; padding: 0; direction: ltr; }
 
-/* Default Link Styles */
-a { color: #2ba6cb; text-decoration: none; line-height: inherit; }
-a:hover, a:focus { color: #2795b6; }
+/* Default Link Styles — RiskExec blue */
+a { color: #002C73; text-decoration: none; line-height: inherit; }
+a:hover, a:focus { color: #113D89; }
 a img { border: none; }
 
 /* Default paragraph styles with Barlow */
@@ -255,30 +225,30 @@ p {
 }
 p aside { font-size: 0.875em; line-height: 1.35; font-style: italic; }
 
-/* Default header styles with Barlow */
+/* Default header styles with Barlow — RiskExec brand blue */
 h1, h2, h3, #toctitle, .sidebarblock > .content > .title, h4, h5, h6 {
     font-family: 'Barlow', "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
     font-weight: 600;
     font-style: normal;
-    color: #222222;
+    color: #002C73;
     text-rendering: optimizeLegibility;
     margin-top: 1em;
     margin-bottom: 0.5em;
     line-height: 1.2125em;
 }
-h1 small, h2 small, h3 small, #toctitle small, .sidebarblock > .content > .title small, h4 small, h5 small, h6 small { font-size: 60%; color: #6f6f6f; line-height: 0; }
+h1 small, h2 small, h3 small, #toctitle small, .sidebarblock > .content > .title small, h4 small, h5 small, h6 small { font-size: 60%; color: #666666; line-height: 0; }
 
-h1 { font-size: 2.125em; font-weight: 700; }
+h1 { font-size: 2.125em; font-weight: 700; color: #002C73; }
 
-h2 { font-size: 1.6875em; font-weight: 600; }
+h2 { font-size: 1.6875em; font-weight: 600; color: #002C73; }
 
-h3, #toctitle, .sidebarblock > .content > .title { font-size: 1.375em; font-weight: 600; }
+h3, #toctitle, .sidebarblock > .content > .title { font-size: 1.375em; font-weight: 600; color: #113D89; }
 
-h4 { font-size: 1.125em; font-weight: 600; }
+h4 { font-size: 1.125em; font-weight: 600; color: #113D89; }
 
-h5 { font-size: 1.125em; font-weight: 500; }
+h5 { font-size: 1.125em; font-weight: 500; color: #333333; }
 
-h6 { font-size: 1em; font-weight: 500; }
+h6 { font-size: 1em; font-weight: 500; color: #333333; }
 
 hr { border: solid #dddddd; border-width: 1px 0 0; clear: both; margin: 1.25em 0 1.1875em; height: 0; }
 
@@ -341,9 +311,9 @@ blockquote, blockquote p { line-height: 1.6; color: #6f6f6f; }
 
 /* Tables */
 table { background: white; margin-bottom: 1.25em; border: solid 1px #dddddd; }
-table thead, table tfoot { background: whitesmoke; font-weight: 600; }
-table thead tr th, table thead tr td, table tfoot tr th, table tfoot tr td { padding: 0.5em 0.625em 0.625em; font-size: inherit; color: #222222; text-align: left; }
-table tr th, table tr td { padding: 0.5625em 0.625em; font-size: inherit; color: #222222; }
+table thead, table tfoot { background: #E7EBF4; font-weight: 600; }
+table thead tr th, table thead tr td, table tfoot tr th, table tfoot tr td { padding: 0.5em 0.625em 0.625em; font-size: inherit; color: #002C73; text-align: left; }
+table tr th, table tr td { padding: 0.5625em 0.625em; font-size: inherit; color: #333333; }
 table tr.even, table tr.alt, table tr:nth-of-type(even) { background: #f9f9f9; }
 table thead tr th, table tfoot tr th, table tbody tr td, table tr td, table tfoot tr td { display: table-cell; line-height: 1.4; }
 
@@ -395,7 +365,7 @@ b.button:after { content: "]"; padding: 0 2px 0 3px; }
 
 #content:before { content: none; }
 
-#header > h1:first-child { color: black; margin-top: 2.25rem; margin-bottom: 0; }
+#header > h1:first-child { color: #002C73; margin-top: 2.25rem; margin-bottom: 0; }
 #header > h1:first-child + #toc { margin-top: 8px; border-top: 1px solid #dddddd; }
 #header > h1:only-child, body.toc2 #header > h1:nth-last-child(2) { border-bottom: 1px solid #dddddd; padding-bottom: 8px; }
 #header .details { border-bottom: 1px solid #dddddd; line-height: 1.45; padding-top: 0.25em; padding-bottom: 0.25em; padding-left: 0.25em; color: #555555; display: -ms-flexbox; display: -webkit-flex; display: flex; -ms-flex-flow: row wrap; -webkit-flex-flow: row wrap; flex-flow: row wrap; }
@@ -408,7 +378,7 @@ b.button:after { content: "]"; padding: 0 2px 0 3px; }
 #header #revnumber { text-transform: capitalize; }
 #header #revnumber:after { content: "\00a0"; }
 
-#content > h1:first-child:not([class]) { color: black; border-bottom: 1px solid #dddddd; padding-bottom: 8px; margin-top: 0; padding-top: 1rem; margin-bottom: 1.25rem; }
+#content > h1:first-child:not([class]) { color: #002C73; border-bottom: 1px solid #dddddd; padding-bottom: 8px; margin-top: 0; padding-top: 1rem; margin-bottom: 1.25rem; }
 
 #toc { border-bottom: 1px solid #dddddd; padding-bottom: 0.5em; }
 #toc > ul { margin-left: 0.125em; }
@@ -419,11 +389,11 @@ b.button:after { content: "]"; padding: 0 2px 0 3px; }
 #toc a { text-decoration: none; }
 #toc a:active { text-decoration: underline; }
 
-#toctitle { color: #6f6f6f; font-size: 1.2em; font-weight: 600; }
+#toctitle { color: #002C73; font-size: 1.2em; font-weight: 700; }
 
 @media only screen and (min-width: 768px) { #toctitle { font-size: 1.375em; }
     body.toc2 { padding-left: 15em; padding-right: 0; }
-    #toc.toc2 { margin-top: 0 !important; background-color: #f2f2f2; position: fixed; width: 15em; left: 0; top: 0; border-right: 1px solid #dddddd; border-top-width: 0 !important; border-bottom-width: 0 !important; z-index: 1000; padding: 1.25em 1em; height: 100%; overflow: auto; }
+    #toc.toc2 { margin-top: 0 !important; background-color: #f0f2f8; position: fixed; width: 15em; left: 0; top: 0; border-right: 1px solid #728bc2; border-top-width: 0 !important; border-bottom-width: 0 !important; z-index: 1000; padding: 1.25em 1em; height: 100%; overflow: auto; }
     #toc.toc2 #toctitle { margin-top: 0; margin-bottom: 0.8rem; font-size: 1.2em; }
     #toc.toc2 > ul { font-size: 0.9em; margin-bottom: 0; }
     #toc.toc2 ul ul { margin-left: 0; padding-left: 1em; }
@@ -436,11 +406,11 @@ b.button:after { content: "]"; padding: 0 2px 0 3px; }
     #toc.toc2 > ul { font-size: 0.95em; }
     #toc.toc2 ul ul { padding-left: 1.25em; }
     body.toc2.toc-right { padding-left: 0; padding-right: 20em; } }
-#content #toc { border-style: solid; border-width: 1px; border-color: #d9d9d9; margin-bottom: 1.25em; padding: 1.25em; background: #f2f2f2; -webkit-border-radius: 0; border-radius: 0; }
+#content #toc { border-style: solid; border-width: 1px; border-color: #728bc2; margin-bottom: 1.25em; padding: 1.25em; background: #f0f2f8; -webkit-border-radius: 0; border-radius: 0; }
 #content #toc > :first-child { margin-top: 0; }
 #content #toc > :last-child { margin-bottom: 0; }
 
-#footer { max-width: 100%; background-color: #222222; padding: 1.25em; }
+#footer { max-width: 100%; background-color: #002C73; padding: 1.25em; }
 
 #footer-text { color: #dddddd; line-height: 1.44; }
 
@@ -457,8 +427,8 @@ b.button:after { content: "]"; padding: 0 2px 0 3px; }
 #content h1 > a.anchor, h2 > a.anchor, h3 > a.anchor, #toctitle > a.anchor, .sidebarblock > .content > .title > a.anchor, h4 > a.anchor, h5 > a.anchor, h6 > a.anchor { position: absolute; z-index: 1001; width: 1.5ex; margin-left: -1.5ex; display: block; text-decoration: none !important; visibility: hidden; text-align: center; font-weight: normal; }
 #content h1 > a.anchor:before, h2 > a.anchor:before, h3 > a.anchor:before, #toctitle > a.anchor:before, .sidebarblock > .content > .title > a.anchor:before, h4 > a.anchor:before, h5 > a.anchor:before, h6 > a.anchor:before { content: "\00A7"; font-size: 0.85em; display: block; padding-top: 0.1em; }
 #content h1:hover > a.anchor, #content h1 > a.anchor:hover, h2:hover > a.anchor, h2 > a.anchor:hover, h3:hover > a.anchor, #toctitle:hover > a.anchor, .sidebarblock > .content > .title:hover > a.anchor, h3 > a.anchor:hover, #toctitle > a.anchor:hover, .sidebarblock > .content > .title > a.anchor:hover, h4:hover > a.anchor, h4 > a.anchor:hover, h5:hover > a.anchor, h5 > a.anchor:hover, h6:hover > a.anchor, h6 > a.anchor:hover { visibility: visible; }
-#content h1 > a.link, h2 > a.link, h3 > a.link, #toctitle > a.link, .sidebarblock > .content > .title > a.link, h4 > a.link, h5 > a.link, h6 > a.link { color: #222222; text-decoration: none; }
-#content h1 > a.link:hover, h2 > a.link:hover, h3 > a.link:hover, #toctitle > a.link:hover, .sidebarblock > .content > .title > a.link:hover, h4 > a.link:hover, h5 > a.link:hover, h6 > a.link:hover { color: #151515; }
+#content h1 > a.link, h2 > a.link, h3 > a.link, #toctitle > a.link, .sidebarblock > .content > .title > a.link, h4 > a.link, h5 > a.link, h6 > a.link { color: #002C73; text-decoration: none; }
+#content h1 > a.link:hover, h2 > a.link:hover, h3 > a.link:hover, #toctitle > a.link:hover, .sidebarblock > .content > .title > a.link:hover, h4 > a.link:hover, h5 > a.link:hover, h6 > a.link:hover { color: #113D89; }
 
 .audioblock, .imageblock, .literalblock, .listingblock, .stemblock, .videoblock { margin-bottom: 1.25em; }
 
@@ -598,9 +568,9 @@ th.valign-middle, td.valign-middle { vertical-align: middle; }
 
 table thead th, table tfoot th { font-weight: 600; }
 
-tbody tr th { display: table-cell; line-height: 1.4; background: whitesmoke; }
+tbody tr th { display: table-cell; line-height: 1.4; background: #E7EBF4; }
 
-tbody tr th, tbody tr th p, tfoot tr th, tfoot tr th p { color: #222222; font-weight: 600; }
+tbody tr th, tbody tr th p, tfoot tr th, tfoot tr th p { color: #002C73; font-weight: 600; }
 
 p.tableblock > code:only-child { background: none; padding: 0; }
 
@@ -772,13 +742,13 @@ span.icon > .fa { cursor: default; }
 a span.icon > .fa { cursor: inherit; }
 
 .admonitionblock td.icon [class^="fa icon-"] { font-size: 2.5em; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); cursor: default; }
-.admonitionblock td.icon .icon-note:before { content: "\f05a"; color: #207c98; }
+.admonitionblock td.icon .icon-note:before { content: "\f05a"; color: #002C73; }
 .admonitionblock td.icon .icon-tip:before { content: "\f0eb"; text-shadow: 1px 1px 2px rgba(155, 155, 0, 0.8); color: #111; }
-.admonitionblock td.icon .icon-warning:before { content: "\f071"; color: #bf6900; }
+.admonitionblock td.icon .icon-warning:before { content: "\f071"; color: #FF7E2D; }
 .admonitionblock td.icon .icon-caution:before { content: "\f06d"; color: #bf3400; }
 .admonitionblock td.icon .icon-important:before { content: "\f06a"; color: #bf0000; }
 
-.conum[data-value] { display: inline-block; color: #fff !important; background-color: #222222; -webkit-border-radius: 100px; border-radius: 100px; text-align: center; font-size: 0.75em; width: 1.67em; height: 1.67em; line-height: 1.67em; font-family: "Open Sans", "DejaVu Sans", sans-serif; font-style: normal; font-weight: 600; }
+.conum[data-value] { display: inline-block; color: #fff !important; background-color: #002C73; -webkit-border-radius: 100px; border-radius: 100px; text-align: center; font-size: 0.75em; width: 1.67em; height: 1.67em; line-height: 1.67em; font-family: "Open Sans", "DejaVu Sans", sans-serif; font-style: normal; font-weight: 600; }
 .conum[data-value] * { color: #fff !important; }
 .conum[data-value] + b { display: none; }
 .conum[data-value]:after { content: attr(data-value); }
@@ -812,7 +782,7 @@ a > code { background-color: #f0f0f0; padding: .1em .4em .1em .4em !important; f
 
 .literalblock pre, .literalblock pre[class], .listingblock pre, .listingblock pre[class] { padding: .5em !important; }
 
-#toc a { color: #364149; }
+#toc a { color: #002C73; }
 
 /* ==========================================================================
    RiskExec Logo Integration & Branding
@@ -901,38 +871,43 @@ a > code { background-color: #f0f0f0; padding: .1em .4em .1em .4em !important; f
     border: 1px solid #c3e6cb;
 }
 
-/* Enhanced typography hierarchy */
+/* Enhanced typography hierarchy — RiskExec brand */
 h1 {
     font-weight: 700;
-    color: #1a1a1a;
+    color: #002C73;
     letter-spacing: -0.02em;
 }
 
 h2 {
     font-weight: 600;
-    color: #2a2a2a;
+    color: #002C73;
     letter-spacing: -0.01em;
 }
 
 h3, #toctitle, .sidebarblock > .content > .title {
     font-weight: 600;
+    color: #113D89;
+}
+
+h4 {
+    color: #113D89;
+}
+
+h5, h6 {
     color: #333333;
 }
 
-h4, h5, h6 {
-    color: #404040;
-}
-
-/* Enhanced table styling */
+/* Enhanced table styling — RiskExec brand */
 table.tableblock {
     font-family: 'Barlow', "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
+    border-color: #728bc2;
 }
 
 table thead th {
-    background-color: #f8f9fa;
+    background-color: #E7EBF4;
     font-weight: 600;
-    color: #495057;
-    border-bottom: 2px solid #dee2e6;
+    color: #002C73;
+    border-bottom: 2px solid #728bc2;
 }
 
 /* Professional quote styling */
@@ -979,7 +954,7 @@ table thead th {
 /* Focus and accessibility improvements */
 a:focus,
 button:focus {
-    outline: 2px solid #2ba6cb;
+    outline: 2px solid #002C73;
     outline-offset: 2px;
 }
 
@@ -997,7 +972,7 @@ blockquote {
     font-family: 'Barlow', "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
     font-style: italic;
     font-weight: 400;
-    border-left: 4px solid #2ba6cb;
+    border-left: 4px solid #FF7E2D;
     background-color: #f8f9fa;
     padding: 1em 1.5em;
     margin: 1.5em 0;
@@ -1016,12 +991,39 @@ li {
     margin-bottom: 0.5em;
 }
 
-/* Footer branding */
+/* Footer branding — RiskExec blue */
 #footer {
     font-family: 'Barlow', "Helvetica Neue", "Helvetica", Helvetica, Arial, sans-serif;
     font-weight: 400;
+    background-color: #002C73;
 }
 
 #footer-text {
     font-size: 0.875em;
+    color: #E7EBF4;
+}
+
+/* Section dividers — brand accent */
+.sect1 + .sect1 {
+    border-top-color: #728bc2;
+}
+
+#header > h1:first-child + #toc {
+    border-top-color: #728bc2;
+}
+
+#header > h1:only-child,
+body.toc2 #header > h1:nth-last-child(2) {
+    border-bottom-color: #728bc2;
+}
+
+/* Sidebar — brand tint */
+.sidebarblock {
+    background: #f0f2f8;
+    border-color: #728bc2;
+}
+
+/* Admonition border — brand accent */
+.admonitionblock > table td.content {
+    border-left-color: #728bc2;
 }
