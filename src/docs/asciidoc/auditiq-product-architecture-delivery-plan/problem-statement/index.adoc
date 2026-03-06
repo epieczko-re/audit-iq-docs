@@ -3,26 +3,60 @@
 
 === The Manual Audit Problem
 
-Compliance officers at financial institutions face a systematic workflow problem.
-For HMDA alone, they must validate 110 reportable data fields per loan record against a stack of source documents — Closing Disclosures, Loan Estimates, URLAs, Promissory Notes, credit reports, and AUS findings.
-The current process is:
+Here is what compliance looks like at most financial institutions in 2026 — and it should make everyone in this room uncomfortable.
+
+A compliance officer sits down on Monday morning with a stack of 50 HMDA loan files to review.
+Each file requires validating 110 reportable data fields against a pile of source documents — Closing Disclosures, Loan Estimates, URLAs, Promissory Notes, credit reports, and AUS findings.
+For _each field_, she opens the source document, locates the relevant value, compares it against the LAR entry, and records whether it matches.
+*Two to five minutes per field.* One hundred and ten fields per record.
+Fifty records this week.
+Do the math: that is _hundreds of hours_ of a trained professional's time spent on what is essentially a human-as-a-diff-engine exercise.
+
+The process is not just slow — it is _corrosive_:
 
 [arabic]
-. *Export* target data (the HMDA LAR) from their LOS or data warehouse into a spreadsheet.
-. *Retrieve* the corresponding source documents — often from multiple systems, in multiple formats.
-. *Compare* each field manually (“stare and compare”), recording discrepancies in the spreadsheet or a separate tracking system.
-. *Triage and remediate* findings — routing them to originators, underwriters, or closers for correction.
-. *Assemble evidence* for examiner readiness — a multi-day exercise involving copying files into shared drives, creating cover memos, and formatting spreadsheets.
+. *Export* target data (the HMDA LAR) from a LOS or data warehouse into a spreadsheet — often a spreadsheet that was built by someone who left the company two years ago.
+. *Retrieve* the corresponding source documents — from multiple systems, in multiple formats, with no guarantee that the versions are current or complete.
+. *Compare* each field manually ("stare and compare"), recording discrepancies in the spreadsheet or a separate tracking system that nobody else can navigate.
+. *Triage and remediate* findings — routing them to originators, underwriters, or closers through email chains that die in inboxes and Slack threads that scroll into oblivion.
+. *Assemble evidence* for examiner readiness — a multi-day, all-hands fire drill of copying files into shared drives, creating cover memos, reformatting spreadsheets, and praying that nothing was missed.
 
-This process is slow (2–5 minutes per field per record for complex documents), error-prone (human reviewers miss discrepancies, especially in high-volume periods), inconsistent (different reviewers apply different standards), and poorly documented (audit trails live in email threads and spreadsheet comments).
+This process is *slow* (2–5 minutes per field per record for complex documents).
+It is *error-prone* (human reviewers miss discrepancies at alarming rates, especially during high-volume periods when accuracy matters most).
+It is *inconsistent* (different reviewers apply different standards, and there is no mechanism to detect or correct the drift).
+And it is *dangerously undocumented* (audit trails live in email threads, spreadsheet comments, and the institutional memory of individuals who may not be there next quarter).
+
+The people doing this work are not entry-level clerks — they are experienced compliance professionals with deep regulatory knowledge.
+And we are asking them to spend 80% of their time on mechanical data comparison instead of exercising the professional judgment they were hired for.
+Every hour a compliance officer spends toggling between a PDF and a spreadsheet is an hour _not_ spent on risk analysis, trend identification, or exam preparation.
+The opportunity cost is staggering, and the regulatory risk of human fatigue and error is real.
 
 === The Three-Lines-of-Defense Gap
 
-Regulators increasingly expect financial institutions to demonstrate a coordinated approach across three lines of defense.
-Today, first-line QC teams, second-line compliance teams, and third-line internal audit teams typically use separate tools — or the same spreadsheets in parallel — with no shared evidence repository or unified audit trail.
-This creates duplicated effort, inconsistent findings, and gaps in coverage that examiners flag.
+Regulators do not ask whether you have _a_ control framework.
+They ask whether your three lines of defense are _coordinated_ — whether QC, compliance, and audit are working from the same evidence, the same standards, and the same audit trail.
+
+The reality at most institutions is a painful distance from that expectation.
+First-line QC teams, second-line compliance teams, and third-line internal audit teams operate in silos — using separate tools, or worse, the same spreadsheets in parallel with no shared evidence repository, no unified finding taxonomy, and no common audit trail.
+The result: duplicated effort, contradictory findings, gaps in coverage, and an examiner who sees disorganization where the institution intended rigor.
+
+When an examiner asks "show me your three-lines-of-defense coordination," the honest answer at most institutions is a wince and a binder.
+That is not a sustainable posture in a $4.6B penalty environment.
 
 === The Competitive Landscape Gap
 
 The primary competitor dominates the lending QC software market with ~141 customers and a defensibility rating of MEDIUM-HIGH.
-However, it has critical limitations: it serves primarily first-line QC teams (not three lines of defense), its AI capabilities were added via partnerships in September 2025 (not native), its documentation is criticized as incomplete, and its legacy architecture makes it difficult to retrofit governance-first AI controls.
+They own the space — but they own it with a product that is _incomplete_.
+
+Critical limitations that create AuditIQ's opening:
+
+* *QC-only scope.* They serve first-line QC teams.
+Second-line compliance and third-line audit?
+Not their problem — which means it becomes the institution's problem.
+* *Bolted-on AI.* Their AI capabilities were added via partnerships in September 2025 — not native, not governed, not built into the architecture.
+It is the difference between a house built with electricity and a house with extension cords running through the windows.
+* *Documentation gaps.* Their documentation is widely criticized as incomplete, forcing customers into an implementation experience that erodes trust before the product even goes live.
+* *Legacy architecture.* Retrofitting governance-first AI controls onto a legacy codebase is not a product decision — it is a multi-year re-architecture that they have not started.
+
+The market is waiting for a product that closes these gaps.
+AuditIQ is that product.
