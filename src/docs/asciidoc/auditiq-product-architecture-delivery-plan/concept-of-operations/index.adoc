@@ -5,6 +5,66 @@ AuditIQ supports three distinct audit modes — manual, OCR-assisted, and fully 
 A reviewer manually comparing a Closing Disclosure against a HMDA LAR record needs a different workflow than a system automatically validating 5,000 structured records against a LOS extract.
 The platform adapts; the reviewer stays in control.
 
+=== Three-Lines-of-Defense Operating Model
+
+AuditIQ serves all three lines of defense from a single platform — but it does not merge them.
+Each line maintains independent judgment, independent conclusions, and an independent audit trail, consistent with the IIA Three Lines Model (see <<sect-problem-statement>>).
+What the platform shares is the _evidence base_: source documents, extracted data, confidence scores, and the immutable event log.
+
+The following table shows how each line interacts with the platform differently:
+
+[cols="18%,27%,27%,28%",options="header"]
+|===
+|Dimension |First Line (QC) |Second Line (Compliance) |Third Line (Internal Audit)
+
+|*Primary question*
+|"Does this loan file match its source documents?"
+|"Are our origination practices adhering to HMDA reporting standards?"
+|"Are the first and second lines performing their functions effectively?"
+
+|*Typical workflow*
+|Record-by-record field comparison (Manual or OCR-Assisted mode)
+|Sample-based thematic review using Automated Pre-Scan; policy-overlay analysis
+|Independent re-review of first-line work product; control testing across audit runs
+
+|*Evidence access*
+|Full access to assigned loan files and source documents
+|Read access to all QC findings and evidence; write access to compliance-layer findings
+|Read access to all QC and compliance findings; write access to audit-layer findings
+
+|*Finding authority*
+|Creates QC findings; cannot modify compliance or audit findings
+|Creates compliance findings; can reference but not alter QC findings
+|Creates audit findings; can reference but not alter QC or compliance findings
+
+|*Approval path*
+|QC Manager approves closure of QC findings
+|Compliance Officer approves closure of compliance findings
+|Audit Director approves closure of audit findings
+
+|*RBAC role(s)*
+|`qc_reviewer`, `qc_manager`
+|`compliance_analyst`, `compliance_officer`
+|`auditor`, `audit_director`
+|===
+
+This separation is enforced at the RBAC level: a user with `qc_reviewer` permissions cannot create or modify compliance-layer findings, and vice versa.
+The exam-ready bundle (<<sect-exam-ready-bundle>>) includes all three layers, allowing examiners to see how each line independently evaluated the same evidence.
+
+=== Two-Stage Testing Model (HMDA)
+
+The FFIEC Examiner Transaction Testing Guidelines prescribe a two-stage methodology that AuditIQ mirrors in its workflow design:
+
+* *Stage 1 — Data Integrity Testing:* Compare HMDA LAR fields against source documents to verify accuracy.
+The HMDA audit pack defines 37 Key Data Fields (<<sect-glossary>>) as the comparison target.
+This is the "stare-and-compare" work that AuditIQ automates — field-by-field comparison with confidence-scored results.
+* *Stage 2 — Substantive / Transactional Testing:* Evaluate whether reported data reflects the underlying transaction correctly.
+Stage 2 findings require professional judgment — for example, determining whether an action-taken code accurately reflects the disposition of an application given its full history.
+AuditIQ surfaces the evidence and flags anomalies; the reviewer applies judgment.
+
+When Stage 1 error rates breach the Initial Sample Threshold, examiners expand to the full sample.
+AuditIQ tracks Stage 1 error rates in real time and alerts the reviewer when the threshold is approached, enabling proactive sample expansion before an examiner demands it.
+
 === Audit Workflow State Machine
 
 The following diagram shows the end-to-end state transitions for an audit run, from creation through finalization.
@@ -37,14 +97,18 @@ stateDiagram-v2
 === Audit Workflow: Manual Mode
 
 [arabic]
-. *Setup:* Admin creates an audit run, selects the audit pack (e.g., HMDA), uploads or links the target dataset.
-. *Ingestion:* System validates the target dataset schema against the pack definition, flags validation errors.
-. *Document linking:* Reviewer or batch process associates source documents (PDFs, images) with target records.
-. *Review:* Reviewer opens a record in the side-by-side viewer: target data fields on the left, source document on the right. Reviewer compares each field, marks as confirmed/discrepancy/unable to determine.
+. *Setup:* Admin creates an audit run, selects the audit pack (e.g., HMDA Origination), uploads or links the target dataset (HMDA LAR extract), and configures the sample size per FFIEC guidelines.
+. *Ingestion:* System validates the target dataset schema against the pack definition (37 Key Data Fields for HMDA), flags validation errors, and confirms record count against the configured sample.
+. *Document linking:* Reviewer or batch process associates source documents (Closing Disclosures, applications, rate-lock confirmations) with target LAR records.
+. *Stage 1 — Data Integrity Review:* Reviewer opens a record in the side-by-side viewer: HMDA LAR fields on the left, source document on the right.
+Reviewer compares each of the 37 Key Data Fields, marks as confirmed/discrepancy/unable to determine.
+For numeric fields (loan amount, rate, income), pack-defined tolerance rules apply (e.g., ±$1 rounding tolerance for loan amount).
 . *Finding creation:* When a discrepancy is identified, reviewer creates a finding with: correct source value, root cause selection, severity (auto-suggested by pack rules, overridable), and comment.
-. *Remediation:* Findings route to responsible parties. Corrective actions are tracked with due dates and evidence attachments.
-. *Second review:* Configurable sampling of completed reviews for quality assurance.
-. *Reporting:* Manager reviews dashboards, generates audit summary report, exports exam-ready bundle.
+. *Stage 2 — Substantive Review:* For records flagged by Stage 1 or selected for deeper analysis, reviewer evaluates whether reported data accurately reflects the underlying transaction (e.g., action-taken code consistency with application history, denial reason alignment with adverse action notices).
+. *Remediation:* Findings route to responsible parties via the remediation lifecycle (<<sect-finding-remediation>>).
+Corrective actions are tracked with SLA-driven due dates (Critical: 1 day, High: 3 days, Medium: 7 days, Low: 14 days) and evidence attachments.
+. *Second review:* Configurable sampling of completed reviews for quality assurance (default: 15% of findings require independent second review).
+. *Reporting:* Manager reviews dashboards, generates audit summary report, exports exam-ready bundle (<<sect-exam-ready-bundle>>).
 
 .Manual Mode Workflow
 [mermaid]
@@ -56,13 +120,14 @@ sequenceDiagram
   participant Manager
 
   Admin->>System: Create audit run + select pack
-  Admin->>System: Upload target dataset
-  System->>System: Validate schema against pack
+  Admin->>System: Upload target dataset (HMDA LAR)
+  System->>System: Validate schema (37 Key Data Fields)
   System-->>Admin: Validation result (errors/warnings)
-  Admin->>System: Link source documents to records
+  Admin->>System: Link source documents to LAR records
   Reviewer->>System: Open record in side-by-side viewer
-  Reviewer->>System: Compare fields (confirm / discrepancy / unable)
+  Reviewer->>System: Stage 1: Compare fields (confirm / discrepancy / unable)
   Reviewer->>System: Create finding (value, root cause, severity, comment)
+  Reviewer->>System: Stage 2: Substantive review of flagged records
   System->>System: Route findings to responsible parties
   Reviewer->>System: Track remediation + evidence
   System->>System: Second review (QA sampling)
@@ -73,13 +138,24 @@ sequenceDiagram
 
 === Audit Workflow: OCR-Assisted Mode (Phase 1+)
 
-Steps 1–3 as above, then:
-
-[arabic, start=4]
-. *OCR extraction:* Document processing pipeline extracts text, tables, and key-value pairs from source documents. Each extracted value carries an extraction confidence score.
-. *Automated pre-scan:* Comparison engine applies pack rules to match target values against extracted source values. Generates preliminary findings with combined confidence scores (extraction × rule application).
-. *Human review:* Reviewer sees pre-populated comparison results. High-confidence matches are pre-confirmed (reviewer can override). Low/medium-confidence items are flagged for manual verification. Reviewer focuses time on genuinely uncertain cases.
-. Steps 6–8 as manual mode.
+[arabic]
+. *Setup:* Admin creates an audit run, selects the audit pack (e.g., HMDA Origination), uploads the target dataset (HMDA LAR extract), and configures sample size and confidence thresholds.
+. *Ingestion:* System validates the target dataset schema against the pack definition (37 Key Data Fields for HMDA), flags validation errors.
+. *Document linking:* Reviewer or batch process associates source documents (PDFs, images) with target LAR records.
+. *OCR extraction:* Document processing pipeline (Docling) extracts text, tables, and key-value pairs from source documents.
+Each extracted value carries an Automated Field-level Confidence (AFC) score routed per canonical thresholds (<<sect-glossary>>): AFC >= 0.85 auto-confirmed, 0.50 \<= AFC < 0.85 flagged for human review, AFC < 0.50 routed to manual entry.
+. *Stage 1 — Automated Pre-Scan:* Comparison engine applies pack rules to match target LAR values against extracted source values across the 37 Key Data Fields.
+Generates preliminary findings with combined confidence scores (extraction × rule application), routed per the same tier structure: combined >= 0.85 auto-confirmed, 0.50–0.84 flagged for review, < 0.50 rejected and flagged for manual re-review.
+. *Stage 1 — Human Review:* Reviewer sees pre-populated comparison results.
+Auto-confirmed matches (combined confidence >= 0.85) are pre-marked but reviewer can override.
+Medium-confidence items (0.50–0.84) are highlighted for manual verification.
+Low-confidence items (< 0.50) require full manual review.
+Reviewer focuses time on genuinely uncertain cases.
+. *Stage 2 — Substantive Review:* For records flagged by Stage 1 or selected for deeper analysis, reviewer evaluates whether reported data accurately reflects the underlying transaction.
+. *Remediation:* Findings route to responsible parties via the remediation lifecycle (<<sect-finding-remediation>>).
+Corrective actions are tracked with SLA-driven due dates and evidence attachments.
+. *Second review:* Configurable sampling of completed reviews for quality assurance.
+. *Reporting:* Manager reviews dashboards, generates audit summary report, exports exam-ready bundle (<<sect-exam-ready-bundle>>).
 
 .OCR-Assisted Mode Workflow
 [mermaid]
@@ -92,19 +168,22 @@ sequenceDiagram
   participant Manager
 
   System->>Docling: Send source documents
-  Docling->>System: Extracted text, tables, key-value pairs + confidence scores
-  System->>CompEngine: Apply pack rules (target vs. extracted source)
+  Docling->>System: Extracted text, tables, key-value pairs + AFC scores
+  System->>CompEngine: Stage 1: Apply pack rules (target vs. extracted source)
   CompEngine->>System: Preliminary findings + combined confidence scores
-  System->>Reviewer: Pre-populated comparison results
-  Note over Reviewer: High-confidence matches pre-confirmed
-  Note over Reviewer: Low/medium-confidence items flagged
+  System->>Reviewer: Pre-populated comparison results (tiered by confidence)
+  Note over Reviewer: AFC >= 0.85: auto-confirmed (overridable)
+  Note over Reviewer: 0.50–0.84: flagged for human review
+  Note over Reviewer: < 0.50: manual review required
   Reviewer->>System: Verify flagged items + override if needed
+  Reviewer->>System: Stage 2: Substantive review of flagged records
   Reviewer->>System: Create/adjust findings
   System->>Manager: Escalated findings for review
   Manager->>System: Approve / request re-review
   Manager->>System: Generate report + exam-ready bundle
 ----
 
+[[sect-finding-remediation]]
 === Finding Remediation Lifecycle
 
 Once findings are generated (in any workflow mode), each finding follows a remediation lifecycle from identification through closure.
@@ -179,16 +258,19 @@ This enables bi-directional linking: a finding can trigger a complaint (e.g., pa
 *Architectural implication:* Because the remediation lifecycle, audit trail, evidence store, and approval workflow are all entity-type-agnostic (see <<sect-policy-documents-table>> and the event store's extensible `entity_type` discriminator), extending to complaint management requires new UI screens and a Complaint Pack — not new backend infrastructure.
 The same Workflow Engine, Event Store, and RBAC model serve both audit findings and complaint records.
 
-=== Audit Workflow: Automated Pre-Scan (“Target-to-Source” / “Record-to-Record”)
+=== Audit Workflow: Automated Pre-Scan ("Target-to-Source" / "Record-to-Record")
 
-For structured data audits (e.g., HMDA LAR against LOS database extract), the full audit can be automated:
+For structured data audits (e.g., HMDA LAR against LOS database extract), the full Stage 1 comparison can be automated:
 
 [arabic]
 . Both target and source datasets are uploaded as structured data (CSV, API).
-. Schema mapping applies (auto-suggested, human-approved).
-. Comparison engine runs all pack rules automatically.
-. Output: full findings register with confidence scores.
-. Human review is required for: all Critical/High findings, all findings below confidence threshold, all AI-generated narratives.
+. System auto-suggests schema mapping with calibrated confidence scores (<<sect-scoring-framework>>).
+Mappings with calibrated score >= 0.95 are auto-accepted; 0.70–0.94 require human review; < 0.70 require manual mapping.
+. Admin reviews and approves the schema mapping.
+If the admin rejects a mapping suggestion, the system presents alternative candidates ranked by confidence, or the admin selects the correct target field manually.
+. Comparison engine runs all pack rules automatically across mapped fields.
+. Output: full findings register with combined confidence scores, routed per canonical thresholds (<<sect-glossary>>).
+. Human review is required for: all Critical/High findings, all findings with combined confidence below 0.85, and all AI-generated narratives.
 
 .Automated Pre-Scan Workflow
 [mermaid]
@@ -202,19 +284,23 @@ sequenceDiagram
 
   Admin->>System: Upload target dataset (CSV/API)
   Admin->>System: Upload source dataset (CSV/API)
-  System->>System: Auto-suggest schema mapping
-  Admin->>System: Approve schema mapping
+  System->>System: Auto-suggest schema mapping + confidence scores
+  System-->>Admin: Present mapping suggestions (tiered by confidence)
+  Admin->>System: Approve, adjust, or manually map fields
   System->>CompEngine: Run all pack rules automatically
-  CompEngine->>System: Full findings register + confidence scores
+  CompEngine->>System: Full findings register + combined confidence scores
   System->>Reviewer: Critical/High findings for review
-  System->>Reviewer: Below-threshold findings for review
+  System->>Reviewer: Below-threshold (< 0.85) findings for review
   Reviewer->>System: Approve / override findings
   System->>Manager: Escalated findings
   Manager->>System: Final approval
-  Manager->>System: Generate report
+  Manager->>System: Generate report + exam-ready bundle
 ----
 
 '''
+
+The following wireframes illustrate the key screens a reviewer encounters during the workflows described above.
+Each wireframe identifies the RBAC roles that can access the screen and the Flowbite components used in the implementation.
 
 [[wf-audit-dashboard]]
 === WF-01: Audit Dashboard
@@ -222,7 +308,8 @@ sequenceDiagram
 *Purpose:* Primary landing screen after login.
 Shows all audits the user has access to, with status indicators, progress metrics, and quick actions.
 
-*Roles:* All roles (filtered by RBAC — Reviewer sees assigned audits only; Manager sees all).
+*Roles:* All roles.
+RBAC filtering controls visibility: `qc_reviewer` and `auditor` roles see only their assigned audits; `qc_manager`, `compliance_officer`, and `audit_director` roles see all audits within their line of defense; Admin sees all audits across all lines.
 
 *Flowbite components:* Card (summary metrics), Table (audit list), Badge (status/severity), Button (actions), Dropdown (filters).
 
@@ -254,11 +341,11 @@ Shows all audits the user has access to, with status indicators, progress metric
 
 *Key interactions:*
 
-* *[+ Create New Audit]* opens <<wf-audit-config, Audit Configuration>> screen
+* *[+ Create New Audit]* opens <<wf-audit-config, Audit Configuration>> screen (visible only to `qc_manager`, `compliance_officer`, `audit_director`, and Admin roles)
 * *Status badge* colors: Created (gray), In Progress (blue), Review Complete (orange), Reporting (purple), Finalized (green)
 * *Findings* column shows total count with critical count in red if >0
 * *Progress* column shows percentage based on audit phase completion
-* Table is sortable by all columns; filterable by status, pack, and date range
+* Table is sortable by all columns; filterable by status, pack, date range, and defense line
 
 '''
 
@@ -268,7 +355,7 @@ Shows all audits the user has access to, with status indicators, progress metric
 *Purpose:* Create and configure a new audit run.
 User selects pack, defines scope, uploads target dataset, and sets review parameters.
 
-*Roles:* Manager, Audit Lead.
+*Roles:* Manager, Audit Lead (`qc_manager`, `compliance_officer`, `audit_director`).
 
 *Flowbite components:* Form (inputs), Select (pack/scope), DatePicker (audit period), Slider (confidence threshold), File Upload (dataset), Button (actions).
 
@@ -328,9 +415,9 @@ User selects pack, defines scope, uploads target dataset, and sets review parame
 *Key interactions:*
 
 * *Pack Template* dropdown shows only packs with `status = 'approved'` from pack registry
-* *Confidence Threshold* slider (0.50–1.00) controls finding auto-confirm cutoff; defaults to 0.85
+* *Confidence Threshold* slider (0.50–1.00) controls finding auto-confirm cutoff; defaults to 0.85 per canonical thresholds (<<sect-glossary>>)
 * *[Create Audit & Continue >>]* validates all fields, creates audit run, navigates to <<wf-doc-upload, Document Upload>>
-* Dataset upload triggers validation (schema check, record count, encoding); errors shown inline
+* Dataset upload triggers validation (schema check against pack-defined fields, record count, encoding); errors shown inline
 
 '''
 
@@ -341,6 +428,7 @@ User selects pack, defines scope, uploads target dataset, and sets review parame
 Shows document processing status, extraction completion, mapping progress, and findings generation.
 
 *Roles:* All roles with access to the audit.
+Reviewers see progress for their assigned records; Managers see aggregate progress across all records and reviewers.
 
 *Flowbite components:* Progress Bar, Timeline, Badge, Card, Table.
 
@@ -385,4 +473,4 @@ Shows document processing status, extraction completion, mapping progress, and f
 
 * Progress bars update in real-time via WebSocket or polling (30-second interval)
 * Clicking a phase row drills into the detailed view for that phase
-* *Extraction Summary* card shows AFC routing distribution, updated as documents process
+* *Extraction Summary* card shows AFC routing distribution per canonical thresholds (<<sect-glossary>>), updated as documents process
