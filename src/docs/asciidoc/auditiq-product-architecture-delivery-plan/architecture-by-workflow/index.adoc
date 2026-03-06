@@ -1,0 +1,251 @@
+[[sect-architecture-by-workflow]]
+== Architecture Mapped to Workflow Stages
+
+____
+This section maps the architecture (Part V) to each user workflow stage (Part III).
+For each stage, it identifies the components involved, the key API contracts, the data flow, and the relevant non-functional requirements.
+This is the bridge between "what the user does" and "what the system builds."
+
+Detailed component specifications are in <<sect-component-design>>.
+Detailed data model definitions are in <<sect-data-model>>.
+____
+
+=== Upload & Ingestion Stage
+
+*Workflow reference:* <<sect-workflow-screen-guide, Stage 1: Upload & Ingestion>>
+
+==== Components Involved
+
+[cols="30%,70%",options="header"]
+|===
+|Component |Role in This Stage
+
+|*Ingestion Service*
+|Validates target dataset (CSV/API) against pack-defined schema; computes per-record SHA-256 checksums; stores validated records in staging tables.
+
+|*Azure Blob Storage*
+|Stores uploaded source documents (PDF, TIFF, ZIP) with server-side encryption (AES-256); quarantine zone for malware scanning.
+
+|*Document Classifier*
+|Identifies document type (CD, 1003, Appraisal, Title, Other) from filename heuristics and first-page OCR; assigns classification confidence.
+
+|*API Gateway*
+|Routes upload requests; enforces file size limits (100 MB single, 1 GB batch); rate limiting per tenant.
+
+|*PostgreSQL*
+|Staging tables for validated records; audit run metadata; document metadata and classification results.
+|===
+
+==== API Contracts
+
+Input: `IngestionRequest` → Output: `ValidationResult` (see <<sect-product-requirements, Epic 1>> for full interface definitions).
+
+==== Data Flow
+
+....
+CSV Upload → API Gateway → Ingestion Service
+  → Schema validation (pack-defined fields)
+  → SHA-256 checksum per record
+  → Store in PostgreSQL staging tables
+  → Return ValidationResult
+
+PDF Upload → API Gateway → Azure Blob Storage (quarantine)
+  → Malware scan → Move to document store
+  → Document Classifier → Classification result
+  → Link to target records via loan number
+....
+
+==== Non-Functional Requirements
+
+* *Ingestion performance:* 5,000-record CSV ingested in <=60s (P95) on canonical test environment.
+* *Zero silent data corruption:* Per-record SHA-256 checksums logged and verifiable.
+* *File size limits:* 100 MB per file, 1 GB per batch (client-side validation).
+* *Encryption:* AES-256 at rest; TLS 1.3 in transit.
+
+'''
+
+=== Extraction Stage
+
+*Workflow reference:* <<sect-workflow-screen-guide, Stage 2: Extraction & Mapping>> (extraction portion)
+
+==== Components Involved
+
+[cols="30%,70%",options="header"]
+|===
+|Component |Role in This Stage
+
+|*Document Processing Service*
+|Orchestrates the 3-tier extraction fallback chain: Docling-Graph VLM → Docling-Graph LLM (Mistral/LiteLLM) → cloud OCR (Azure AI Document Intelligence).
+
+|*Docling-Graph Pipeline*
+|PDF → structured JSON via Docling layout engine; graph node/edge extraction for cross-document corroboration; Pydantic template-driven field extraction.
+
+|*AFC v2 Scoring Layer*
+|Computes 6-signal composite confidence per field: `docling_page_grade` (0.12), `ocr_segment_confidence` (0.23), `pattern_validity` (0.20), `layout_anchor_consistency` (0.18), `cross_doc_redundancy` (0.12), `graph_corrob_score` (0.15).
+
+|*Celery Workers*
+|Async document processing queue; retry logic; monitoring hooks.
+
+|*Redis*
+|Job queue for async extraction tasks; caching for extraction results.
+|===
+
+==== API Contracts
+
+3-tier fallback chain (see <<sect-product-requirements, Epic 2>> for full pseudocode):
+
+....
+for each document:
+  Step 1: Docling-Graph VLM extraction → compute AFC
+  if AFC >= 0.50: persist extraction
+  else:
+    Step 2: Docling-Graph LLM (Mistral/LiteLLM) → recompute AFC
+    if AFC >= 0.50: persist extraction
+    else:
+      Step 3: Cloud OCR fallback → manual review queue
+....
+
+==== Data Flow Diagram Placeholder
+
+.Extraction Pipeline Data Flow
+NOTE: See <<sect-doc-processing>> for the detailed extraction pipeline architecture diagram, and <<sect-ui-workflows, Workflow 2>> for the user-facing flowchart.
+
+==== Non-Functional Requirements
+
+* *Throughput:* ~175,000 pages/day on single 8-vCPU / 32 GB instance.
+* *Per-page latency:* ~0.5-2s (standard), ~3-8s (VLM), +1-3s (cloud OCR fallback).
+* *Extraction target:* >=85% precision on critical HMDA fields at AFC >=0.85.
+* *Determinism:* Same document + same model version = same extraction output.
+
+'''
+
+=== Mapping Stage
+
+*Workflow reference:* <<sect-workflow-screen-guide, Stage 2: Extraction & Mapping>> (mapping portion)
+
+==== Components Involved
+
+[cols="30%,70%",options="header"]
+|===
+|Component |Role in This Stage
+
+|*Schema Mapping Service*
+|Hybrid heuristic matcher with 5 weighted signals; two-layer confidence design (raw signals → calibrated decision score).
+
+|*Synonym Dictionary*
+|Curated domain-specific equivalence table (e.g., `loan_type` <--> `mortgage_product`); overrides feed back from reviewer actions.
+
+|*Graph Edge Boosting*
+|Node property matching + entity type filtering from Docling-Graph knowledge graph boost mapping confidence.
+
+|*Calibration Engine*
+|Temperature scaling (Phase 1, >=200 labeled decisions) or isotonic regression (Phase 2, >=500 decisions); ECE target <=0.05.
+|===
+
+==== API Contracts
+
+*Matching Algorithm (5 weighted signals):*
+
+* `name_similarity` (0.30): Jaro-Winkler / Levenshtein + MISMO description matching
+* `synonym_match` (0.25): Curated domain-specific equivalence table
+* `type_compatibility` (0.20): Target (MISMO) and source type agreement
+* `document_section` (0.15): Expected location in document
+* `historical_mapping` (0.10): Previously approved mappings, decayed by recency
+
+*Routing thresholds (calibrated score):*
+
+* >=0.95: Auto-accept (~10s visual confirmation)
+* 0.70-0.95: Human review (~45s per field)
+* <0.70: Manual mapping (no suggestion shown)
+
+==== Non-Functional Requirements
+
+* *Precision target:* >=95% at conf_mapping >=0.90 on CD-supported fields.
+* *Override rate target:* <=25% on CD-supported fields.
+* *Reviewer session time:* <=30 min for standard CD (15-20 fields).
+
+'''
+
+=== Rule Execution Stage
+
+*Workflow reference:* <<sect-workflow-screen-guide, Stage 3: Finding Review & Approval>>
+
+==== Components Involved
+
+[cols="30%,70%",options="header"]
+|===
+|Component |Role in This Stage
+
+|*Normalization Engine*
+|Pack-defined normalization rules per field (currency stripping, date parsing, address formatting, Unicode NFC).
+
+|*Comparison & Rules Engine*
+|Applies pack rules to normalized mapped data; supports exact match, tolerance-based, conditional logic, cross-field validation, lookup validation.
+
+|*LLM Integration (LiteLLM)*
+|Generates finding narratives with citations; rate-limited; PII-redacted inputs; cost-monitored.
+
+|*Findings Management Service*
+|Creates findings with 6 required attributes (target value, source value, rule, confidence, severity, citation); manages 9-state lifecycle.
+
+|*Provenance Logger*
+|Records 21-field schema per AI call: `model_id`, `model_version`, `prompt_template_version`, `input_context_hash`, `timestamp`, `retrieval_corpus`, `token_counts`, `data_handling_flags`, etc.
+
+|*PII Redaction Pipeline*
+|Strips names, SSN, account numbers, addresses before all LLM API calls.
+|===
+
+==== API Contracts
+
+*Finding output:* `FindingOutput` interface (see <<sect-product-requirements, Epic 4>>): finding_id, audit_id, record_id, rule_id, target_field, target_value, source_value, match_result, mapping_confidence, extraction_confidence, rule_confidence, combined_confidence, severity, regulation_citation.
+
+==== Data Flow Diagram Placeholder
+
+.Rule Execution Data Flow
+NOTE: See <<sect-component-design>> for the detailed component interaction diagram, and <<sect-ui-workflows, Workflow 4>> for the AI governance flowchart.
+
+==== Non-Functional Requirements
+
+* *Comparison throughput:* >=500 records/minute for structured data (record-to-record).
+* *Determinism:* Rules engine is fully deterministic; AI narratives are explicitly non-deterministic and labeled.
+* *AI governance:* 3 required disclaimers per AI output; no AI output enters official record without human approval.
+
+'''
+
+=== Reporting Stage
+
+*Workflow reference:* <<sect-workflow-screen-guide, Stage 4: Remediation & Reporting>>
+
+==== Components Involved
+
+[cols="30%,70%",options="header"]
+|===
+|Component |Role in This Stage
+
+|*Reporting Service*
+|Generates audit summary reports (HTML/PDF); findings breakdowns; evidence indices; confidence distributions.
+
+|*Exam Pack Lifecycle Manager*
+|Maintains the living dossier from audit creation through finalization; event-driven versioning; 14-artifact bundle.
+
+|*Remediation Workflow Engine*
+|Tracks 9-state finding lifecycle; SLA enforcement (Critical: 1d, High: 3d, Medium: 7d, Low: 14d); breach handling.
+
+|*Immutable Audit Trail*
+|Append-only event log (RFC 8785 canonical JSON, SHA-256 hash chain, global monotonic sequence IDs).
+
+|*WORM Anchor Storage*
+|Cryptographic anchor points for audit trail integrity validation (Phase 1c).
+|===
+
+==== API Contracts
+
+*Exam bundle artifacts (14):* Coverage statistics, approval manifests (three-lines-of-defense certification), exceptions log, change log, pipeline provenance, findings register, evidence index, audit summary, and more.
+See <<sect-exam-ready-bundle>> for the complete artifact specification.
+
+==== Non-Functional Requirements
+
+* *Audit trail integrity:* Hash chain verifiable end-to-end (round-trip test).
+* *Bundle versioning:* Post-export changes auto-create new version; previous version marked `superseded`.
+* *Data retention:* Per regulatory requirements (7 years minimum for HMDA); tiered storage for cost management.
+* *Disaster recovery:* RPO <=1 hour, RTO <=4 hours (see <<sect-architecture-overview>> for DR runbook).

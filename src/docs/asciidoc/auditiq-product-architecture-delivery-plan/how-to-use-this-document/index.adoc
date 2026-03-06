@@ -1,0 +1,50 @@
+[[sect-how-to-use]]
+== How to Use This Document
+
+This document is organized into eight parts.
+Read Part II (Operational Model) and Part III (User Workflows & Screens) before estimating or sprinting.
+Those two parts define _what the system does_ and _how users interact with it_ — every requirement in Part IV and every component in Part V traces back to a workflow in Part III.
+
+=== For the 4-Person Engineering Team
+
+[arabic]
+. *Start with Part II* — understand the audit run state machine, the finding remediation lifecycle, and the three-lines-of-defense RBAC model.
+These are the conceptual primitives that every service and screen is built around.
+. *Read Part III cover to cover* — the lifecycle-stage screen groupings (Upload, Extract, Map, Find, Remediate, Report, Admin) define the sprint-planning units.
+Each grouping lists the FR IDs, the services involved, and the acceptance criteria you will estimate against.
+. *Use Part IV as the acceptance contract* — the FR tables are organized by epic.
+When you pick up a story, look up the FR ID in Part IV for the authoritative acceptance criteria and the embedded wireframe.
+. *Reference Part V for API contracts and data flows* — the Architecture by Workflow Stage section (<<sect-architecture-by-workflow>>) maps each workflow stage to the components, API contracts, and data flow diagrams you will build.
+. *Check Part VI before any AI-related work* — AI governance red lines, model registry requirements, and provenance logging are non-negotiable.
+Read <<sect-ai-governance>> before writing any LLM integration code.
+. *Plan sprints with Part VII* — the Workflow Delivery Matrix (<<sect-workflow-delivery-matrix>>) maps screens to services to sprints to owners.
+The Quick Start (<<sect-quick-start-team>>) gives you the 10-screen MVP scope and a 6-sprint suggestion.
+
+=== Document Structure Overview
+
+* *Part I — Strategic Context:* Executive Summary, Problem Statement, Product Vision, Competitive Intelligence.
+Read for business context and market positioning.
+* *Part II — Operational Model:* Concept of Operations (audit modes, state machines, finding lifecycle, RBAC), and this reading guide.
+The conceptual foundation for everything that follows.
+* *Part III — User Workflows & Screens:* End-to-end workflow diagrams, all 26 MVP screen wireframes grouped by lifecycle stage, FR ID cross-references, and developer context notes.
+This is the primary sprint-planning reference.
+* *Part IV — Requirements & Specifications:* Complete FR tables with acceptance criteria, Audit Pack Specification with rule engine, Regulatory Compliance & Policy Management, and the Canonical Glossary (single source of truth for all confidence metrics and thresholds).
+* *Part V — Architecture & Design:* Architecture Overview, workflow-to-component mapping, Component-Level Design, Data Model, and Scoring Framework.
+* *Part VI — AI & Governance:* AI Governance & Model Risk Controls, Model Registry, Model Deployment, Docling-Graph Integration, Immutability vs. Correctability.
+* *Part VII — Delivery & Business:* Pricing, Quick Start for the 4-person team, Delivery Plan with Workflow Delivery Matrix, Risks & Mitigations, Future Roadmap.
+* *Part VIII — Reference:* Appendices, Architectural Decisions (including MVP Decisions Locked), Exam-Ready Bundle Specification, Document Control.
+
+=== Audiences
+
+* *Engineering team:* Parts II, III, IV, V (sprint-plan against workflows and FR tables; use API contracts from Part V).
+* *Product / leadership:* Part I for context; Part VII for investment decisions and delivery timeline.
+* *Compliance / regulatory stakeholders:* Part VI (AI Governance, Immutability) and Part VIII (Exam-Ready Bundle, Canonical Glossary) for regulatory defensibility.
+
+=== Conventions
+
+* *TODO* = work item that must be completed before implementation starts.
+* *ASSUMPTION* = a belief stated explicitly; risk if wrong is documented.
+* *DECISION NEEDED* = requires stakeholder input before proceeding.
+* *DECISION LOCKED* = decided for MVP; revisit criteria documented in <<sect-mvp-decisions>>.
+* *Canonical Glossary:* All confidence metrics, routing thresholds, severity definitions, and calibration criteria are defined in <<sect-glossary>>.
+If a value elsewhere in this document conflicts with the Glossary, the Glossary governs.

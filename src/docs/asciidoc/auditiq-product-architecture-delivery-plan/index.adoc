@@ -1,8 +1,8 @@
 = AuditIQ: Product + Architecture + Delivery Plan
-:subtitle: RiskExec — Comprehensive Specification v0.15
+:subtitle: RiskExec — Comprehensive Specification v0.25
 :doctype: book
 :author: Erik Pieczkowski
-:revnumber: 0.24
+:revnumber: 0.25
 :revdate: 2026-03-06
 :build-timestamp: local build
 :toc:
@@ -25,18 +25,30 @@ include::product-vision-and-strategic-positioning/index.adoc[]
 include::competitive-intelligence/index.adoc[]
 
 // ============================================================
-// Part II: Operational Concept
+// Part II: Operational Model
 // ============================================================
 
-= Part II: Operational Concept
+= Part II: Operational Model
 
 include::concept-of-operations/index.adoc[]
 
+include::how-to-use-this-document/index.adoc[]
+
 // ============================================================
-// Part III: Requirements & Specifications
+// Part III: User Workflows & Screens
 // ============================================================
 
-= Part III: Requirements & Specifications
+= Part III: User Workflows & Screens
+
+include::workflow-screen-guide/index.adoc[]
+
+include::ui-workflows-and-user-journeys/index.adoc[]
+
+// ============================================================
+// Part IV: Requirements & Specifications
+// ============================================================
+
+= Part IV: Requirements & Specifications
 
 include::product-requirements/index.adoc[]
 
@@ -44,13 +56,17 @@ include::audit-pack-specification/index.adoc[]
 
 include::regulatory-compliance-and-policy-management/index.adoc[]
 
+include::glossary/index.adoc[]
+
 // ============================================================
-// Part IV: Architecture & Design
+// Part V: Architecture & Design
 // ============================================================
 
-= Part IV: Architecture & Design
+= Part V: Architecture & Design
 
 include::architecture-overview/index.adoc[]
+
+include::architecture-by-workflow/index.adoc[]
 
 include::component-level-design/index.adoc[]
 
@@ -59,10 +75,10 @@ include::data-model/index.adoc[]
 include::scoring-framework/index.adoc[]
 
 // ============================================================
-// Part V: AI & Governance
+// Part VI: AI & Governance
 // ============================================================
 
-= Part V: AI & Governance
+= Part VI: AI & Governance
 
 include::ai-governance-and-model-risk-controls/index.adoc[]
 
@@ -75,12 +91,14 @@ include::docling-graph-integration/index.adoc[]
 include::immutability-vs-correctability/index.adoc[]
 
 // ============================================================
-// Part VI: Delivery & Business
+// Part VII: Delivery & Business
 // ============================================================
 
-= Part VI: Delivery & Business
+= Part VII: Delivery & Business
 
 include::pricing-and-packaging/index.adoc[]
+
+include::quick-start-team/index.adoc[]
 
 include::delivery-plan/index.adoc[]
 
@@ -88,20 +106,16 @@ include::risks-constraints-and-mitigations/index.adoc[]
 
 include::future-roadmap/index.adoc[]
 
-include::ui-workflows-and-user-journeys/index.adoc[]
-
 // ============================================================
-// Part VII: Reference
+// Part VIII: Reference
 // ============================================================
 
-= Part VII: Reference
+= Part VIII: Reference
+
+include::appendices/index.adoc[]
 
 include::decisions-and-open-questions/index.adoc[]
 
 include::exam-ready-bundle-specification/index.adoc[]
-
-include::glossary/index.adoc[]
-
-include::appendices/index.adoc[]
 
 include::document-control/index.adoc[]
