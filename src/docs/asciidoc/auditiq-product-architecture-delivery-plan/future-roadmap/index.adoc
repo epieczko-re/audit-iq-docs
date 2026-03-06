@@ -21,12 +21,130 @@
 * Enables proactive finding prediction on new loans
 * Calibration study required (Phase 1b baseline → Phase 2 retraining)
 
-*Adaptive Learning*
+*Adaptive Learning & Reinforcement Learning from Human Review*
 
-* Feedback loops: Reviewer decisions → confidence recalibration
-* Example: If matcher suggests mapping with 0.72 confidence, but reviewer corrects 20% of the time, lower threshold to 0.60
-* Telemetry dashboard showing real-time drift in model accuracy per pack per customer
-* Automated alerts if override rate >15% (indicate model degradation)
+The MVP architecture captures every human decision — accept, override, edit, reject, re-score — as an immutable, timestamped audit event (<<sect-immutability>>).
+Combined with the three-layer confidence scores (<<sect-confidence-scoring>>), the 21-field AI provenance records (<<sect-ai-governance>>), and the narrative diff history, AuditIQ accumulates a rich reward-signal dataset suitable for reinforcement learning (RL).
+
+_Why RL fits AuditIQ._
+Three properties make the human-in-the-loop scoring pipeline a natural RL problem:
+
+. *Delayed, sparse reward.*
+The system does not know whether a routing decision was correct until the human reviewer acts — sometimes minutes or hours later.
+RL handles delayed feedback natively.
+. *Exploration–exploitation tradeoff.*
+The platform benefits from auto-confirming more findings over time (exploitation) but must occasionally route borderline cases to humans to continue learning (exploration).
+Static thresholds cannot balance this; a policy-gradient or contextual-bandit agent can.
+. *Non-stationary environment.*
+Institutions change document formats, regulations update, new pack rules arrive, and reviewer populations shift.
+RL adapts to distribution drift; static thresholds degrade silently.
+
+_Reward signals already captured in MVP._
+
+[cols=”35%,30%,35%”,options=”header”]
+|===
+|Human Action |RL Signal |Source
+
+|Accept extraction at AFC ≥0.85
+|Positive reward (model correct)
+|Immutable audit event
+
+|Override extracted value
+|Negative reward + ground-truth label
+|Compensating event + reason
+
+|Accept suggested schema mapping
+|Positive reward
+|Mapping confidence log
+
+|Override mapping / add synonym
+|Negative reward + correction
+|Synonym dictionary + override reason
+
+|Approve AI narrative
+|Positive reward
+|21-field provenance record
+
+|Edit & approve AI narrative
+|Reward + preference pair (draft vs. edited)
+|Diff history + effective_challenge_notes
+
+|Reject AI narrative
+|Strong negative signal
+|Provenance record + disposition
+
+|Manager re-scores severity
+|Penalty on finding classification
+|Severity-reset event + justification
+|===
+
+_Three RL application areas._
+
+*Confidence-threshold optimization (contextual bandit).*
+Replace the static AFC routing thresholds (<<sect-glossary>>) with a learned policy that selects per-field, per-document-type, per-institution routing decisions.
+State vector: six AFC signals + document type + field type + institution profile.
+Action space: auto-confirm / human-review / manual-entry.
+Reward: +1 if human confirms, −1 if human overrides, weighted by finding severity.
+This is a contextual bandit — simpler than full RL, well-studied, and compatible with regulatory constraints because the policy can be bounded.
+For example, the system would never auto-confirm below a regulatory floor of 0.70 regardless of learned preference.
+
+*Schema-mapping preference learning (DPO / RLHF).*
+Every reviewer override of a suggested mapping produces a preference pair: (system suggestion, human-chosen mapping).
+Direct Preference Optimization (DPO) or RLHF can fine-tune the mapping scorer.
+The model learns institution-specific naming conventions and document-layout patterns.
+The synonym dictionary already serves as a manual approximation of this loop — RL would automate and generalize it.
+
+*Narrative quality improvement (RLHF).*
+Manager approve / edit / reject decisions on AI-drafted finding narratives are textual preference data.
+Approved narratives are positive examples.
+Edited narratives provide diff-level reward (what the human changed and why).
+Rejected narratives are strong negatives.
+All three signals are already captured in the provenance schema and diff history.
+A reward model trained on these preferences can guide narrative generation toward institution-preferred tone, citation density, and regulatory language.
+This does not require fine-tuning the base LLM weights — reward-model steering or best-of-N sampling is sufficient.
+
+_Safety and regulatory guardrails for RL._
+
+* *Policy constraints.* The RL agent is bounded: it can never auto-confirm below regulatory-floor thresholds defined in the Canonical Glossary (<<sect-glossary>>), ensuring human review on low-confidence items regardless of learned policy.
+* *Offline / batch RL only.* Training occurs on historical logged data — never online in the production decision path.
+New policies are evaluated offline against held-out audit runs before deployment.
+* *A/B gated rollout.* Every policy update is A/B tested against the incumbent static-threshold policy.
+Promotion requires: (a) override rate ≤ current baseline, (b) no increase in Critical/High finding miss rate, (c) reviewer session time does not increase.
+* *Model Registry integration.* RL policies are registered as model artifacts in the Model Registry (<<sect-model-registry>>) with the same lifecycle (draft → staging → approved → deprecated), validation gates, and provenance logging as any other model.
+* *Rollback trigger.* If post-deployment override rate exceeds 15% for three consecutive days, the RL policy is automatically rolled back to the prior approved version and an alert is raised on the drift monitoring dashboard (<<sect-ai-governance>>).
+* *Explainability.* Contextual-bandit policies produce per-decision feature-importance scores, enabling reviewers to see _why_ the system routed a finding to human review — satisfying SR 11-7 effective-challenge requirements.
+* *Immutable training provenance.* The training dataset (state, action, reward tuples) is versioned and hash-anchored in the audit trail, enabling regulators to reconstruct what the model learned and from which human decisions.
+
+_Prerequisites and phasing._
+
+[cols=”15%,45%,40%”,options=”header”]
+|===
+|Phase |Milestone |Dependency
+
+|Phase 1 (MVP)
+|Capture all reward signals via immutable audit trail, provenance logging, and override tracking.
+No RL models in production.
+|<<sect-immutability>>, <<sect-ai-governance>>, <<sect-scoring-framework>>
+
+|Phase 2a
+|Offline contextual-bandit training for AFC routing thresholds using ≥10,000 logged human decisions.
+A/B test against static thresholds on 2–3 pilot institutions.
+|Minimum 3 months of production audit data across ≥5 institutions
+
+|Phase 2b
+|DPO training for schema-mapping scorer using ≥5,000 override preference pairs.
+Deploy as challenger model alongside heuristic matcher v1.
+|Sufficient mapping-override volume; institution diversity
+
+|Phase 3
+|RLHF reward model for narrative quality using ≥1,000 manager approve/edit/reject preference pairs.
+Best-of-N sampling or reward-model reranking (no base-model fine-tuning).
+|Sufficient narrative review volume; stable prompt templates
+|===
+
+_Key insight:_ the MVP is already building the data-collection infrastructure for RL — immutable logs, human corrections, provenance tracking, and override-rate monitoring.
+The marginal engineering cost of adding RL in Phase 2 is low because the reward signals are already being captured at every human decision point.
+The question is not _whether_ the data supports RL, but _when_ sufficient volume accumulates to train reliable policies.
 
 *Multi-Pack Audit Workflows*
 
