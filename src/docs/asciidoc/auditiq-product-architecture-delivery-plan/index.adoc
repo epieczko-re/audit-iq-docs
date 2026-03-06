@@ -2,7 +2,7 @@
 :subtitle: RiskExec — Comprehensive Specification v0.15
 :doctype: book
 :author: Erik Pieczkowski
-:revnumber: 0.19
+:revnumber: 0.21
 :revdate: 2026-03-06
 :build-timestamp: local build
 :toc:
