@@ -563,6 +563,65 @@ NOTE: Initial conservative threshold per <<sect-decision-d2, Decision D2>>; may 
 * 0.70–0.95: Human review required (reviewer evaluates suggestion; ~45s per field)
 * <0.70: Manual mapping required (no suggestion shown; reviewer selects from field list)
 
+==== Bootstrap Calibration Procedure
+
+Layer 2 calibration requires labeled mapping decisions that do not exist at launch.
+This section defines the bootstrap procedure that transitions the system from uncalibrated heuristic scoring to a calibrated decision model.
+
+*Phase 0 — Pre-launch seed data (before first customer):*
+
+[arabic]
+. Generate synthetic mapping datasets from 5 sample HMDA LAR files (public HMDA data + redacted CDs).
+. Internal team completes ~100 mapping decisions across 3 pack variants (HMDA origination, HMDA servicing, CRA).
+. Train initial logistic regression on these 100 decisions using leave-one-out cross-validation.
+. Expected initial ECE: 0.08–0.12 (above the ≤0.05 target — acceptable for soft launch).
+
+*Phase 1a — Early customer calibration (first 3–5 customers):*
+
+[arabic]
+. Auto-accept threshold set to ≥0.98 (ultra-conservative — virtually no auto-accepts during bootstrap).
+. Every reviewer accept/override/manual decision is captured with `calibratedScoreAtDecision` and `disposition` in `ApprovedMapping`.
+. At 200 cumulative labeled decisions (across all tenants, anonymized), trigger first production calibration:
+.. Split data: 80% train / 20% validation (stratified by disposition type).
+.. Fit temperature-scaled logistic regression on train set.
+.. Compute ECE on validation set.
+.. If ECE ≤ 0.05: deploy calibrated model; lower auto-accept threshold to ≥0.95.
+.. If ECE > 0.05 but ≤ 0.08: deploy but keep threshold at ≥0.98; schedule recalibration at 350 decisions.
+.. If ECE > 0.08: keep heuristic scoring; flag for engineering review.
+
+*Phase 1b — Continuous recalibration:*
+
+[arabic]
+. Recalibration runs automatically every 200 new decisions (batch) or weekly (whichever comes first).
+. Reliability diagrams and ECE are computed and stored for each calibration run.
+. If ECE degrades by >0.02 from the previous calibration, an alert is sent to the ML team and the auto-accept threshold reverts to ≥0.98 until the next calibration passes.
+
+*Go/kill criteria for calibration quality:*
+
+[cols="30%,35%,35%",options="header"]
+|===
+|Metric |Go (deploy calibrated model) |Kill (revert to heuristic)
+
+|ECE
+|≤ 0.05
+|> 0.10 after 500+ decisions
+
+|Auto-accept precision
+|≥ 0.98 (false-accept rate < 2%)
+|< 0.95
+
+|Override rate on auto-accepted fields
+|< 5% of auto-accepted fields subsequently overridden
+|> 10%
+
+|Reviewer trust signal
+|> 80% of reviewers skip review of auto-accepted fields
+|< 60% (indicates reviewers do not trust auto-accepts)
+|===
+
+*Data imbalance mitigation:* Early labeled data skews toward easy mappings (exact name matches).
+To ensure calibration covers hard cases, the system tracks disposition rates by matching pattern (exact, abbreviation, synonym, derived, multi-source) and flags under-represented patterns for targeted reviewer sampling.
+
 ==== Input/Output Contracts
 
 [source,typescript]
@@ -695,7 +754,89 @@ Target: ≤25% override rate on CD-supported fields by end of Phase 1b UAT.
 }
 ----
 
+*Unicode normalization:* All string values are converted to Unicode NFC (Canonical Decomposition followed by Canonical Composition) before any other normalization rule applies.
+This prevents silent mismatches when source documents contain decomposed characters (NFD) — for example, "José" composed vs. decomposed would fail equality checks without NFC normalization.
+
+*Error handling — type coercion failures:*
+
+[cols="25%,25%,25%,25%",options="header"]
+|===
+|Error Type |Example |Fallback Behavior |Finding Impact
+
+|Date parse failure
+|"02/31/2025" (invalid day)
+|Set value to `null`; emit `normalization_failed` event; flag for manual review
+|`conf_rule` reduced to 0.0; finding generated with `match_result = 'unable_to_determine'`
+
+|Numeric parse failure
+|"$N/A" in loan_amount field
+|Set value to `null`; emit `normalization_failed` event
+|`conf_rule` reduced to 0.0; finding generated with `match_result = 'unable_to_determine'`
+
+|Currency symbol ambiguity
+|"£250,000" when USD expected
+|Preserve raw value; add `currency_mismatch` warning; do not convert
+|Finding generated with `severity = 'medium'` and narrative noting currency mismatch
+
+|Whitespace anomaly
+|"123\u00A0Main\u2003St" (non-breaking space + em space)
+|Collapse all Unicode whitespace categories (Zs) to single ASCII space; trim leading/trailing
+|None — transparent normalization
+
+|State abbreviation unknown
+|"Calif." (non-standard)
+|Attempt lookup in extended abbreviation table (150+ variants); if no match, preserve raw value and flag
+|`conf_rule` unaffected if lookup succeeds; finding if target expects "CA" and normalization fails
+|===
+
+*Decimal precision rules by field type:*
+
+[cols="30%,20%,50%",options="header"]
+|===
+|Field Category |Precision |Rationale
+
+|Loan amounts, dollar values
+|2 decimal places (round half-even / banker's rounding)
+|HMDA LAR reporting standard; avoids ±$0.01 false positives
+
+|Interest rates, APR
+|3 decimal places
+|Rate spread tolerance per FFIEC requires 3-decimal precision (e.g., 6.250% vs. 6.251%)
+
+|LTV ratio, DTI ratio
+|2 decimal places
+|Industry convention; pack rules define tolerance (typically ±0.5%)
+
+|Percentages (general)
+|2 decimal places
+|Standard reporting precision
+|===
+
+*Complex transformation examples:*
+
+[cols="20%,40%,40%",options="header"]
+|===
+|Field |Normalization Rules |Example Input → Output
+
+|`property_address`
+|NFC → uppercase → collapse whitespace → normalize state → strip unit designator abbreviations → USPS standardization
+|"123 main st, apt 4b, san francisco, calif. 94102" → "123 MAIN ST APT 4B SAN FRANCISCO CA 94102"
+
+|`borrower_name`
+|NFC → trim → collapse whitespace → remove honorifics (Mr/Mrs/Dr) → preserve case
+|" Mr. José  García-López " → "José García-López"
+
+|`loan_origination_date`
+|Parse flexible formats (MM/DD/YYYY, YYYY-MM-DD, DD-Mon-YY, "January 15, 2025") → ISO 8601 UTC
+|"01/15/25" → "2025-01-15T00:00:00Z" (with 2000-pivot for 2-digit years)
+
+|`action_taken_type`
+|Strip whitespace → map to HMDA enum code if narrative provided
+|"Loan Originated" → "1" (per HMDA Action Taken codes)
+|===
+
 *Determinism:* Deterministic — same input + same rules = same output.
+Unicode NFC normalization and banker's rounding are both deterministic operations.
 
 === Comparison & Rules Engine
 
@@ -863,6 +1004,99 @@ interface StatusTransition {
 |Email notification to owner
 |===
 
+==== SLA Enforcement & Breach Handling
+
+SLA timers are computed from the `created_at` timestamp of each finding and enforced by a scheduled job that runs every 15 minutes.
+Due dates for remediation are auto-calculated based on severity (Critical: 1 business day, High: 3 business days, Medium: 7 business days, Low: 14 business days) but can be overridden by a Manager with documented justification.
+
+*SLA enforcement matrix:*
+
+[cols="18%,18%,18%,18%,28%",options="header"]
+|===
+|State |Severity |SLA Duration |Warning At |Breach Action
+
+|Identified → Triaged
+|Critical
+|4 hours
+|2 hours
+|Auto-escalate to Manager; finding flagged `sla_breached = true`; email + in-app notification
+
+|Identified → Triaged
+|High
+|24 hours
+|12 hours
+|Manager notification; finding flagged `sla_approaching`
+
+|Identified → Triaged
+|Medium
+|72 hours
+|48 hours
+|Email notification to assigned reviewer
+
+|Identified → Triaged
+|Low
+|7 business days
+|5 business days
+|Email notification to assigned reviewer
+
+|Remediation Assigned → Corrected
+|Critical
+|1 business day
+|4 hours
+|Auto-escalate to Manager + Compliance Officer; blocked from bundle export
+
+|Remediation Assigned → Corrected
+|High
+|3 business days
+|2 business days
+|Manager notification
+
+|Corrected → Retest Passed/Failed
+|Critical
+|4 hours
+|2 hours
+|Auto-assign to next available reviewer if original retester has not acted
+
+|Corrected → Retest Passed/Failed
+|High
+|24 hours
+|12 hours
+|Manager notification
+|===
+
+*Breach state handling:*
+
+* Breached findings are *never* auto-closed or auto-resolved — a human must act.
+* The `sla_breached` flag is immutable once set; it persists through the finding lifecycle and appears in the exam pack dossier.
+* Breach events are recorded in the audit trail with `event_type = 'sla_breached'` and include: finding_id, expected_sla_duration, actual_duration, escalation_actions_taken.
+* Repeated breaches (>3 Critical SLA breaches in a single audit) trigger a `systemic_sla_failure` alert to the Audit Director and are surfaced in the exam pack's exceptions log.
+
+==== Cross-Finding Pattern Detection
+
+The Findings Management Service monitors for cross-finding patterns that indicate systemic issues rather than isolated discrepancies:
+
+[cols="30%,30%,40%",options="header"]
+|===
+|Pattern |Detection Threshold |Action
+
+|Same field, multiple records
+|≥5 findings on the same `field_id` within one audit
+|Auto-generate `pattern_alert` event; suggest Manager review for systemic root cause
+
+|Same rule, high frequency
+|≥10 findings triggered by the same `rule_id`
+|Flag rule for potential threshold adjustment; notify Pack Author
+
+|Confidence clustering
+|≥10 findings with `combined_confidence` between 0.50–0.60 (borderline)
+|Flag for human review prioritization; suggest recalibration check
+
+|Single-record anomaly
+|≥5 findings on a single `record_id`
+|Flag record as high-risk; suggest full manual review of all fields
+|===
+
+Pattern alerts are informational — they do not change finding state but are included in the exam pack dossier's coverage statistics to give examiners visibility into systemic risk signals.
 
 === Evidence & Attachment Service
 
@@ -1175,6 +1409,210 @@ interface ReportSection {
 }
 ----
 
+[[sect-exam-pack-lifecycle-manager]]
+=== Exam Pack Lifecycle Manager
+
+*Responsibilities:*
+
+* Maintain the exam pack as a continuously updated dossier throughout the audit lifecycle
+* Create new bundle versions on material events (finding changes, approvals, evidence updates)
+* Compute coverage and sampling statistics from audit data
+* Collect and structure approval manifests from all three lines of defense
+* Track exceptions and overrides with justification
+* Generate pipeline provenance from model registry and service versions
+* Produce the exportable ZIP bundle with manifest and hash verification
+* Serve bundle version history and version-to-version diffs via API
+
+*Event-driven update triggers:*
+
+The Exam Pack Lifecycle Manager subscribes to audit trail events via the Workflow Engine.
+When a material event occurs, it creates a new bundle version:
+
+[cols="40%,30%,30%",options="header"]
+|===
+|Event Type |Version Bump |Action
+
+|`audit_started`
+|Major (v1.0)
+|Create initial bundle with audit metadata and pack configuration
+
+|`pre_scan_complete`
+|Major (v2.0)
+|Populate findings register, coverage statistics, confidence distributions
+
+|`finding_created` / `finding_closed` / `finding_reopened`
+|Major
+|Update findings register, recalculate coverage stats, append to change log
+
+|`finding_triaged` / `finding_escalated`
+|Minor
+|Update finding status in register, append to change log
+
+|`corrective_action_completed`
+|Minor
+|Update corrective action log, append to change log
+
+|`evidence_added` / `evidence_superseded`
+|Minor
+|Update source document index, append to change log
+
+|`approval_recorded`
+|Major
+|Add approval to manifest, update defense lines certification, check all-lines-approved
+
+|`exception_recorded`
+|Minor
+|Append to exceptions log
+
+|`bundle_exported`
+|No bump
+|Record export metadata (who, when, hash)
+|===
+
+*Input/Output Contracts:*
+
+[source,typescript]
+----
+interface BundleVersionRequest {
+  auditId: string;
+  version?: string;        // Optional: specific version; defaults to latest
+}
+
+interface BundleVersion {
+  bundleId: string;
+  auditId: string;
+  bundleVersion: string;
+  parentBundleId: string | null;
+  status: 'draft' | 'review' | 'approved' | 'exported' | 'superseded';
+  versionTrigger: string;
+  versionSummary: string;
+  createdAt: timestamp;
+
+  // Coverage snapshot
+  totalFindings: number;
+  findingsBySeverity: Record<string, number>;
+  coveragePct: number;
+  avgCombinedConfidence: number;
+
+  // Approval state
+  firstLineApproved: boolean;
+  secondLineApproved: boolean;
+  thirdLineApproved: boolean;
+  allLinesApproved: boolean;
+}
+
+interface BundleDiff {
+  fromVersion: string;
+  toVersion: string;
+  findingsAdded: number;
+  findingsClosed: number;
+  findingsReopened: number;
+  findingsEscalated: number;
+  evidenceAdded: number;
+  evidenceSuperseded: number;
+  approvalsAdded: number;
+  exceptionsAdded: number;
+  correctiveActionsCompleted: number;
+}
+
+interface BundleExportResult {
+  bundleId: string;
+  bundleVersion: string;
+  exportFormat: 'zip' | 'merged_pdf';
+  storagePath: string;
+  bundleHash: string;
+  fileCount: number;
+  totalSizeBytes: number;
+  integrityChecks: {
+    hashChainVerified: boolean;
+    piiRedactionVerified: boolean;
+    aiContentApproved: boolean;
+    allLinesApproved: boolean;
+  };
+}
+
+interface BundleApprovalRequest {
+  auditId: string;
+  defenseLine: 1 | 2 | 3;
+  role: string;
+  scope: string;
+  findingsReviewed: number;
+  findingsApproved: number;
+  findingsEscalated: number;
+  signOffStatement: string;
+}
+----
+
+*API Endpoints:*
+
+[cols="15%,40%,45%",options="header"]
+|===
+|Method |Endpoint |Description
+
+|GET
+|`/api/v1/audits/{auditId}/bundle`
+|Returns the current (latest) bundle metadata including coverage snapshot and approval state
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/versions`
+|Returns the complete version chain with summary and trigger for each version
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/versions/{version}`
+|Returns a specific bundle version with full metadata
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/diff`
+|Returns the delta between two versions (query params: `from`, `to`)
+
+|POST
+|`/api/v1/audits/{auditId}/bundle/approve`
+|Records a line-of-defense approval; triggers major version bump
+
+|POST
+|`/api/v1/audits/{auditId}/bundle/export`
+|Generates the ZIP bundle for the current or specified version; runs integrity checks
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/coverage`
+|Returns current coverage and sampling statistics (<<sect-coverage-and-sampling>>)
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/exceptions`
+|Returns current exceptions log (<<sect-exceptions-log>>)
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/approvals`
+|Returns approval manifest with all line-of-defense sign-offs (<<sect-approval-manifest>>)
+|===
+
+*Error Handling:*
+
+[cols="40%,60%",options="header"]
+|===
+|Error |Handling
+
+|Bundle export requested before all AI narratives approved
+|Return 422 with list of unapproved narratives; block export
+
+|Bundle export requested with untriaged Critical findings
+|Return 422 with list of untriaged Critical findings; block export
+
+|Approval recorded by wrong defense line (e.g., QC manager approving audit-layer findings)
+|Return 403; RBAC enforcement prevents cross-line approvals
+
+|Version conflict (concurrent updates)
+|Optimistic locking via bundle content hash; retry with latest version
+
+|Bundle generation fails mid-export
+|Partial bundle cleaned up; error event logged; user notified to retry
+|===
+
+*Determinism:* Bundle content is deterministic for a given audit state — same findings, evidence, and approvals always produce the same bundle content (hash-verified).
+
+*Storage:* Generated bundles stored in Azure Blob Storage under `tenant-{tenant_id}/bundles/audit_{audit_id}/v{version}/`.
+Retention follows the same 7-year lifecycle policy as source documents.
+
 [[sect-rbac-permission-matrix]]
 === RBAC & Permission Matrix
 
@@ -1308,6 +1746,30 @@ sequenceDiagram
 |1 minute
 |5 requests/second
 |===
+
+*Burst semantics:* Burst limits allow short spikes above the sustained rate.
+The burst allowance is a token bucket that refills at the sustained rate.
+For example, the per-tenant burst of 500 requests/second allows a spike of 500 requests in a single second, but the bucket then takes ~3 seconds to refill to full capacity at the 10,000/minute sustained rate (~167/second).
+A tenant cannot continuously consume at the burst rate.
+
+*Quota window type:* Sliding window (not fixed-minute boundaries).
+This prevents the "double-burst" problem where a client sends 10,000 requests at :59 and another 10,000 at :01 of the next minute.
+
+*Multi-tenant fairness:* Rate limits are enforced per-tenant in APIM using separate rate-limit counters per `tenant_id` claim.
+One tenant hitting its quota has zero impact on other tenants — no shared counters, no shared queues.
+Backend services use separate Kubernetes resource quotas per tenant tier (Standard, Professional, Enterprise) to prevent noisy-neighbor effects at the compute layer.
+
+*Rate-limit response headers:* All responses include standard rate-limit headers per the IETF RateLimit Header Fields draft:
+
+....
+RateLimit-Limit: 10000
+RateLimit-Remaining: 7842
+RateLimit-Reset: 34
+Retry-After: 0
+....
+
+`RateLimit-Reset` is the number of seconds until the quota window resets.
+`Retry-After` is populated only on 429 responses and indicates seconds to wait before retrying.
 
 *API versioning:* URL-path versioning (`/api/v1/...`).
 Breaking changes require a new version; old versions supported for 6 months minimum.
@@ -1572,6 +2034,150 @@ State remains unchanged.
 * *Compensation:* If a multi-step transition partially completes (e.g., pre-scan starts but comparison engine crashes), the Orchestration Service emits a `TransitionFailed` event with partial results and rolls the state back to the prior valid state.
 The operator can retry or manually intervene.
 
+[[sect-service-resilience]]
+==== Service Resilience & Failure Recovery
+
+Each downstream service has explicit timeout, circuit breaker, and dead-letter handling policies.
+The Orchestration Service acts as the resilience coordinator — it owns retry decisions and compensation logic for multi-step operations.
+
+*Per-service timeout and retry policy:*
+
+[cols="20%,15%,15%,15%,35%",options="header"]
+|===
+|Service |Operation Timeout |Retries |Backoff |Fallback on Exhaustion
+
+|Document Processing (Docling)
+|30s per page
+|3
+|2s, 4s, 8s
+|Route to Cloud OCR fallback (<<sect-doc-processing>>); if fallback also fails, quarantine document and continue audit with remaining documents
+
+|Schema Mapping Service
+|10s per mapping suggestion
+|3
+|1s, 2s, 4s
+|Return uncalibrated Layer 1 score only; flag mapping as `requires_manual_review`
+
+|Comparison & Rules Engine
+|5s per record
+|2
+|1s, 2s
+|Skip record; mark as `unable_to_determine`; include in findings register with `processing_error` flag
+
+|Regulatory Citation Engine
+|8s per query
+|2
+|1s, 2s
+|Return pack-defined primary citation only (no AI-suggested secondary citations)
+
+|AI Narrative Generation
+|30s per narrative
+|2
+|5s, 10s
+|Return empty narrative placeholder with "[AI generation unavailable — manual narrative required]" label
+
+|Event Store (write)
+|5s
+|5
+|1s, 2s, 4s, 8s, 16s
+|Write to local WAL (write-ahead log); background process replays WAL to Event Store on recovery.
+Events are *never* silently dropped.
+
+|Elasticsearch (index)
+|10s
+|3
+|2s, 4s, 8s
+|Queue indexing request to dead-letter topic; background process retries hourly.
+Search results may be stale until reindexing completes.
+
+|Azure Blob Storage
+|15s
+|3
+|2s, 4s, 8s
+|Return upload failure to client with retry guidance.
+No silent data loss.
+|===
+
+*Circuit breaker thresholds:*
+
+[cols="25%,20%,20%,35%",options="header"]
+|===
+|Service |Error Rate Threshold |Window |Recovery Strategy
+
+|Document Processing
+|>20% failure rate
+|5 minutes
+|Open circuit → route all requests to Cloud OCR fallback for 60 seconds → half-open (send 10% of traffic to Docling) → close if success rate >90%
+
+|Schema Mapping
+|>15% failure rate
+|5 minutes
+|Open circuit → serve uncalibrated heuristic scores for 120 seconds → half-open → close
+
+|Comparison Engine
+|>10% failure rate
+|5 minutes
+|Open circuit → pause pre-scan; alert operator; require manual restart after investigation
+
+|Citation Engine
+|>30% failure rate
+|5 minutes
+|Open circuit → serve primary citations only (no semantic search) for 300 seconds → half-open → close
+
+|Event Store
+|>5% failure rate
+|1 minute
+|Open circuit → write to local WAL immediately → alert on-call engineer (P1 severity).
+Event Store failures are critical — data integrity is at risk.
+|===
+
+*Partial batch failure handling:*
+
+When a pre-scan processes N records and fails at record K:
+
+[arabic]
+. Records 1 through K-1: findings are committed and visible.
+The audit state transitions to `REVIEW_READY` for the completed portion.
+. Record K: marked as `processing_error` with error details.
+A finding is created with `match_result = 'unable_to_determine'` and the error attached as metadata.
+. Records K+1 through N: remain unprocessed.
+The Orchestration Service emits a `PartialBatchComplete` event with `{processed: K-1, failed: 1, remaining: N-K}`.
+. Manager sees a banner: "Pre-scan partially complete (K-1 of N records).
+1 record failed processing.
+{N-K} records not yet processed.
+[Retry Remaining] [Review Completed]."
+. *Retry Remaining* restarts processing from record K (not from the beginning).
+Record IDs are checkpointed in the audit state to enable resume-from-failure.
+
+*Rollback semantics for multi-step transitions:*
+
+[cols="30%,35%,35%",options="header"]
+|===
+|Transition |Steps |Compensation on Failure
+
+|`READY → PRE_SCAN_RUNNING → REVIEW_READY`
+|1. Load pack rules 2. Execute comparison 3. Generate findings 4. Compute coverage stats
+|If step 3 fails: findings from steps 1-2 are committed (partial results); state set to `REVIEW_READY` with `partial_scan = true` flag.
+If step 1 fails: no side effects; state remains `READY`.
+
+|`UNDER_REVIEW → REPORT_GENERATION → PENDING_APPROVAL`
+|1. Aggregate findings 2. Generate AI narratives 3. Compile report PDF 4. Assemble bundle version
+|If step 3 fails: findings and narratives are preserved; report marked `generation_failed`; state remains `UNDER_REVIEW`.
+Manager can retry report generation without re-running review.
+
+|`PENDING_APPROVAL → FINALIZED`
+|1. Validate all approvals 2. Lock findings (immutable) 3. Generate final bundle version 4. Archive to cold storage
+|If step 3 fails: approvals are preserved but findings remain mutable; state remains `PENDING_APPROVAL`.
+Manager retries finalization.
+|===
+
+*Dead-letter handling:*
+
+Failed operations that exhaust all retries are written to a dead-letter topic in Azure Service Bus.
+Each dead-letter message includes: `operation_type`, `audit_id`, `record_id` (if applicable), `error_details`, `retry_count`, `original_timestamp`.
+A background process reviews dead-letter messages hourly and either retries (for transient errors that have since resolved) or alerts the operator (for persistent failures).
+Dead-letter messages older than 7 days are escalated to P1 severity.
+
 *Event emission contract:*
 
 Every state transition emits an event to the Event Store (<<sect-audit-trail-event-store>>):
@@ -1692,6 +2298,31 @@ Selected for: native multi-tenancy support, payload filtering, and no vendor loc
 * Each chunk retains metadata: regulation title, CFR part, section number, subsection, effective date, amendment history.
 * Overlapping windows (50-token overlap) to preserve cross-paragraph context.
 
+*Chunk size justification:*
+
+[cols="20%,40%,40%",options="header"]
+|===
+|Chunk Size |Advantage |Disadvantage
+
+|<100 tokens
+|Higher precision per chunk; fine-grained citation
+|Loses cross-sentence context; regulatory paragraphs often require full paragraph for meaning (e.g., "subject to the exceptions in paragraph (b)" is meaningless without paragraph (b))
+
+|100–300 tokens (selected)
+|Balances precision and context; aligns with typical CFR paragraph length; produces embeddings with high semantic density
+|Some long paragraphs (e.g., commentary sections) may be split mid-thought
+
+|300–500 tokens
+|Preserves full paragraph context including commentary
+|Embedding quality degrades — diverse topics within a single chunk reduce semantic specificity; recall drops for narrow queries
+
+|>500 tokens
+|Full section context preserved
+|Embedding vector represents a blend of multiple concepts; precision drops significantly on targeted queries
+|===
+
+The 50-token overlap was empirically chosen during Phase 0 prototyping: overlaps <30 tokens lost critical cross-paragraph references (e.g., "as defined in the preceding paragraph"), while overlaps >80 tokens created near-duplicate embeddings that diluted search results.
+
 *Input contracts:*
 
 [source,typescript]
@@ -1721,17 +2352,81 @@ interface CitationResult {
 *Query flow:*
 
 [arabic]
-. Finding context (rule violation narrative + field name + severity) is embedded using the same model.
-. Semantic search retrieves top-k candidate paragraphs from Qdrant.
-. Re-ranker (cross-encoder) re-scores candidates for precision.
-. Pack-defined primary citations are always included and ranked first.
+. Finding context (rule violation narrative + field name + severity) is embedded using the same domain-fine-tuned sentence transformer.
+. Semantic search retrieves top-20 candidate paragraphs from Qdrant (over-retrieve to allow re-ranker to filter).
+. Re-ranker (cross-encoder) re-scores all 20 candidates and returns top-k (default: 5) by relevance.
+. Pack-defined primary citations are always included and ranked first regardless of re-ranker score.
 . AI-suggested secondary citations are labeled `[AI-SUGGESTED]` and require reviewer confirmation before inclusion in reports.
+
+==== Re-Ranker Specification
+
+*Model:* Cross-encoder fine-tuned on regulatory question-paragraph pairs.
+Base model: `ms-marco-MiniLM-L-12-v2` (lightweight cross-encoder with strong out-of-box performance on passage reranking benchmarks).
+
+*Fine-tuning (Phase 1b):*
+
+* *Training data:* 2,000+ (query, paragraph, relevance) triples constructed from:
+** HMDA examination procedure questions paired with the CFR paragraphs they reference (extracted from FFIEC examiner guides — these guides explicitly cite specific CFR sections).
+** Synthetic negatives: for each positive pair, 5 hard negatives sampled from the same CFR part (same regulation, wrong section).
+* *Loss function:* Cross-entropy on binary relevance (relevant / not relevant).
+* *Evaluation:* 80/20 train/test split, stratified by regulation.
+
+*Phase 0 (pre-fine-tuning):* Use `ms-marco-MiniLM-L-12-v2` out of the box.
+Expected NDCG@5 ~0.65 on regulatory text (acceptable for MVP; pack-defined primary citations compensate for search quality gaps).
+
+*Phase 1b target (post-fine-tuning):* NDCG@5 ≥ 0.80 on held-out regulatory question-paragraph test set.
+
+==== Search Quality Metrics & Monitoring
+
+[cols="25%,25%,25%,25%",options="header"]
+|===
+|Metric |Definition |Target |Monitoring Cadence
+
+|NDCG@5
+|Normalized Discounted Cumulative Gain at rank 5, measured on a held-out test set of 200 regulatory queries
+|≥ 0.80 (Phase 1b); ≥ 0.65 (Phase 0)
+|Re-evaluated on every corpus update and every model fine-tuning iteration
+
+|MRR (Mean Reciprocal Rank)
+|Average of 1/rank of the first relevant result across all test queries
+|≥ 0.75
+|Re-evaluated on corpus update
+
+|Precision@5
+|Fraction of top-5 results that are relevant
+|≥ 0.60
+|Re-evaluated on corpus update
+
+|Citation acceptance rate
+|% of AI-suggested secondary citations that reviewers confirm as relevant
+|≥ 70%
+|Tracked per audit; aggregated monthly
+
+|Citation rejection rate
+|% of AI-suggested citations that reviewers explicitly reject
+|< 15%
+|Tracked per audit; if > 15% for 3 consecutive audits, trigger re-ranker evaluation
+
+|Corpus drift indicator
+|Semantic similarity between new corpus embeddings and previous version (measured as cosine similarity of mean pool vectors per regulation)
+|> 0.90 (no significant drift)
+|Computed on every quarterly corpus update; if < 0.85, flag for human review of changed regulations
+|===
+
+*Citation verification:* To address the confabulation risk identified in <<sect-ai-governance>>, every AI-suggested citation is verified before display:
+
+[arabic]
+. The cited CFR reference (e.g., "12 CFR § 1003.4(a)(1)") is validated against the metadata store — the paragraph must exist in the corpus at the cited location.
+. If the cited paragraph text does not match the stored text (hash comparison), the citation is flagged as `[CITATION MISMATCH]` and suppressed from the report.
+. Citations with `relevance_score` < 0.60 are suppressed entirely (below `min_relevance` threshold).
 
 *Corpus update cadence:*
 
 * CFR text updated quarterly (aligned with Federal Register publication cycle).
 * Agency guidance updated within 30 days of publication.
-* Embeddings re-computed on corpus update; old vectors retained for audit reproducibility (versioned by corpus_version).
+* Embeddings re-computed on corpus update; old vectors retained for audit reproducibility (versioned by `corpus_version`).
+* On corpus update: re-ranker evaluation suite runs automatically.
+If NDCG@5 drops by >0.05, alert ML team and hold the update until investigated.
 
 '''
 
@@ -2001,6 +2696,403 @@ interface SearchHit {
 * *Warm phase:* After 3 months, move to warm nodes (larger, cheaper storage).
 * *Cold phase:* After 12 months, move to cold storage (frozen tier, searchable snapshots).
 * *Delete phase:* After 7 years, delete indices.
+
+'''
+
+[[sect-e2e-performance-model]]
+=== End-to-End Performance Model
+
+Individual component performance targets are defined in their respective sections.
+This subsection composes them into end-to-end latency estimates for typical audit profiles, giving operators and customers realistic expectations for wall-clock processing times.
+
+==== Reference Audit Profiles
+
+[cols="20%,20%,20%,20%,20%",options="header"]
+|===
+|Profile |Records |Source Documents |Pages/Doc (avg) |Total Pages
+
+|Small (single branch)
+|50 loans
+|150 docs (3/loan)
+|4
+|600
+
+|Medium (regional bank)
+|500 loans
+|1,500 docs (3/loan)
+|4
+|6,000
+
+|Large (institution-wide)
+|5,000 loans
+|15,000 docs (3/loan)
+|4
+|60,000
+|===
+
+==== End-to-End Latency Estimates (OCR-Assisted Mode)
+
+Assumes single-tenant processing with default concurrency settings.
+Parallelism factors noted where applicable.
+
+[cols="25%,25%,25%,25%",options="header"]
+|===
+|Pipeline Stage |Small (50 loans) |Medium (500 loans) |Large (5,000 loans)
+
+|*Ingestion & validation*
+(50–5,000 records, sequential)
+|<5 seconds
+|~30 seconds
+|~5 minutes
+
+|*Document processing*
+(Docling extraction, 8 workers)
+|600 pages ÷ 8 workers × 1.5s/page = ~2 minutes
+|6,000 pages ÷ 8 workers × 1.5s/page = ~19 minutes
+|60,000 pages ÷ 16 workers × 1.5s/page = ~94 minutes
+
+|*Schema mapping*
+(per-record, parallelized at 4 workers)
+|50 records × 110 fields ÷ 100 suggestions/sec = ~55 seconds
+|500 × 110 ÷ 100 = ~9 minutes
+|5,000 × 110 ÷ 100 = ~92 minutes
+
+|*Normalization*
+(CPU-bound, 8 workers)
+|<5 seconds
+|~30 seconds
+|~5 minutes
+
+|*Comparison & rules*
+(≥500 records/min)
+|50 ÷ 500 = ~6 seconds
+|500 ÷ 500 = ~1 minute
+|5,000 ÷ 500 = ~10 minutes
+
+|*Findings generation & scoring*
+(inline with comparison)
+|Included above
+|Included above
+|Included above
+
+|*Bundle version creation*
+(on pre-scan complete)
+|<10 seconds
+|<30 seconds
+|~2 minutes
+
+|*Total estimated wall-clock*
+|*~4 minutes*
+|*~31 minutes*
+|*~3.5 hours*
+|===
+
+==== Performance Targets by Percentile
+
+[cols="25%,25%,25%,25%",options="header"]
+|===
+|Metric |P50 |P95 |P99
+
+|Document extraction (per page)
+|1.2 seconds
+|2.5 seconds
+|5.0 seconds (complex multi-table page)
+
+|Schema mapping (per field)
+|8 ms
+|25 ms
+|100 ms (synonym dictionary miss → full search)
+
+|Rule comparison (per record)
+|50 ms
+|150 ms
+|500 ms (cross-field rule with multi-document corroboration)
+
+|Finding creation (including event emission)
+|20 ms
+|80 ms
+|200 ms
+
+|Citation search (per query)
+|200 ms
+|500 ms
+|1.2 seconds (re-ranker on 20 candidates)
+
+|Bundle export (ZIP generation)
+|5 seconds (small)
+|30 seconds (medium)
+|3 minutes (large, with source documents)
+|===
+
+==== Scaling Levers
+
+* *Document processing:* Horizontal scaling via Kubernetes HPA (Horizontal Pod Autoscaler) on CPU utilization.
+Default: 8 workers; auto-scale to 32 workers under load.
+Large-profile audits (>10,000 pages) auto-trigger scale-up before processing begins.
+* *Comparison engine:* Stateless; scales horizontally.
+Performance is CPU-bound (no I/O bottleneck).
+* *Schema mapping:* Bounded by synonym dictionary lookups (in-memory) and historical acceptance queries (PostgreSQL).
+Connection pooling and read replicas mitigate database bottleneck.
+* *Elasticsearch indexing:* Asynchronous; does not block pipeline.
+Indexing lag target: <5 seconds for findings, <30 seconds for documents.
+
+'''
+
+[[sect-multi-tenancy-isolation]]
+=== Multi-Tenancy & Tenant Isolation
+
+AuditIQ is a multi-tenant SaaS platform where every layer enforces tenant isolation independently.
+No single layer is trusted to be the sole isolation boundary — defense in depth ensures that a failure in one layer cannot leak data across tenants.
+
+==== Isolation by Layer
+
+[cols="20%,35%,45%",options="header"]
+|===
+|Layer |Isolation Mechanism |Enforcement Detail
+
+|*API Gateway*
+|JWT `tenant_id` claim extraction; per-tenant rate-limit counters
+|APIM policy validates `tenant_id` claim exists in JWT.
+If missing, request rejected with 401.
+`X-Tenant-ID` header injected for all downstream services.
+Rate-limit counters are keyed on `tenant_id` — no shared buckets.
+
+|*Application services*
+|`X-Tenant-ID` header required on every request; services scope all queries by `tenant_id`
+|Every database query includes `WHERE tenant_id = :tenant_id`.
+Services reject requests without `X-Tenant-ID` header with 400 Bad Request.
+Integration tests verify that cross-tenant queries return zero results.
+
+|*PostgreSQL*
+|Row-Level Security (RLS) policies on all tables
+|RLS policies enforce `tenant_id = current_setting('app.tenant_id')` on SELECT, INSERT, UPDATE.
+Application sets `SET app.tenant_id = :tenant_id` at the start of every transaction.
+Even if application code omits a `WHERE tenant_id` clause, RLS prevents cross-tenant access.
+DELETE is revoked on audit trail tables (immutable log).
+
+|*Elasticsearch*
+|Per-tenant indices (`{index}-{tenant_id}`)
+|Search service constructs index name from `X-Tenant-ID` header.
+A request from tenant A can never query tenant B's index.
+The shared `regulations` index is read-only and contains no tenant-specific data.
+
+|*Qdrant (Vector DB)*
+|Payload-level filtering by `tenant_id` for institution-specific policy embeddings; shared corpus for regulations
+|Regulation embeddings are shared (public regulatory text — no tenant data).
+Institution policy embeddings use `tenant_id` as a required payload filter.
+Even if all tenant embeddings coexist in one collection, Qdrant's payload filter ensures only the requesting tenant's vectors are returned.
+
+|*Azure Blob Storage*
+|Per-tenant containers (`{tenant_id}-documents`, `{tenant_id}-evidence`, etc.)
+|SAS tokens are scoped to a specific tenant's container.
+Backend services use Managed Identity with container-level RBAC.
+No cross-tenant container access is possible without a tenant-specific SAS token or Managed Identity scope.
+
+|*Azure Service Bus*
+|Per-tenant topic subscriptions for event routing
+|Dead-letter topics and event routing use `tenant_id` as a partition key.
+Messages are never routed to the wrong tenant's subscription.
+|===
+
+==== Tenant Resource Quotas
+
+[cols="25%,25%,25%,25%",options="header"]
+|===
+|Resource |Standard Tier |Professional Tier |Enterprise Tier
+
+|Concurrent audits
+|5
+|20
+|100 (soft limit)
+
+|Storage per tenant
+|50 GB
+|500 GB
+|5 TB
+
+|Document uploads per day
+|500
+|5,000
+|Unlimited
+
+|API requests per minute
+|10,000
+|50,000
+|200,000
+
+|Max records per audit
+|1,000
+|10,000
+|100,000
+
+|AI narrative generations per day
+|50
+|500
+|5,000
+|===
+
+Quota enforcement is at the API Gateway layer.
+Quota overages return 429 with a `Retry-After` header and a human-readable message indicating which quota was exceeded.
+
+==== Cross-Tenant Data Leakage Prevention
+
+* *Automated testing:* CI/CD pipeline includes cross-tenant isolation tests that create two tenants, populate data in tenant A, and verify that tenant B queries return zero results across all services (PostgreSQL, Elasticsearch, Qdrant, Blob Storage).
+* *Penetration testing:* Annual external penetration test includes tenant isolation bypass attempts (IDOR, JWT manipulation, direct database access).
+* *Monitoring:* Application logs are audited weekly for any query that returns results where `result.tenant_id != request.tenant_id` — this should never occur and triggers a P0 incident if detected.
+
+'''
+
+[[sect-monitoring-alerting]]
+=== Monitoring, Alerting & Observability
+
+==== Monitoring Architecture
+
+All services emit structured telemetry to Azure Monitor / Application Insights.
+The monitoring stack follows the three pillars of observability: metrics, logs, and traces.
+
+* *Metrics:* Azure Monitor custom metrics (counters, gauges, histograms) for throughput, latency, error rates, and business KPIs.
+* *Logs:* Structured JSON logs shipped to Azure Log Analytics workspace.
+Every log entry includes: `tenant_id`, `request_id`, `service_name`, `operation`, `duration_ms`, `status`.
+* *Traces:* Distributed tracing via OpenTelemetry SDK.
+Every request gets a `trace_id` that propagates across all services, enabling end-to-end latency analysis.
+
+==== Key Metrics by Component
+
+[cols="25%,40%,35%",options="header"]
+|===
+|Component |Metrics |Alert Threshold
+
+|*API Gateway*
+|Request rate, error rate (4xx, 5xx), P95 latency, rate-limit hit rate
+|>1% 5xx rate (5 min); P95 >2s (5 min); rate-limit hit >10% (1 min)
+
+|*Document Processing*
+|Pages processed/min, extraction success rate, AFC score distribution, Docling vs. OCR fallback ratio
+|Extraction success <90% (15 min); fallback ratio >30% (1 hour); queue depth >500 pages
+
+|*Schema Mapping*
+|Mappings suggested/min, auto-accept rate, override rate, calibration ECE
+|Override rate >25% (per audit); ECE >0.08 (per calibration run)
+
+|*Normalization*
+|Records normalized/min, normalization failure rate, Unicode coercion count
+|Failure rate >5% (15 min)
+
+|*Comparison Engine*
+|Records compared/min, findings generated/min, finding severity distribution
+|Throughput <200 records/min (5 min); Critical finding rate >10% (per audit — may indicate data quality issue)
+
+|*Findings Management*
+|Open findings by severity, SLA breach count, average triage time, pattern alert count
+|Critical SLA breach (immediate); >3 SLA breaches per audit (escalate to Audit Director)
+
+|*Exam Pack Manager*
+|Bundle versions created/day, export count, approval turnaround time
+|Bundle generation failure (immediate); approval pending >48 hours for finalized audit
+
+|*Event Store*
+|Events written/sec, hash chain verification latency, anchor point creation rate, WAL replay lag
+|Write failure (immediate — P0); WAL replay lag >1 minute; anchor point delay >2× configured interval
+
+|*Citation Engine*
+|Queries/sec, P95 search latency, citation acceptance rate, corpus version
+|P95 >1.5s (5 min); acceptance rate <60% (per audit)
+
+|*Elasticsearch*
+|Index lag, search latency, cluster health, shard count
+|Index lag >30s (5 min); cluster status yellow >10 min; cluster status red (immediate)
+
+|*Azure Blob Storage*
+|Upload/download rate, scan queue depth, storage capacity per tenant
+|Scan queue >100 files (5 min); tenant approaching storage quota (80%)
+|===
+
+==== Alert Severity Tiers
+
+[cols="15%,25%,30%,30%",options="header"]
+|===
+|Severity |Response Time |Notification Channel |Examples
+
+|*P0 — Critical*
+|15 minutes
+|PagerDuty → on-call engineer + Slack #incidents
+|Event Store write failure; hash chain integrity violation; cross-tenant data leakage detected; database primary down
+
+|*P1 — High*
+|1 hour
+|Slack #alerts + email to engineering lead
+|Document processing circuit breaker open; SLA breach on Critical finding; dead-letter queue >100 messages; Docling extraction success <80%
+
+|*P2 — Medium*
+|4 hours
+|Slack #alerts
+|Calibration ECE regression; override rate spike; Elasticsearch cluster yellow; storage approaching quota
+
+|*P3 — Low*
+|Next business day
+|Email digest
+|Citation acceptance rate decline; corpus drift indicator below threshold; dead-letter messages approaching 7-day age
+|===
+
+==== AI Risk Monitoring
+
+The ten AI risk scenarios defined in <<sect-ai-governance>> require specific monitoring signals:
+
+[cols="30%,35%,35%",options="header"]
+|===
+|AI Risk Scenario |Monitoring Signal |Alert Condition
+
+|Confabulation (hallucinated citations)
+|Citation verification pass/fail rate
+|Verification failure rate >5% (per model version)
+
+|Extraction confidence drift
+|AFC score distribution (mean, P10, P90) tracked per model version
+|Mean AFC drops >0.05 from baseline; P10 drops below 0.50
+
+|Narrative quality degradation
+|AI narrative approval rate; edit distance between AI draft and approved version
+|Approval rate <80%; median edit distance >30% of original text
+
+|Model bias detection
+|Finding severity distribution segmented by borrower demographics (if available)
+|Statistically significant disparity in severity distribution across demographic groups (chi-squared test, p<0.05)
+
+|Prompt injection attempt
+|Input sanitization rejection rate; anomalous token patterns in extraction input
+|Rejection rate spike >3× baseline; known injection pattern detected
+
+|Scoring calibration drift
+|ECE trend over time; reliability diagram bin deviations
+|ECE increases by >0.02 from last calibration; any reliability diagram bin deviates >0.10 from diagonal
+|===
+
+==== Dashboards by Role
+
+[cols="25%,35%,40%",options="header"]
+|===
+|Role |Dashboard |Key Widgets
+
+|*QC Manager*
+|Audit Operations
+|Active audit progress (% records reviewed), findings by severity, SLA countdown timers, reviewer workload distribution, daily finding creation rate
+
+|*Compliance Officer*
+|Compliance Oversight
+|Cross-audit finding trends, policy gap alerts, three-lines-of-defense approval status, systemic pattern alerts, exam pack readiness indicator
+
+|*Audit Director*
+|Executive Summary
+|Institution-wide audit coverage, SLA breach trend, Critical finding aging, exam pack version history, remediation completion rate
+
+|*Engineering / SRE*
+|Platform Health
+|Service error rates, P95 latencies, circuit breaker states, Event Store write throughput, Elasticsearch cluster health, dead-letter queue depth, AI model inference latency
+
+|*Pack Author*
+|Pack Effectiveness
+|Rule hit rates, false positive rates by rule, override patterns, suggested rule adjustments, citation acceptance rates per regulation
+|===
 
 '''
 

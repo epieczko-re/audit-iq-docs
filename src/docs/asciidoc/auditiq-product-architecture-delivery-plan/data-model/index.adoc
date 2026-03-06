@@ -8,10 +8,16 @@ audit_runs (one) ---> (many) findings
 audit_runs (one) ---> (many) evidence
 audit_runs (one) ---> (many) field_mappings
 audit_runs (one) ---> (many) users_assigned
+audit_runs (one) ---> (many) exam_bundles
 
 findings (one) ---> (many) status_transitions
 findings (one) ---> (many) evidence (via foreign_key)
 findings (one) ---> (many) remediation_actions
+findings (one) ---> (many) bundle_exceptions
+
+exam_bundles (one) ---> (many) bundle_approvals
+exam_bundles (one) ---> (many) bundle_exceptions
+exam_bundles (one) ---> (one) parent_bundle (self-referential version chain)
 
 evidence (one) ---> (many) audit_trail.events
 
@@ -324,6 +330,150 @@ This table is the source of truth for document metadata; the profile captures th
 *Review cycle engine (Phase 2+):* When `next_review_date` approaches (configurable alert window, default 30 days), the Workflow Engine creates a review workflow event.
 The review follows the same dual-approval pattern as Policy Profile review (<<sect-ai-policy-pipeline>>, Phase 5).
 Every review event is recorded in `audit_trail.events` with `entity_type = 'policy_document'`.
+
+[[sect-exam-bundles-table]]
+==== exam_bundles (Exam Pack Dossier)
+
+*Strategic rationale:* The exam-ready bundle is a first-class product object — not a one-time export.
+This table tracks bundle versions, approval state, and content hashes to support continuous dossier updates and examiner-facing version chains.
+See <<sect-exam-ready-bundle>> for the full specification.
+
+[source,sql]
+----
+CREATE TABLE audits.exam_bundles (
+  bundle_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  audit_id UUID NOT NULL,
+
+  -- Versioning
+  bundle_version VARCHAR(20) NOT NULL,              -- e.g., '2.3'
+  parent_bundle_id UUID,                            -- Previous version in the chain (null for v1.0)
+  version_trigger VARCHAR(100) NOT NULL,            -- 'audit_started', 'pre_scan_complete', 'finding_closed', 'approval_recorded', etc.
+  version_summary TEXT,                             -- Human-readable delta summary
+
+  -- Status
+  status VARCHAR(50) DEFAULT 'draft',               -- 'draft', 'review', 'approved', 'exported', 'superseded'
+
+  -- Content hashes
+  bundle_content_hash VARCHAR(64),                  -- SHA-256 of entire bundle ZIP
+  manifest_hash VARCHAR(64),                        -- SHA-256 of bundle_manifest.json
+
+  -- Coverage snapshot
+  total_findings INT,
+  findings_by_severity JSONB,                       -- {"critical": 2, "high": 5, "medium": 15, "low": 20, "informational": 5}
+  coverage_pct DECIMAL(5,2),                        -- % of population tested
+  avg_combined_confidence DECIMAL(3,2),             -- Overall confidence average
+
+  -- Approval tracking
+  first_line_approved_by UUID,
+  first_line_approved_at TIMESTAMP,
+  second_line_approved_by UUID,
+  second_line_approved_at TIMESTAMP,
+  third_line_approved_by UUID,
+  third_line_approved_at TIMESTAMP,
+  all_lines_approved BOOLEAN DEFAULT FALSE,
+
+  -- Storage
+  storage_path VARCHAR(512),                        -- Azure Blob path to generated bundle ZIP
+  exported_at TIMESTAMP,                            -- When bundle was downloaded/transmitted
+  exported_by UUID,
+
+  -- Metadata
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by UUID NOT NULL,
+
+  -- Audit trail link
+  audit_event_id UUID,                              -- Link to event store for bundle lifecycle events
+
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (parent_bundle_id) REFERENCES audits.exam_bundles(bundle_id),
+  FOREIGN KEY (created_by) REFERENCES users(user_id),
+  FOREIGN KEY (exported_by) REFERENCES users(user_id),
+
+  UNIQUE (audit_id, bundle_version)                 -- One version per audit
+);
+CREATE INDEX idx_bundles_audit ON audits.exam_bundles(audit_id, bundle_version);
+CREATE INDEX idx_bundles_tenant ON audits.exam_bundles(tenant_id);
+CREATE INDEX idx_bundles_status ON audits.exam_bundles(status);
+----
+
+==== bundle_approvals (Line-of-Defense Sign-Offs)
+
+*Tracks individual approval actions on exam bundles — one row per approval event:*
+
+[source,sql]
+----
+CREATE TABLE audits.bundle_approvals (
+  approval_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  bundle_id UUID NOT NULL,
+  tenant_id UUID NOT NULL,
+
+  -- Approval details
+  defense_line INT NOT NULL,                        -- 1 (QC), 2 (Compliance), 3 (Internal Audit)
+  role VARCHAR(50) NOT NULL,                        -- 'qc_manager', 'compliance_officer', 'audit_director'
+  approver_id UUID NOT NULL,
+  approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  -- Scope
+  scope VARCHAR(100) NOT NULL,                      -- 'all_qc_findings', 'compliance_layer_review', 'independent_assurance_sample'
+  findings_reviewed INT NOT NULL,
+  findings_approved INT,
+  findings_escalated INT DEFAULT 0,
+
+  -- Sign-off
+  sign_off_statement TEXT,
+  digital_signature_hash VARCHAR(64),
+
+  -- Audit trail link
+  audit_event_id UUID NOT NULL,
+
+  FOREIGN KEY (bundle_id) REFERENCES audits.exam_bundles(bundle_id),
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (approver_id) REFERENCES users(user_id)
+);
+CREATE INDEX idx_bundle_approvals_bundle ON audits.bundle_approvals(bundle_id);
+CREATE INDEX idx_bundle_approvals_line ON audits.bundle_approvals(defense_line);
+----
+
+==== bundle_exceptions (Override & Exception Tracking)
+
+*Records every human override of system-generated confidence, severity, or rule application:*
+
+[source,sql]
+----
+CREATE TABLE audits.bundle_exceptions (
+  exception_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  bundle_id UUID NOT NULL,
+  tenant_id UUID NOT NULL,
+  audit_id UUID NOT NULL,
+
+  -- Exception details
+  exception_type VARCHAR(50) NOT NULL,              -- 'confidence_override', 'severity_override', 'rule_suppression', 'evidence_unavailable'
+  finding_id UUID,                                  -- Null for rule-level exceptions
+  actor_id UUID NOT NULL,
+  actor_role VARCHAR(50) NOT NULL,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  -- Override values
+  original_value JSONB NOT NULL,                    -- {"field": "combined_confidence", "value": 0.72}
+  overridden_to JSONB NOT NULL,                     -- {"field": "combined_confidence", "value": 0.92}
+  justification TEXT NOT NULL,
+  evidence_reference VARCHAR(255),                  -- Link to supporting evidence or policy document
+
+  -- Audit trail link
+  audit_event_id UUID NOT NULL,
+
+  FOREIGN KEY (bundle_id) REFERENCES audits.exam_bundles(bundle_id),
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (finding_id) REFERENCES audits.findings(finding_id),
+  FOREIGN KEY (actor_id) REFERENCES users(user_id)
+);
+CREATE INDEX idx_bundle_exceptions_bundle ON audits.bundle_exceptions(bundle_id);
+CREATE INDEX idx_bundle_exceptions_audit ON audits.bundle_exceptions(audit_id);
+CREATE INDEX idx_bundle_exceptions_type ON audits.bundle_exceptions(exception_type);
+----
 
 ==== audit_trail.events (Immutable Log)
 
