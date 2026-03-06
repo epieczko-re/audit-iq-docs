@@ -20,6 +20,7 @@ _Built: {build-timestamp}_
 
 |0.3 |2026-03-06 |Erik Pieczkowski |Reorganized into seven-Part structure; expanded Future Roadmap with GRC competitive positioning, Compliance Framework Library, module pricing, and TAM analysis ($200M → $15B+); added platform extensibility hooks for complaint/policy management; rewrote executive messaging with stronger market-window framing; added reinforcement learning roadmap; relocated Document Control to end of document with daily-update rules; named ACES as the incumbent competitor in three strategic locations (Problem Statement, Competitive Intelligence, Executive Summary) while keeping remaining references generic.
 Rewrote Problem Statement to align HMDA validation narrative with FFIEC Examiner Transaction Testing Guidelines: replaced all-files-all-fields framing with accurate sample-based methodology, 37 Key Data Fields focus, and two-stage testing process.
+Corrected three-lines-of-defense language across all sections to reflect IIA Three Lines Model: each line maintains independent judgment while sharing a common evidence base, replacing prior "coordinated" framing that could imply merged responsibilities.
 |===
 
 === Authors / Owners

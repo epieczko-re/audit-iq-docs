@@ -24,7 +24,7 @@ The window to take market share is open _right now_, and it will not stay open f
 * *Governance-first AI:* every AI output is advisory, explainable, human-approved, and immutably logged.
 This is not AI for AI's sake — this is AI that a regulator can examine and a compliance officer can defend.
 * *Three-lines-of-defense support* in one system, vs. the primary competitor's QC-only tunnel vision.
-QC, compliance, and audit teams share a single evidence repository, a unified audit trail, and a common language of confidence — for the first time.
+QC, compliance, and audit teams each maintain independent judgment while working from a single evidence repository, a unified audit trail, and a common language of confidence — for the first time.
 
 *Phase 1 MVP scope:* HMDA origination audit.
 Manual and OCR-assisted review modes.

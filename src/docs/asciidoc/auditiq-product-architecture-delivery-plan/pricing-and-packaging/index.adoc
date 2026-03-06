@@ -55,7 +55,7 @@ AuditIQ's pack architecture is a natural fit for the same per-pack pricing model
 
 * *RiskExec add-on:* 20–30% ACV uplift for existing customers adopting audit automation → target $8K–$12K/yr for single-pack entry, scaling to $50K–$120K/yr for multi-pack enterprise
 * *Standalone product:* For audit-first prospects (e.g., incumbent displacement), AuditIQ competes directly at $40K–$150K ACV with full pack portfolio
-* *Rationale:* Reduces audit labor cost by ~40% per engagement; enables higher audit frequency; consolidates 3 lines of defense into one system
+* *Rationale:* Reduces audit labor cost by ~40% per engagement; enables higher audit frequency; serves all 3 lines of defense from a shared evidence platform while preserving each line's independent authority
 
 === Pricing Model
 
