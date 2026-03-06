@@ -22,9 +22,9 @@ The Quick Start (<<sect-quick-start-team>>) gives you the 10-screen MVP scope an
 
 === Document Structure Overview
 
-* *Part I — Strategic Context:* Executive Summary, Problem Statement, Product Vision, Competitive Intelligence.
-Read for business context and market positioning.
-* *Part II — Operational Model:* Concept of Operations (audit modes, state machines, finding lifecycle, RBAC), and this reading guide.
+* *Part I — Strategic Context:* Executive Summary, this reading guide, Problem Statement, Product Vision, Competitive Intelligence.
+Start here for business context, market positioning, and guidance on navigating the rest of the document.
+* *Part II — Operational Model:* Concept of Operations (audit modes, state machines, finding lifecycle, RBAC).
 The conceptual foundation for everything that follows.
 * *Part III — User Workflows & Screens:* End-to-end workflow diagrams, all 26 MVP screen wireframes grouped by lifecycle stage, FR ID cross-references, and developer context notes.
 This is the primary sprint-planning reference.

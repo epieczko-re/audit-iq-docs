@@ -18,6 +18,8 @@
 
 include::executive-summary/index.adoc[]
 
+include::how-to-use-this-document/index.adoc[]
+
 include::problem-statement/index.adoc[]
 
 include::product-vision-and-strategic-positioning/index.adoc[]
@@ -31,8 +33,6 @@ include::competitive-intelligence/index.adoc[]
 = Part II: Operational Model
 
 include::concept-of-operations/index.adoc[]
-
-include::how-to-use-this-document/index.adoc[]
 
 // ============================================================
 // Part III: User Workflows & Screens
