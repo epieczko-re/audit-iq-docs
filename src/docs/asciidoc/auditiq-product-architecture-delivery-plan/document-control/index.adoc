@@ -29,6 +29,14 @@ Propagated embedding architecture across four dependent sections: replaced Nomic
 Expanded Architecture Overview (Section 9) with six new subsections: observability and monitoring strategy with per-component metrics and alerting tiers; failure modes and resilience patterns with circuit breaker, retry policies, and graceful degradation hierarchy; database scaling roadmap from vertical scaling through Citus sharding to multi-region; configuration and deployment management with blue-green deployment and drift detection; regulatory-to-architecture compliance mapping linking 11 architectural decisions to GLBA, FFIEC, and HMDA requirements; strengthened multi-tenancy isolation with per-layer enforcement detail; expanded disaster recovery with AZ-level and region-level runbook procedures including failback; added justification column to all 12 NFR targets with benchmark sources and regulatory rationale; expanded STRIDE threat model with attack scenarios and detection strategies.
 Elevated Exam-Ready Bundle from one-time export to first-class product object: rewrote Exam-Ready Bundle Specification with 14-artifact continuously versioned dossier including coverage and sampling statistics, approval manifests with three-lines-of-defense certification, exceptions and overrides log, bundle change log with version chain, and pipeline provenance linking to model registry; added Exam Pack Lifecycle Manager component to Component-Level Design with event-driven versioning, API contracts, and error handling; added three new data model tables (exam_bundles, bundle_approvals, bundle_exceptions); added six new product requirements (FR-8.4 through FR-8.9) for bundle versioning, approval manifests, coverage stats, exceptions tracking, version diffs, and pipeline provenance; added Exam Pack Dossier lifecycle section to Concept of Operations with continuous update model and sequence diagram; updated Delivery Plan Phase 1c scope; updated Architecture Overview data flow and component diagrams.
 Expanded Component-Level Design (Section 10) with nine improvements: added Schema Mapping bootstrap calibration procedure with go/kill criteria, pre-launch seed data plan, and continuous recalibration cadence; expanded Normalization Engine with Unicode NFC policy, type coercion error handling table, decimal precision rules by field type, and complex transformation examples; added SLA enforcement matrix and breach handling for Findings Management with cross-finding pattern detection; added comprehensive Service Resilience subsection with per-service timeout/retry/circuit-breaker tables, partial batch failure handling with resume-from-failure, rollback semantics for multi-step transitions, and dead-letter queue management; added End-to-End Performance Model with three reference audit profiles, composite latency estimates, P50/P95/P99 targets, and scaling levers; expanded API Gateway rate limiting with burst semantics, sliding-window quota, multi-tenant fairness guarantees, and IETF-standard rate-limit headers; expanded Regulatory Citation Engine with re-ranker specification, chunk size justification, six search quality metrics with monitoring cadence, and citation verification protocol; added Multi-Tenancy and Tenant Isolation subsection with seven-layer isolation matrix, per-tier resource quotas, and cross-tenant leakage prevention testing; added Monitoring Alerting and Observability subsection with per-component metrics, four-tier alert severity, AI risk monitoring signals, and role-based dashboard definitions.
+
+|0.25 |2026-03-06 |Erik Pieczkowski |Reorganized document from seven-Part into eight-Part execution-focused structure for 4-person team sprint planning.
+Moved UI Workflows & Screen Inventory to Part III (immediately after Concept of Operations) and added lifecycle-stage groupings (Upload, Extraction, Mapping, Findings, Remediation, Reporting, Admin) with FR ID cross-references and Developer Context notes linking screens to services.
+Added Architecture by Workflow Stage section mapping each workflow stage to components, API contracts, and NFRs.
+Added Workflow Delivery Matrix to Delivery Plan mapping every screen and service to sprints, owners, and acceptance criteria.
+Added Quick Start for the 4-Person Team with top 10 MVP screens, 6-sprint plan, and top 5 technical risks.
+Rewrote How to Use This Document as engineer-focused reading guide directing team to read Part II and Part III before estimating.
+Moved Canonical Glossary to Part IV (Requirements & Specifications) as single source of truth co-located with FR tables.
 |===
 
 === Authors / Owners
@@ -55,34 +63,5 @@ Expanded Component-Level Design (Section 10) with nine improvements: added Schem
 
 === How to Use This Document
 
-This document is organized into seven parts:
-
-* *Part I — Strategic Context:* Executive Summary, Problem Statement, Product Vision, Competitive Intelligence.
-* *Part II — Operational Concept:* Concept of Operations (ConOps) — audit modes, workflow states, finding lifecycle, PII redaction.
-* *Part III — Requirements & Specifications:* Product Requirements, Audit Pack Specification, Regulatory Compliance & Policy Management.
-* *Part IV — Architecture & Design:* Architecture Overview (including Key Concepts), Component-Level Design, Data Model, Scoring Framework.
-* *Part V — AI & Governance:* AI Governance & Model Risk Controls, Model Registry, Model Deployment, Docling-Graph Integration, Immutability vs. Correctability.
-* *Part VI — Delivery & Business:* Pricing & Packaging, Delivery Plan, Risks & Mitigations, Future Roadmap, UI Workflows & User Journeys.
-* *Part VII — Reference:* Architectural Decisions (including MVP Decisions Locked), Exam-Ready Bundle Specification, Canonical Glossary, Appendices.
-
-This document serves three audiences simultaneously:
-
-* *Engineering team:* Sprint-plan against Parts III and IV (<<sect-product-requirements, Product Requirements>>, <<sect-audit-pack-spec, Audit Pack Specification>>, <<sect-architecture-overview, Architecture Overview>>, <<sect-component-design, Component-Level Design>>, <<sect-data-model, Data Model>>).
-Part V (<<sect-ai-governance, AI Governance>>, <<sect-model-registry, Model Registry>>, <<sect-model-deployment, Model Deployment>>, <<sect-docling-graph, Docling-Graph>>, <<sect-immutability, Immutability>>) provides AI/ML architecture.
-Each section contains explicit contracts, schemas, and acceptance criteria that can be decomposed into user stories and tasks.
-* *Product / leadership:* Read Part I for context and competitive positioning.
-Review Part VI (<<sect-pricing, Pricing>>, <<sect-delivery-plan, Delivery Plan>>) and Part VII (<<sect-decisions, Decisions>>) for investment decisions.
-<<sect-risks-constraints, Risks, Constraints, and Mitigations>> provides risk context.
-* *Compliance / regulatory stakeholders:* Focus on Part V (<<sect-ai-governance, AI Governance>>, <<sect-immutability, Immutability>>) and Part VII (<<sect-exam-ready-bundle, Exam-Ready Bundle>>, <<sect-glossary, Canonical Glossary>>) for regulatory defensibility.
-<<sect-regulatory-compliance, Regulatory Compliance & Policy Management>> specifies the five-layer compliance hierarchy.
-
-*Canonical Glossary:* All confidence metrics (AFC, mapping_confidence, extraction_confidence, rule_confidence, combined_confidence), routing thresholds, severity definitions, and calibration criteria are defined in a *single source of truth*: the *<<sect-glossary, Canonical Glossary>>*.
-If a threshold value elsewhere in this document conflicts with the Glossary, the Glossary governs.
-
-*Conventions used in this document:*
-
-* *TODO* = work item that must be completed before implementation starts
-* *ASSUMPTION* = a belief stated explicitly; risk if wrong is documented
-* *DECISION NEEDED* = requires stakeholder input before proceeding
-* *DECISION LOCKED* = decided for MVP; revisit criteria documented in <<sect-mvp-decisions>>
-* Reference documents are listed in <<sect-appendices, Appendix E>>.
+See <<sect-how-to-use>> in Part II for the full reading guide, audience map, and conventions.
+That section has been rewritten to instruct the engineering team: "Read Part II and Part III before estimating/sprinting."

@@ -1,0 +1,208 @@
+[[sect-quick-start-team]]
+== Quick Start for the 4-Person Team
+
+____
+This one-page guide maps the immediate MVP scope for the 4-person team (Mar-Jun 2026).
+Read this before your first sprint planning session.
+For the full delivery plan, see <<sect-delivery-plan>>.
+For the Workflow Delivery Matrix, see <<sect-workflow-delivery-matrix>>.
+____
+
+=== Immediate MVP Scope: Top 10 Screens
+
+These are the 10 highest-priority screens that must ship for the MVP (June 30, 2026).
+They cover the complete audit lifecycle for HMDA origination using manual and OCR-assisted modes.
+
+[cols="5%,30%,15%,50%",options="header"]
+|===
+|# |Screen |Priority |Why MVP-Critical
+
+|1
+|<<wf-audit-dashboard, WF-01: Audit Dashboard>>
+|P0
+|Primary landing screen; entry point for all workflows.
+
+|2
+|<<wf-audit-config, WF-02: Audit Configuration>>
+|P0
+|Creates audit runs; selects packs; uploads target datasets.
+
+|3
+|<<wf-doc-upload, WF-04: Document Upload>>
+|P0
+|Source document ingestion; classification; loan matching.
+
+|4
+|<<wf-extraction-review, WF-06: Field Extraction Review>>
+|P0
+|Core reviewer screen; split-pane AFC validation.
+
+|5
+|<<wf-mapping-review, WF-08: Mapping Review>>
+|P0
+|Schema mapping approval with two-layer confidence.
+
+|6
+|<<wf-findings-queue, WF-10: Findings Queue>>
+|P0
+|Primary findings review interface; severity + confidence sorting.
+
+|7
+|<<wf-finding-detail, WF-11: Finding Detail>>
+|P0
+|Full finding view with evidence, provenance, and approval.
+
+|8
+|<<wf-ai-narrative, WF-12: AI Narrative Approval>>
+|P0
+|AI governance enforcement; effective challenge documentation.
+
+|9
+|<<wf-remediation, WF-14: Remediation Tracking>>
+|P0
+|Finding remediation lifecycle; SLA tracking.
+
+|10
+|<<wf-bundle-export, WF-17: Exam-Ready Bundle>>
+|P0
+|Exam pack dossier export; three-lines certification.
+|===
+
+=== Core Services for MVP
+
+[cols="35%,25%,40%",options="header"]
+|===
+|Service |Owner |MVP Scope
+
+|Ingestion Service
+|Senior Dev 2
+|CSV upload + schema validation + SHA-256 checksums.
+
+|Document Processing Service
+|Senior Dev 1
+|Docling-Graph extraction + AFC v2 + 3-tier fallback.
+
+|Schema Mapping Service
+|Senior Dev 1
+|Hybrid heuristic matcher v1 + graph edge boosting.
+
+|Comparison & Rules Engine
+|Senior Dev 2
+|Pack rule execution + normalization + findings generation.
+
+|Findings Management
+|Senior Dev 2
+|9-state lifecycle + AI narratives + provenance logging.
+
+|Immutable Audit Trail
+|Senior Dev 2
+|RFC 8785 + SHA-256 hash chain + append-only events.
+
+|Exam Pack Lifecycle Manager
+|Senior Dev 2
+|14-artifact versioned bundle + continuous update model.
+
+|Auth / RBAC
+|Junior Dev
+|JWT + three-lines-of-defense roles + RLS.
+
+|Model Registry
+|Junior Dev
+|Postgres table + CRUD + call-time gating.
+
+|UI Shell + Screens
+|Junior Dev
+|Flowbite/Tailwind; 10 MVP screens above.
+|===
+
+=== Suggested 6-Sprint Plan
+
+[cols="10%,18%,22%,50%",options="header"]
+|===
+|Sprint |Dates |Phase |Key Deliverables
+
+|0
+|Mar 9 – Mar 28
+|Phase 0
+|Infrastructure (AKS, DB, CI/CD), Docling-Graph POC, LLM integration POC, HMDA test corpus.
+*Exit gate:* >=85% precision on key HMDA fields.
+
+|1
+|Mar 31 – Apr 11
+|Phase 1a (first half)
+|Document upload UI, Docling-Graph pipeline (production), AFC v2 scoring, data model + audit trail.
+*Owner focus:* Senior Dev 1 on extraction; Senior Dev 2 on data model; Junior Dev on upload UI.
+
+|2
+|Apr 14 – Apr 25
+|Phase 1a (second half)
+|Pack engine + state machine, evidence management UI, model registry, HMDA pack complete.
+*Owner focus:* Senior Dev 2 on pack engine; Junior Dev on evidence UI + model registry.
+
+|3
+|Apr 28 – May 9
+|Phase 1b (first half)
+|Schema mapping service, confidence scoring API, rules engine integration, PII redaction pipeline.
+*Owner focus:* Senior Dev 1 on mapping + confidence; Senior Dev 2 on rules engine.
+
+|4
+|May 12 – May 23
+|Phase 1b (second half)
+|AI narrative generation, manager escalation UI, AI governance UI (badges, disclaimers, approval), drift monitoring basics.
+*Owner focus:* Senior Dev 2 on AI narratives + provenance; Junior Dev on governance UI.
+
+|5-6
+|May 26 – Jun 27
+|Phase 1c
+|Performance tuning, reporting + exam bundle, integration testing, security audit, beta onboarding, bug fixes.
+*Owner focus:* All hands on hardening and UAT.
+|===
+
+=== Top 5 Technical Risks
+
+These risks have the highest impact on the MVP timeline.
+Full details in <<sect-risks-constraints>>.
+
+[cols="5%,35%,10%,50%",options="header"]
+|===
+|ID |Risk |Score |Top 3 Mitigations
+
+|*R4*
+|LLM hallucinations in findings narratives mislead reviewers
+|*20*
+|_(1)_ Require explicit human approval before finalizing any AI narrative.
+_(2)_ Citation check pipeline.
+_(3)_ Confidence threshold (min 0.70).
+
+|*R24*
+|Non-canonical JSON serialization breaks hash chain verification
+|*20*
+|_(1)_ Mandate RFC 8785 (JCS) for all hashed payloads.
+_(2)_ Round-trip verification test on every write.
+_(3)_ Pin serialization library versions.
+
+|*R26*
+|Automation bias: reviewers rubber-stamp AI outputs
+|*20*
+|_(1)_ Mandatory effective challenge documentation.
+_(2)_ Randomized challenge prompts.
+_(3)_ Track override rates per reviewer.
+
+|*R2*
+|Schema matcher confidence scores poorly calibrated (>40% override rate)
+|*16*
+|_(1)_ Expand training data.
+_(2)_ Adjust confidence thresholds.
+_(3)_ Conservative initial thresholds (>=0.95 auto-accept).
+
+|*R7*
+|Q2 timeline slip due to Docling/OCR integration delays
+|*16*
+|_(1)_ Start Docling setup in Feb (now).
+_(2)_ Parallel track: manual extraction UI ready by week 2.
+_(3)_ Reduce scope to core workflow only.
+|===
+
+NOTE: R4, R24, and R26 are the *top 3 risks* — all score 20 (Likelihood x Impact).
+R4 and R26 both relate to AI trust; R24 relates to audit trail integrity.
+These three risks should be reviewed weekly during standup.
