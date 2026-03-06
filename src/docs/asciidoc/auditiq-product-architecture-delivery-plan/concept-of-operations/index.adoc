@@ -49,7 +49,7 @@ The following table shows how each line interacts with the platform differently:
 |===
 
 This separation is enforced at the RBAC level: a user with `qc_reviewer` permissions cannot create or modify compliance-layer findings, and vice versa.
-The exam-ready bundle (<<sect-exam-ready-bundle>>) includes all three layers, allowing examiners to see how each line independently evaluated the same evidence.
+The exam pack dossier (<<sect-exam-ready-bundle>>) includes all three layers — with a structured three-lines-of-defense certification artifact — allowing examiners to see how each line independently evaluated the same evidence.
 
 === Two-Stage Testing Model (HMDA)
 
@@ -242,7 +242,65 @@ stateDiagram-v2
 ----
 
 *Audit trail:* Every state transition emits an immutable audit event with `actor_id`, `timestamp`, `disposition`, and `rationale`.
-The complete finding remediation history is included in the exam-ready bundle (<<sect-exam-ready-bundle>>).
+The complete finding remediation history is included in the exam pack dossier (<<sect-exam-ready-bundle>>).
+
+=== Exam Pack Dossier: Continuous Update Model
+
+The exam pack is not generated at the end of the audit — it is a *living dossier* that the platform maintains from the moment the audit begins.
+This operational model ensures the institution is always examination-ready, not just at finalization.
+
+*How the dossier evolves through the audit lifecycle:*
+
+[arabic]
+. *Audit created (v1.0):* Bundle initialized with audit metadata, pack configuration snapshot, and sampling methodology.
+Coverage statistics show 0% tested; no findings.
+. *Pre-scan complete (v2.0):* Findings register populated from automated pre-scan.
+Coverage statistics show rules tested, confidence distributions, and error rate.
+Approval manifest is empty — no reviews yet.
+. *QC review in progress (v2.x):* Each finding triage, closure, or escalation triggers a minor version bump.
+The change log tracks every status transition.
+Exceptions log captures any reviewer overrides of confidence or severity.
+. *First-line approval (major bump):* QC Manager reviews all findings and records approval.
+Approval manifest shows first-line sign-off with scope, findings reviewed, and digital signature.
+. *Compliance review (major bump):* Compliance Officer reviews all findings, adds compliance-layer observations.
+Second-line approval recorded with independent assessment.
+. *Audit Director review (major bump):* Third-line independent assurance sample reviewed.
+Three-lines-of-defense certification becomes complete.
+`all_lines_approved` flag set to true.
+. *Export to examiner:* Bundle exported as ZIP with all 14 artifacts.
+Export event recorded with hash and recipient.
+If findings change after export, a new version is created and the previous version is marked `superseded`.
+The version chain provides full traceability.
+
+*Post-export updates:* If a finding is reopened or a corrective action completes after the initial export, the Exam Pack Lifecycle Manager automatically creates a new bundle version.
+Examiners (or the institution) can request a diff between any two versions to see exactly what changed.
+This eliminates the risk of examiners reviewing stale data.
+
+.Exam Pack Dossier Lifecycle
+[mermaid]
+----
+sequenceDiagram
+  participant System
+  participant Bundle as Exam Pack Manager
+  participant QCMgr as QC Manager
+  participant CompOff as Compliance Officer
+  participant AudDir as Audit Director
+  participant Examiner
+
+  System->>Bundle: Audit created → v1.0 (metadata + pack config)
+  System->>Bundle: Pre-scan complete → v2.0 (findings + coverage)
+  System->>Bundle: Finding triaged → v2.1
+  System->>Bundle: Finding closed → v2.2
+  QCMgr->>Bundle: First-line approval → v3.0
+  CompOff->>Bundle: Second-line approval → v4.0
+  AudDir->>Bundle: Third-line approval → v5.0
+  Note over Bundle: All lines approved ✓
+  QCMgr->>Bundle: Export bundle v5.0
+  Bundle-->>Examiner: ZIP with 14 artifacts + hash
+  Note over System: Finding reopened post-export
+  System->>Bundle: Finding reopened → v5.1 (v5.0 superseded)
+  Bundle-->>Examiner: Delta available: v5.0 → v5.1
+----
 
 [[sect-remediation-extensibility]]
 ==== Platform Extensibility: Complaint Management and Beyond

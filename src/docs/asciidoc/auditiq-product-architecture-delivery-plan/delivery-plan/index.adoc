@@ -62,7 +62,7 @@ Phase 1c: Hardening & Launch Prep (May 26 – Jun 27, 5 weeks)
 ├─ Performance tuning (extraction latency <2s/page)
 ├─ vLLM self-hosted deployment (if Phase 0 POC approved)
 ├─ Reporting: audit summary, findings, evidence index
-├─ Exam-ready bundle export (graph CSV/Cypher)
+├─ Exam pack dossier: versioned bundle with coverage stats, approval manifests, exceptions log, change log, pipeline provenance, and three-lines-of-defense certification
 ├─ Security audit + penetration testing (external partner)
 ├─ End-to-end integration testing + UAT
 ├─ Beta customer onboarding (3–5 customers)
@@ -322,9 +322,9 @@ This phase has a 5-week window to absorb UAT feedback and bug fixes.
 |Senior Dev 2
 |Findings list, evidence index, confidence breakdown
 
-|Exam-ready bundle export: graph CSV + Cypher formats as evidence artifacts
+|Exam pack dossier: versioned bundle with 14 artifacts (coverage, approvals, exceptions, change log, provenance, defense-lines certification) + graph CSV/Cypher evidence
 |Senior Dev 2
-|See <<sect-exam-ready-bundle>> and <<sect-docling-graph>>
+|See <<sect-exam-ready-bundle>>, <<sect-exam-pack-lifecycle-manager>>, and <<sect-docling-graph>>
 
 |End-to-end integration testing (all workflows)
 |Senior Dev 2

@@ -1175,6 +1175,210 @@ interface ReportSection {
 }
 ----
 
+[[sect-exam-pack-lifecycle-manager]]
+=== Exam Pack Lifecycle Manager
+
+*Responsibilities:*
+
+* Maintain the exam pack as a continuously updated dossier throughout the audit lifecycle
+* Create new bundle versions on material events (finding changes, approvals, evidence updates)
+* Compute coverage and sampling statistics from audit data
+* Collect and structure approval manifests from all three lines of defense
+* Track exceptions and overrides with justification
+* Generate pipeline provenance from model registry and service versions
+* Produce the exportable ZIP bundle with manifest and hash verification
+* Serve bundle version history and version-to-version diffs via API
+
+*Event-driven update triggers:*
+
+The Exam Pack Lifecycle Manager subscribes to audit trail events via the Workflow Engine.
+When a material event occurs, it creates a new bundle version:
+
+[cols="40%,30%,30%",options="header"]
+|===
+|Event Type |Version Bump |Action
+
+|`audit_started`
+|Major (v1.0)
+|Create initial bundle with audit metadata and pack configuration
+
+|`pre_scan_complete`
+|Major (v2.0)
+|Populate findings register, coverage statistics, confidence distributions
+
+|`finding_created` / `finding_closed` / `finding_reopened`
+|Major
+|Update findings register, recalculate coverage stats, append to change log
+
+|`finding_triaged` / `finding_escalated`
+|Minor
+|Update finding status in register, append to change log
+
+|`corrective_action_completed`
+|Minor
+|Update corrective action log, append to change log
+
+|`evidence_added` / `evidence_superseded`
+|Minor
+|Update source document index, append to change log
+
+|`approval_recorded`
+|Major
+|Add approval to manifest, update defense lines certification, check all-lines-approved
+
+|`exception_recorded`
+|Minor
+|Append to exceptions log
+
+|`bundle_exported`
+|No bump
+|Record export metadata (who, when, hash)
+|===
+
+*Input/Output Contracts:*
+
+[source,typescript]
+----
+interface BundleVersionRequest {
+  auditId: string;
+  version?: string;        // Optional: specific version; defaults to latest
+}
+
+interface BundleVersion {
+  bundleId: string;
+  auditId: string;
+  bundleVersion: string;
+  parentBundleId: string | null;
+  status: 'draft' | 'review' | 'approved' | 'exported' | 'superseded';
+  versionTrigger: string;
+  versionSummary: string;
+  createdAt: timestamp;
+
+  // Coverage snapshot
+  totalFindings: number;
+  findingsBySeverity: Record<string, number>;
+  coveragePct: number;
+  avgCombinedConfidence: number;
+
+  // Approval state
+  firstLineApproved: boolean;
+  secondLineApproved: boolean;
+  thirdLineApproved: boolean;
+  allLinesApproved: boolean;
+}
+
+interface BundleDiff {
+  fromVersion: string;
+  toVersion: string;
+  findingsAdded: number;
+  findingsClosed: number;
+  findingsReopened: number;
+  findingsEscalated: number;
+  evidenceAdded: number;
+  evidenceSuperseded: number;
+  approvalsAdded: number;
+  exceptionsAdded: number;
+  correctiveActionsCompleted: number;
+}
+
+interface BundleExportResult {
+  bundleId: string;
+  bundleVersion: string;
+  exportFormat: 'zip' | 'merged_pdf';
+  storagePath: string;
+  bundleHash: string;
+  fileCount: number;
+  totalSizeBytes: number;
+  integrityChecks: {
+    hashChainVerified: boolean;
+    piiRedactionVerified: boolean;
+    aiContentApproved: boolean;
+    allLinesApproved: boolean;
+  };
+}
+
+interface BundleApprovalRequest {
+  auditId: string;
+  defenseLine: 1 | 2 | 3;
+  role: string;
+  scope: string;
+  findingsReviewed: number;
+  findingsApproved: number;
+  findingsEscalated: number;
+  signOffStatement: string;
+}
+----
+
+*API Endpoints:*
+
+[cols="15%,40%,45%",options="header"]
+|===
+|Method |Endpoint |Description
+
+|GET
+|`/api/v1/audits/{auditId}/bundle`
+|Returns the current (latest) bundle metadata including coverage snapshot and approval state
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/versions`
+|Returns the complete version chain with summary and trigger for each version
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/versions/{version}`
+|Returns a specific bundle version with full metadata
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/diff`
+|Returns the delta between two versions (query params: `from`, `to`)
+
+|POST
+|`/api/v1/audits/{auditId}/bundle/approve`
+|Records a line-of-defense approval; triggers major version bump
+
+|POST
+|`/api/v1/audits/{auditId}/bundle/export`
+|Generates the ZIP bundle for the current or specified version; runs integrity checks
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/coverage`
+|Returns current coverage and sampling statistics (<<sect-coverage-and-sampling>>)
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/exceptions`
+|Returns current exceptions log (<<sect-exceptions-log>>)
+
+|GET
+|`/api/v1/audits/{auditId}/bundle/approvals`
+|Returns approval manifest with all line-of-defense sign-offs (<<sect-approval-manifest>>)
+|===
+
+*Error Handling:*
+
+[cols="40%,60%",options="header"]
+|===
+|Error |Handling
+
+|Bundle export requested before all AI narratives approved
+|Return 422 with list of unapproved narratives; block export
+
+|Bundle export requested with untriaged Critical findings
+|Return 422 with list of untriaged Critical findings; block export
+
+|Approval recorded by wrong defense line (e.g., QC manager approving audit-layer findings)
+|Return 403; RBAC enforcement prevents cross-line approvals
+
+|Version conflict (concurrent updates)
+|Optimistic locking via bundle content hash; retry with latest version
+
+|Bundle generation fails mid-export
+|Partial bundle cleaned up; error event logged; user notified to retry
+|===
+
+*Determinism:* Bundle content is deterministic for a given audit state — same findings, evidence, and approvals always produce the same bundle content (hash-verified).
+
+*Storage:* Generated bundles stored in Azure Blob Storage under `tenant-{tenant_id}/bundles/audit_{audit_id}/v{version}/`.
+Retention follows the same 7-year lifecycle policy as source documents.
+
 [[sect-rbac-permission-matrix]]
 === RBAC & Permission Matrix
 

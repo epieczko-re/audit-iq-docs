@@ -91,6 +91,30 @@ Events are append-only and hash-chained for tamper evidence.
 The system differentiates between truly immutable artifacts (evidence, events) and correctible artifacts (findings, mappings) where corrections are modeled as new events that supersede prior state.
 See <<sect-immutability>> for the full immutability/correctability specification.
 
+[[sect-exam-pack-concept]]
+==== Exam Pack Output: Continuously Updated Dossier
+
+The exam pack output is not a one-time export — it is a *first-class product object* that the platform maintains continuously throughout the audit lifecycle.
+Buyers do not want a ZIP file generated at the end; they want a living dossier that is always examination-ready, reflecting the current state of coverage, findings, approvals, and remediation.
+
+*What the exam pack contains:*
+
+* *Coverage matrix:* Which audit pack rules were tested, against which populations, at which confidence thresholds — with machine-readable sampling statistics (confidence level, margin of error, actual error rate).
+* *Sampling methodology:* Structured metadata (not just a narrative) showing stratification, sample sizes, selection method, and representativeness metrics.
+* *Findings with evidence links:* Every finding is traced to specific source documents, extraction confidence scores, and the rule that triggered it.
+* *Approval manifests:* Structured sign-off records showing which line-of-defense roles reviewed and approved findings, with timestamps and rationale.
+* *Exceptions and overrides log:* Every instance where a human overrode system confidence, severity, or rule application — with justification.
+* *Change log and version chain:* When findings change status (reopened, corrected, escalated), the exam pack auto-generates a new version with a delta summary.
+* *Pipeline provenance:* Which extraction model version, mapping service version, and rules engine version produced each finding — traceable to <<sect-model-registry>>.
+* *Three-lines-of-defense certification:* Proof that QC, Compliance, and Audit each independently evaluated the evidence.
+
+*Lifecycle semantics:*
+
+The exam pack is created when the audit enters `InProgress` state and updated automatically on every material event (finding created, finding closed, approval recorded, evidence superseded).
+Each update produces a new *bundle version* linked to its predecessor, forming an auditable version chain.
+Examiners can request any version or a delta between versions.
+See <<sect-exam-ready-bundle>> for the full specification.
+
 ==== Architecture Diagrams
 
 ===== Audit Run State Machine
@@ -148,7 +172,13 @@ graph LR
     subgraph Outputs
         FIND["Findings Register<br/>with Confidence Scores"]
         REPORT["Reports &<br/>Dashboards"]
-        BUNDLE["Exam-Ready<br/>Bundle"]
+    end
+
+    subgraph ExamDossier["Exam Dossier (Continuously Updated)"]
+        BUNDLE["Exam Pack<br/>Bundle Manager"]
+        COV["Coverage &<br/>Sampling Stats"]
+        APPROVE["Approval<br/>Manifests"]
+        CHANGELOG["Change Log &<br/>Version Chain"]
     end
 
     CSV --> VAL
@@ -160,6 +190,10 @@ graph LR
     COMP --> FIND
     FIND --> REPORT
     FIND --> BUNDLE
+    BUNDLE --> COV
+    BUNDLE --> APPROVE
+    BUNDLE --> CHANGELOG
+    REPORT --> BUNDLE
 ----
 
 ===== Component Architecture
@@ -180,6 +214,7 @@ graph TB
         AUDIT["Audit Orchestration<br/>Service"]
         PACK["Audit Pack<br/>Manager"]
         WORKFLOW["Workflow Engine<br/>State Machine"]
+        EXAM["Exam Pack<br/>Lifecycle Manager"]
     end
 
     subgraph DataPipeline[Data Pipeline]
@@ -216,8 +251,11 @@ graph TB
     NORM --> COMPARE
     COMPARE --> SCORING
     PACK --> AI_RULES
+    AUDIT --> EXAM
     AUDIT --> AI_REPORT
     AI_REPORT --> CITATIONS
+    EXAM --> DB
+    EXAM --> DOCS
 
     AUDIT --> DB
     DOCPROC --> DOCS
@@ -337,6 +375,8 @@ See <<sect-rbac-permission-matrix>>.
 See <<sect-audit-orchestration>>.
 * *Audit Pack Manager:* Pack versioning, distribution, validation harness.
 See <<sect-audit-pack-spec>>.
+* *Exam Pack Lifecycle Manager:* Maintains the exam pack as a continuously updated dossier — versioning, coverage statistics, approval manifests, change logs, and three-lines-of-defense certification.
+See <<sect-exam-pack-lifecycle-manager>>.
 * *Workflow Engine:* State machine enforcement, event publishing, retry/compensation.
 
 ==== Data Pipeline Services
