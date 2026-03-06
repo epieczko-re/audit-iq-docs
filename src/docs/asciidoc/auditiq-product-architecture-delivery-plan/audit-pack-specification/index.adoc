@@ -1224,7 +1224,7 @@ interface AuditPackContract {
 // Finding includes origin attribution
 interface Finding {
   rule_id: string;
-  rule_origin: 'regulatory' | 'policy_tightened' | 'policy_supplemental' | 'procedural_checkpoint';
+  rule_origin: 'regulatory' | 'policy_tightened' | 'policy_supplemental' | 'procedural_checkpoint' | 'complaint';  // 'complaint' reserved for future complaint management integration
   regulation_citation?: string;
   policy_citation?: PolicyCitation;
   severity: string;
