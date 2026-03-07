@@ -91,27 +91,27 @@ flowchart TD
 
 |WF-10
 |<<wf-findings-queue, Findings Review Queue>>
-|FR-4.1, FR-4.4, FR-4.7
+|<<FR-4.1>>, <<FR-4.4>>, <<FR-4.7>>
 |Sortable/filterable queue by severity + confidence; Stage 1 error rate threshold alert.
 
 |WF-11
 |<<wf-finding-detail, Finding Detail>>
-|FR-4.4, FR-4.6
+|<<FR-4.4>>, <<FR-4.6>>
 |Full finding view: target/source values, rule, confidence, severity, regulatory citation, timeline.
 
 |WF-12
 |<<wf-ai-narrative, AI Narrative Approval>>
-|FR-4.4
+|<<FR-4.4>>
 |AI-drafted narrative with mandatory "AI-Drafted — Requires Human Verification" label; approve/edit/reject with effective challenge notes.
 
 |WF-12b
 |<<wf-record-comparison, Record Comparison>>
-|FR-4.1, FR-4.2
+|<<FR-4.1>>, <<FR-4.2>>
 |Side-by-side Stage 1 comparison: HMDA LAR fields vs. source document fields across 37 Key Data Fields.
 
 |WF-13
 |<<wf-escalation, Manager Escalation>>
-|FR-4.1
+|<<FR-4.1>>
 |Manager review of escalated findings; approve closure, request re-review, or further escalate.
 |===
 
@@ -491,12 +491,19 @@ Supports pattern detection across multiple findings for systemic issue identific
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
+[[FR-4.1]]
 |FR-4.1 |System shall compare target values to source values using pack-defined rules after normalization, covering all 37 Key Data Fields (<<sect-glossary>>) defined in the HMDA audit pack. |Given a target HMDA LAR record with loan_amount=250000 and source Closing Disclosure showing $250,000.00, when Stage 1 comparison runs across all 37 Key Data Fields, then normalization removes formatting and comparison finds exact match. Fields compared include loan amount, interest rate, action taken, property address, and all other pack-defined fields. |P0
+[[FR-4.2]]
 |FR-4.2 |Comparison shall support: exact match, tolerance-based match (absolute and percentage), conditional logic, cross-field validation, and lookup validation — with rule types configurable per field in the audit pack. |Given a tolerance rule of ±$0.01 for loan_amount, when target=250000.00 and source=250000.01, then comparison reports MATCH within tolerance. Given HMDA action-taken code "1" (Originated), when lookup validation runs against the HMDA reference table, then the code is validated as a legitimate value. |P0
+[[FR-4.3]]
 |FR-4.3 |Audit runs shall be reproducible: identical inputs + pack version + configuration = identical outputs. Non-deterministic components (AI suggestions) are clearly separated. |Given two identical audit runs with same inputs and pack version, when compared, then deterministic outputs (findings from rules) are byte-identical. AI-generated narratives may differ but are labeled as non-deterministic. |P0
+[[FR-4.4]]
 |FR-4.4 |System shall generate findings with: target value, source value, triggering rule, confidence score, severity score, and regulatory citation. |Given a finding for Action Taken mismatch, when displayed, then all six attributes are present, with regulatory citation linking to 12 CFR 1003 section. |P0
+[[FR-4.5]]
 |FR-4.5 |Comparison engine shall process ≥500 records/minute for automated pre-scan against structured source data. |Given 5,000 HMDA records with structured source data, when automated pre-scan runs, then completion time is ≤10 minutes. |P1
+[[FR-4.6]]
 |FR-4.6 |System shall support Stage 2 substantive/transactional testing: evaluate whether reported data reflects the underlying transaction correctly, beyond field-level comparison. Stage 2 tests include action-taken code validation against application disposition history, denial reason cross-checking against underwriting notes, and rate-spread recalculation. |Given a loan with action-taken code "1" (originated) but source documents showing a withdrawn application, when Stage 2 rules execute, then system flags a substantive finding with severity Critical and regulatory citation 12 CFR 1003.4(a)(8). |P1
+[[FR-4.7]]
 |FR-4.7 |System shall track Stage 1 error rates per audit run in real time and alert the reviewer when the pack-defined error threshold is approached. |Given 50 HMDA records under review with a 5% error threshold configured in the HMDA pack, when 2 records (4%) have confirmed Stage 1 discrepancies, then system displays a threshold proximity alert: "Stage 1 error rate 4% — approaching 5% threshold. Consider proactive sample expansion." |P0
 |===
 
@@ -509,9 +516,13 @@ AI-generated narratives, suggestions, and advisory outputs are explicitly non-de
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
+[[FR-6.1]]
 |FR-6.1 |Findings shall follow the 9-state lifecycle defined in <<sect-concept-of-operations>>: IDENTIFIED → TRIAGED → REMEDIATION_ASSIGNED → CORRECTED → RETEST_PASSED → CLOSED; with branch states RETEST_FAILED (returns to REMEDIATION_ASSIGNED), ESCALATED (manager review with pattern detection), and REOPENED (compensating event; original preserved). |Given a finding in IDENTIFIED status, when reviewer triages it, then status advances to TRIAGED and an AuditEvent is recorded. Given a finding in CORRECTED status, when retest fails, then status transitions to RETEST_FAILED and returns to REMEDIATION_ASSIGNED with additional notes. Each transition requires a valid prior state. |P0
+[[FR-6.2]]
 |FR-6.2 |Each finding shall capture: root cause, corrective action, owner, due date, evidence references, and all status transitions. |Given a finding with corrective action assigned, when viewed, then all metadata fields are populated and the complete transition history is visible in the audit trail. |P0
+[[FR-6.3]]
 |FR-6.3 |Escalation workflow shall support configurable severity-based routing and time-based auto-escalation. |Given an escalation rule "Critical findings not triaged within 24 hours auto-escalate to Manager," when a Critical finding sits untriaged for 24 hours, then system sends escalation notification and logs the event. |P1
+[[FR-6.4]]
 |FR-6.4 |Second review: configurable sampling percentage, random selection, assignment to designated second reviewer who cannot be the primary reviewer. |Given 20% second review configured, when primary review completes on 100 records, then system selects 20 records randomly and assigns them to the designated second reviewer (different from primary). |P0
 |===
 
@@ -523,22 +534,22 @@ AI-generated narratives, suggestions, and advisory outputs are explicitly non-de
 |===
 |Component |Role in This Journey
 
-|*Normalization Engine*
+|*Normalization Engine* (<<sect-component-design>>)
 |Pack-defined normalization rules per field (currency stripping, date parsing, address formatting, Unicode NFC).
 
-|*Comparison & Rules Engine*
+|*Comparison & Rules Engine* (<<sect-component-design>>)
 |Applies pack rules to normalized mapped data; supports exact match, tolerance-based, conditional logic, cross-field validation, lookup validation.
 
-|*LLM Integration (LiteLLM)*
+|*LLM Integration (LiteLLM)* (<<sect-ai-governance>>)
 |Generates finding narratives with citations; rate-limited; PII-redacted inputs; cost-monitored.
 
-|*Findings Management Service*
+|*Findings Management Service* (<<sect-component-design>>)
 |Creates findings with 6 required attributes (target value, source value, rule, confidence, severity, citation); manages 9-state lifecycle.
 
-|*Provenance Logger*
+|*Provenance Logger* (<<sect-ai-governance>>)
 |Records 21-field schema per AI call: `model_id`, `model_version`, `prompt_template_version`, `input_context_hash`, `timestamp`, `retrieval_corpus`, `token_counts`, `data_handling_flags`, etc.
 
-|*PII Redaction Pipeline*
+|*PII Redaction Pipeline* (<<sect-ai-governance>>)
 |Strips names, SSN, account numbers, addresses before all LLM API calls.
 |===
 

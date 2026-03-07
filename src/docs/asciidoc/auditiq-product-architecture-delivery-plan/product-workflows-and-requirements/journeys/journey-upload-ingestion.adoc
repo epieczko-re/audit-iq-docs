@@ -168,22 +168,22 @@ sequenceDiagram
 
 |WF-01
 |<<wf-audit-dashboard, Audit Dashboard>>
-|FR-10.1, FR-10.4
+|<<FR-10.1>>, <<FR-10.4>>
 |Dashboard shows all audits with RBAC-filtered visibility; status badges, progress metrics, quick actions.
 
 |WF-02
 |<<wf-audit-config, Audit Configuration>>
-|FR-10.2, FR-10.5
+|<<FR-10.2>>, <<FR-10.5>>
 |Create audit run with pack selection, sample size, confidence threshold, dataset upload; validates schema against pack.
 
 |WF-04
 |<<wf-doc-upload, Document Upload>>
-|FR-1.3, FR-1.4, FR-1.5
+|<<FR-1.3>>, <<FR-1.4>>, <<FR-1.5>>
 |Drag-drop or batch upload of PDF/TIFF/ZIP; auto-classification with confidence; loan-record matching.
 
 |WF-05
 |<<wf-processing-status, Processing Status>>
-|FR-2.1, FR-2.5
+|<<FR-2.1>>, <<FR-2.5>>
 |Per-document extraction progress, page grades, fallback triggers, field counts.
 |===
 
@@ -458,6 +458,7 @@ Shows Docling processing status, page grades, fallback triggers, and per-documen
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
+[[FR-1.1]]
 |FR-1.1
 |System shall accept target datasets via CSV upload, API endpoint, and cross-module transfer from existing RiskExec modules (HMDA, CRA).
 a|*Acceptance Criteria (FR-1.1 — Ingestion performance):*
@@ -470,9 +471,13 @@ a|*Acceptance Criteria (FR-1.1 — Ingestion performance):*
 ** Guarantee 0% silent data corruption: valid records stored exactly as received with per-record SHA-256 checksums logged and verifiable.
 ** Provide validation summary in the UI and as a JSON/CSV download.
 |P0
+[[FR-1.2]]
 |FR-1.2 |System shall perform automated completeness and format validation on ingested datasets. |Given a CSV missing required columns, when uploaded, then system rejects with specific error listing missing columns. Given a CSV with malformed date values, when uploaded, then system flags affected rows with line numbers and expected format. |P0
+[[FR-1.3]]
 |FR-1.3 |System shall accept source documents in PDF, TIFF, JPEG, and PNG formats. |Given a multi-page PDF, when uploaded, then document is stored, classified, and available in the document viewer within 10 seconds per page. |P0
+[[FR-1.4]]
 |FR-1.4 |System shall support bulk document upload with batch classification. |Given a ZIP containing 50 mixed-format documents, when uploaded, then all documents are extracted, classified by type (CD, LE, URLA, etc.), and linked to target records via loan number matching. |P1
+[[FR-1.5]]
 |FR-1.5 |System shall enforce maximum file size limits: 100MB per single file, 1GB per batch upload. |Given a file exceeding 100MB, when upload is attempted, then system rejects with clear size limit message before upload begins (client-side validation). |P0
 |===
 
@@ -485,6 +490,7 @@ No AI is involved in ingestion.
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
+[[FR-10.1]]
 |FR-10.1
 |System shall provide an audit dashboard showing all audit runs the authenticated user has access to, with RBAC-filtered visibility per the IIA Three Lines Model.
 a|*Acceptance Criteria (FR-10.1 — Audit Dashboard):*
@@ -496,6 +502,7 @@ a|*Acceptance Criteria (FR-10.1 — Audit Dashboard):*
 * Table is sortable by all columns and filterable by status, pack, date range, and defense line.
 |P0
 
+[[FR-10.2]]
 |FR-10.2
 |System shall allow authorized users to create and configure a new audit run, including pack selection, scope definition, sample size, audit period, confidence thresholds, and review parameters.
 a|*Acceptance Criteria (FR-10.2 — Audit Configuration):*
@@ -506,6 +513,7 @@ a|*Acceptance Criteria (FR-10.2 — Audit Configuration):*
 * Only `qc_manager`, `compliance_officer`, `audit_director`, and `admin` roles can create audit runs.
 |P0
 
+[[FR-10.3]]
 |FR-10.3
 |System shall provide real-time audit progress monitoring showing phase completion status across all audit lifecycle stages (upload, extraction, mapping, rules, review, finalization).
 a|*Acceptance Criteria (FR-10.3 — Audit Progress Monitor):*
@@ -515,6 +523,7 @@ a|*Acceptance Criteria (FR-10.3 — Audit Progress Monitor):*
 * Reviewers see progress for their assigned records; Managers see aggregate progress across all records and reviewers.
 |P0
 
+[[FR-10.4]]
 |FR-10.4
 |System shall enforce the audit workflow state machine: Created → DocumentsUploaded → Extracted → ReviewerInProgress → FindingsGenerated → ManagerReview → ManagerApproval → Finalized.
 State transitions emit immutable audit events with `actor_id`, `timestamp`, and `rationale`.
@@ -525,6 +534,7 @@ a|*Acceptance Criteria (FR-10.4 — Audit State Machine):*
 * Given a manager requesting re-review, when in `ManagerReview` state, then audit returns to `FindingsGenerated` with documented rationale.
 |P0
 
+[[FR-10.5]]
 |FR-10.5
 |System shall support three execution modes per audit run — Manual, OCR-Assisted, and Automated Pre-Scan — selectable at audit configuration time based on source data type and audit scope.
 |Given an admin configuring a new audit, when they select execution mode, then the system adjusts available workflow options accordingly: Manual mode skips extraction automation, OCR-Assisted enables Docling extraction with AFC routing, and Automated Pre-Scan enables full record-to-record comparison. |P0
@@ -541,19 +551,19 @@ No AI is involved in audit lifecycle operations.
 |===
 |Component |Role in This Journey
 
-|*Ingestion Service*
+|*Ingestion Service* (<<sect-component-design>>)
 |Validates target dataset (CSV/API) against pack-defined schema; computes per-record SHA-256 checksums; stores validated records in staging tables.
 
-|*Azure Blob Storage*
+|*Azure Blob Storage* (<<sect-document-store>>)
 |Stores uploaded source documents (PDF, TIFF, ZIP) with server-side encryption (AES-256); quarantine zone for malware scanning.
 
-|*Document Classifier*
+|*Document Classifier* (<<sect-doc-processing>>)
 |Identifies document type (CD, 1003, Appraisal, Title, Other) from filename heuristics and first-page OCR; assigns classification confidence.
 
-|*API Gateway*
+|*API Gateway* (<<sect-api-gateway>>)
 |Routes upload requests; enforces file size limits (100 MB single, 1 GB batch); rate limiting per tenant.
 
-|*PostgreSQL*
+|*PostgreSQL* (<<sect-data-model>>)
 |Staging tables for validated records; audit run metadata; document metadata and classification results.
 |===
 

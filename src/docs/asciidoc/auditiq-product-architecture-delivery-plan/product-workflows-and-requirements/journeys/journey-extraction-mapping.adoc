@@ -156,27 +156,27 @@ sequenceDiagram
 
 |WF-03
 |<<wf-audit-progress, Audit Progress Monitor>>
-|FR-10.3, FR-10.4
+|<<FR-10.3>>, <<FR-10.4>>
 |Real-time phase progress (upload, extraction, mapping, rules, review, finalization); AFC routing distribution.
 
 |WF-06
 |<<wf-extraction-review, Field Extraction Review>>
-|FR-2.1, FR-2.2, FR-2.3
+|<<FR-2.1>>, <<FR-2.2>>, <<FR-2.3>>
 |Split-pane: document viewer (left) + extracted fields with AFC badges (right); accept/edit/enter actions.
 
 |WF-07
 |<<wf-doc-viewer, Document Viewer>>
-|FR-2.4
+|<<FR-2.4>>
 |Full-page viewer with zoom, search, field bounding-box overlays; loads within 3s per page.
 
 |WF-08
 |<<wf-mapping-review, Mapping Review>>
-|FR-3.1, FR-3.2, FR-3.3
+|<<FR-3.1>>, <<FR-3.2>>, <<FR-3.3>>
 |Two-layer confidence routing; auto-accept (>=0.95), human review (0.70-0.94), manual (<0.70); alternatives + override.
 
 |WF-09
 |<<wf-synonym-dict, Synonym Dictionary>>
-|FR-3.4
+|<<FR-3.4>>
 |CRUD for curated synonym pairs; overrides from mapping review feed back here for approval.
 |===
 
@@ -528,10 +528,15 @@ Full coverage requires 1003, appraisal, and title documents (Phase 2).
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
+[[FR-2.1]]
 |FR-2.1 |System shall process source documents through the Docling-Graph pipeline (Docling + Docling-Graph) to extract text, tables, and key-value pairs as versioned Pydantic objects and a directed knowledge graph (KG). Extraction may use VLM (Docling) or LLM (self-hosted Mistral via LiteLLM) backends. |Given a standard Closing Disclosure PDF, when processed by the Docling-Graph pipeline, then system extracts all key fields (loan amount, interest rate, property address, borrower name) as validated Pydantic objects with ≥85% field-level F1 (normalized) on the Phase 1 evaluation corpus; graph exports available in CSV/Cypher format for downstream processing. |P0
+[[FR-2.2]]
 |FR-2.2 |Each extracted value shall carry an extraction confidence score (AFC 0.0–1.0) that includes graph-derived corroboration signals from the Docling-Graph knowledge graph. |Given an extracted loan amount, when displayed to reviewer, then AFC score is visible with color indicator (green ≥0.85, yellow 0.50–0.84, red <0.50) and includes an explicit `graph_corrob_score` subcomponent showing cross-document graph corroboration strength. |P0
+[[FR-2.3]]
 |FR-2.3 |OCR output shall be presented as assistive/advisory in Phase 1, not authoritative. |Given any OCR-extracted value, when displayed, then it is visually labeled as "AI-extracted (advisory)" and cannot auto-finalize a finding without human confirmation. |P0
+[[FR-2.4]]
 |FR-2.4 |System shall provide a high-fidelity document viewer with page navigation, zoom, text search, and field highlight overlay. |Given a 50-page PDF, when opened in viewer, then page loads within 3 seconds, zoom works from 50% to 400%, text search returns results with highlighting, and extracted fields are overlaid with bounding boxes. |P0
+[[FR-2.5]]
 |FR-2.5 |System shall execute a 3-tier extraction fallback chain: (1) Docling-Graph VLM extraction, (2) Docling-Graph LLM extraction via LiteLLM/self-hosted Mistral, (3) cloud OCR (Azure AI Document Intelligence or equivalent). Fallback from tier 1→2 triggers when AFC < 0.50 for the extracted page; fallback from tier 2→3 triggers when AFC remains < 0.50 after LLM re-extraction or when >30% of key fields on a document remain below 0.50. |Given a low-quality scanned document where Docling-Graph VLM extraction produces AFC < 0.50 on key fields, when fallback triggers, then system attempts LLM extraction via LiteLLM/Mistral first; if still below threshold, re-processes with cloud OCR; each fallback event is logged with `extraction_method` provenance (see <<sect-ai-provenance>>). |P1
 |===
 
@@ -547,9 +552,13 @@ See <<sect-decision-d1, Decision D1>>.
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
+[[FR-3.1]]
 |FR-3.1 |System shall automatically suggest field-level mappings between target and source schemas using confidence-scored matching. |Given HMDA LAR schema and CD extracted fields, when mapping is requested, then system suggests mappings for ≥80% of reportable fields with confidence scores. |P0
+[[FR-3.2]]
 |FR-3.2 |Each suggested mapping shall carry a mapping confidence score (0.0–1.0). |Given suggested mappings, when displayed in mapping UI, then each shows confidence score with threshold indicators: ≥0.85 auto-accept, 0.50–0.84 human review, <0.50 reject. |P0
+[[FR-3.3]]
 |FR-3.3 |System shall provide a mapping review UI for human approval, rejection, and override. |Given a list of suggested mappings, when reviewer opens mapping UI, then they can accept/reject each mapping, manually create new mappings, and save the approved mapping set as a versioned artifact. |P0
+[[FR-3.4]]
 |FR-3.4 |Approved mappings shall be versioned and reusable across audit runs within the same audit pack. |Given an approved mapping set for HMDA pack v1.0, when a new audit run uses the same pack version, then the approved mappings are pre-loaded and do not require re-approval. |P0
 |===
 
@@ -567,13 +576,13 @@ See <<sect-decision-d1, Decision D1>>.
 |===
 |Component |Role in Extraction
 
-|*Document Processing Service*
+|*Document Processing Service* (<<sect-doc-processing>>)
 |Orchestrates the 3-tier extraction fallback chain: Docling-Graph VLM → Docling-Graph LLM (Mistral/LiteLLM) → cloud OCR (Azure AI Document Intelligence).
 
-|*Docling-Graph Pipeline*
+|*Docling-Graph Pipeline* (<<sect-docling-graph>>)
 |PDF → structured JSON via Docling layout engine; graph node/edge extraction for cross-document corroboration; Pydantic template-driven field extraction.
 
-|*AFC v2 Scoring Layer*
+|*AFC v2 Scoring Layer* (<<sect-scoring-framework>>)
 |Computes 6-signal composite confidence per field: `docling_page_grade` (0.12), `ocr_segment_confidence` (0.23), `pattern_validity` (0.20), `layout_anchor_consistency` (0.18), `cross_doc_redundancy` (0.12), `graph_corrob_score` (0.15).
 
 |*Celery Workers*
@@ -589,16 +598,16 @@ See <<sect-decision-d1, Decision D1>>.
 |===
 |Component |Role in Mapping
 
-|*Schema Mapping Service*
+|*Schema Mapping Service* (<<sect-schema-mapping-service>>)
 |Hybrid heuristic matcher with 5 weighted signals; two-layer confidence design (raw signals → calibrated decision score).
 
-|*Synonym Dictionary*
+|*Synonym Dictionary* (<<sect-schema-mapping-service>>)
 |Curated domain-specific equivalence table (e.g., `loan_type` <--> `mortgage_product`); overrides feed back from reviewer actions.
 
-|*Graph Edge Boosting*
+|*Graph Edge Boosting* (<<sect-docling-graph>>)
 |Node property matching + entity type filtering from Docling-Graph knowledge graph boost mapping confidence.
 
-|*Calibration Engine*
+|*Calibration Engine* (<<sect-confidence-calibration>>)
 |Temperature scaling (Phase 1, >=200 labeled decisions) or isotonic regression (Phase 2, >=500 decisions); ECE target <=0.05.
 |===
 

@@ -454,22 +454,22 @@ The user creates an audit run, selects an audit pack, uploads the HMDA LAR targe
 
 |WF-01
 |<<wf-audit-dashboard, Audit Dashboard>>
-|FR-10.1, FR-10.4 (<<sect-product-requirements>>)
+|<<FR-10.1>>, <<FR-10.4>>
 |Dashboard shows all audits with RBAC-filtered visibility; status badges, progress metrics, quick actions.
 
 |WF-02
 |<<wf-audit-config, Audit Configuration>>
-|FR-10.2, FR-10.5 (<<sect-product-requirements>>)
+|<<FR-10.2>>, <<FR-10.5>>
 |Create audit run with pack selection, sample size, confidence threshold, dataset upload; validates schema against pack.
 
 |WF-04
 |<<wf-doc-upload, Document Upload>>
-|FR-1.3, FR-1.4, FR-1.5 (<<sect-product-requirements>>)
+|<<FR-1.3>>, <<FR-1.4>>, <<FR-1.5>>
 |Drag-drop or batch upload of PDF/TIFF/ZIP; auto-classification with confidence; loan-record matching.
 
 |WF-03
 |<<wf-audit-progress, Audit Progress Monitor>>
-|FR-10.3, FR-10.4 (<<sect-product-requirements>>)
+|<<FR-10.3>>, <<FR-10.4>>
 |Real-time phase progress (upload, extraction, mapping, rules, review, finalization); AFC routing distribution.
 |===
 
@@ -493,7 +493,7 @@ The user creates an audit run, selects an audit pack, uploads the HMDA LAR targe
 *Data flow:* CSV → Ingestion Service (validation + SHA-256 checksums) → PostgreSQL staging tables.
 PDFs → Blob Storage → Document Classifier → link to LAR records.
 *API contracts:* `IngestionRequest`, `ValidationResult` interfaces (see <<sect-product-requirements>>).
-*Architecture detail:* <<sect-architecture-by-workflow, Upload & Ingestion stage>>.
+*Architecture detail:* <<sect-architecture-overview, Upload & Ingestion stage>>.
 
 '''
 
@@ -510,27 +510,27 @@ The system extracts structured data from source documents and maps extracted fie
 
 |WF-05
 |<<wf-processing-status, Processing Status>>
-|FR-2.1, FR-2.5 (<<sect-product-requirements>>)
+|<<FR-2.1>>, <<FR-2.5>>
 |Per-document extraction progress, page grades, fallback triggers, field counts.
 
 |WF-06
 |<<wf-extraction-review, Field Extraction Review>>
-|FR-2.1, FR-2.2, FR-2.3 (<<sect-product-requirements>>)
+|<<FR-2.1>>, <<FR-2.2>>, <<FR-2.3>>
 |Split-pane: document viewer (left) + extracted fields with AFC badges (right); accept/edit/enter actions.
 
 |WF-07
 |<<wf-doc-viewer, Document Viewer>>
-|FR-2.4 (<<sect-product-requirements>>)
+|<<FR-2.4>>
 |Full-page viewer with zoom, search, field bounding-box overlays; loads within 3s per page.
 
 |WF-08
 |<<wf-mapping-review, Mapping Review>>
-|FR-3.1, FR-3.2, FR-3.3 (<<sect-product-requirements>>)
+|<<FR-3.1>>, <<FR-3.2>>, <<FR-3.3>>
 |Two-layer confidence routing; auto-accept (>=0.95), human review (0.70-0.94), manual (<0.70); alternatives + override.
 
 |WF-09
 |<<wf-synonym-dict, Synonym Dictionary>>
-|FR-3.4 (<<sect-product-requirements>>)
+|<<FR-3.4>>
 |CRUD for curated synonym pairs; overrides from mapping review feed back here for approval.
 |===
 
@@ -556,7 +556,7 @@ Full coverage requires 1003, appraisal, and title documents (Phase 2).
 *Services:* Document Processing Service (Docling-Graph + AFC), Schema Mapping Service (hybrid heuristic matcher), Synonym Dictionary.
 *Data flow:* Blob Storage → Docling-Graph pipeline → Pydantic template extraction → AFC scoring → field routing → Schema Mapping Service → approved mappings → Rules Engine.
 *API contracts:* 3-tier fallback chain pseudocode, `FindingOutput` interface (see <<sect-product-requirements>>).
-*Architecture detail:* <<sect-architecture-by-workflow, Extraction and Mapping stage>>.
+*Architecture detail:* <<sect-architecture-overview, Extraction and Mapping stage>>.
 
 '''
 
@@ -573,27 +573,27 @@ The comparison engine applies pack rules against mapped data; the LLM drafts fin
 
 |WF-10
 |<<wf-findings-queue, Findings Review Queue>>
-|FR-4.1, FR-4.4, FR-4.7 (<<sect-product-requirements>>)
+|<<FR-4.1>>, <<FR-4.4>>, <<FR-4.7>>
 |Sortable/filterable queue by severity + confidence; Stage 1 error rate threshold alert.
 
 |WF-11
 |<<wf-finding-detail, Finding Detail>>
-|FR-4.4, FR-4.6 (<<sect-product-requirements>>)
+|<<FR-4.4>>, <<FR-4.6>>
 |Full finding view: target/source values, rule, confidence, severity, regulatory citation, timeline.
 
 |WF-12
 |<<wf-ai-narrative, AI Narrative Approval>>
-|FR-4.4 (<<sect-product-requirements>>)
+|<<FR-4.4>>
 |AI-drafted narrative with mandatory "AI-Drafted — Requires Human Verification" label; approve/edit/reject with effective challenge notes.
 
 |WF-12b
 |<<wf-record-comparison, Record Comparison>>
-|FR-4.1, FR-4.2 (<<sect-product-requirements>>)
+|<<FR-4.1>>, <<FR-4.2>>
 |Side-by-side Stage 1 comparison: HMDA LAR fields vs. source document fields across 37 Key Data Fields.
 
 |WF-13
 |<<wf-escalation, Manager Escalation>>
-|FR-4.1 (<<sect-product-requirements>>)
+|<<FR-4.1>>
 |Manager review of escalated findings; approve closure, request re-review, or further escalate.
 |===
 
@@ -618,7 +618,7 @@ The comparison engine applies pack rules against mapped data; the LLM drafts fin
 *Services:* Normalization Engine, Comparison & Rules Engine, LLM Integration (LiteLLM/Mistral), Findings Management Service, Provenance Logger.
 *Data flow:* Approved mappings + pack rules → Normalization → Comparison Engine → findings → LLM narrative → review queue → effective challenge → approved findings.
 *AI governance:* 3 required disclaimers per AI output; 21-field provenance schema per AI call; PII redaction before all LLM calls.
-*Architecture detail:* <<sect-architecture-by-workflow, Rule Execution stage>>.
+*Architecture detail:* <<sect-architecture-overview, Rule Execution stage>>.
 
 '''
 
@@ -635,27 +635,27 @@ Findings flow from identification through closure with approval gates at each tr
 
 |WF-14
 |<<wf-remediation, Remediation Tracking>>
-|FR-6.1, FR-6.2 (<<sect-product-requirements>>)
+|<<FR-6.1>>, <<FR-6.2>>
 |9-state remediation lifecycle; SLA-driven due dates (Critical: 1d, High: 3d, Medium: 7d, Low: 14d).
 
 |WF-15
 |<<wf-aging, Aging Dashboard>>
-|FR-6.3 (<<sect-product-requirements>>)
+|<<FR-6.3>>
 |SLA violation alerts; overdue findings sorted by age and severity.
 
 |WF-16
 |<<wf-report-gen, Report Generation>>
-|FR-8.1 (<<sect-product-requirements>>)
+|<<FR-8.1>>
 |Audit summary report template selection; HTML/PDF export; findings breakdown.
 
 |WF-17
 |<<wf-bundle-export, Exam-Ready Bundle Export>>
-|FR-8.4, FR-8.5, FR-8.6, FR-8.7 (<<sect-product-requirements>>)
+|<<FR-8.4>>, <<FR-8.5>>, <<FR-8.6>>, <<FR-8.7>>
 |14-artifact versioned ZIP bundle with approval manifests, coverage stats, change log, pipeline provenance.
 
 |WF-18
 |<<wf-findings-register, Findings Register>>
-|FR-8.1 (<<sect-product-requirements>>)
+|<<FR-8.1>>
 |Complete findings list with export, filtering, and status summary.
 |===
 
@@ -680,7 +680,7 @@ Findings flow from identification through closure with approval gates at each tr
 *Data flow:* Approved findings → remediation state machine → SLA tracking → report generation → bundle packaging.
 *State machine:* 9 states (Identified → Triaged → Remediation Assigned → Corrected → Retest Passed/Failed → Closed → Escalated → Reopened).
 See <<sect-finding-remediation>> for full state diagram.
-*Architecture detail:* <<sect-architecture-by-workflow, Reporting stage>>.
+*Architecture detail:* <<sect-architecture-overview, Reporting stage>>.
 
 '''
 
@@ -696,12 +696,12 @@ Dashboards provide read-only operational and executive views across all audits.
 
 |WF-19
 |<<wf-exec-dashboard, Executive Dashboard>>
-|FR-8.1 (<<sect-product-requirements>>)
+|<<FR-8.10>>
 |KPIs (audit count, findings, compliance rate, avg resolution), compliance trend chart, severity breakdown.
 
 |WF-20
 |<<wf-mgr-dashboard, Manager Dashboard>>
-|FR-8.1 (<<sect-product-requirements>>)
+|<<FR-8.10>>
 |Active audits, critical findings, overdue remediations, team workload, pending approvals.
 
 |WF-21
@@ -905,27 +905,27 @@ Admin screens cover user management, pack lifecycle, model registry, system conf
 
 |WF-22
 |<<wf-user-mgmt, User Management>>
-|FR-7.1, FR-7.2 (<<sect-product-requirements>>)
+|<<FR-9.1>>, <<FR-9.2>>
 |Three Lines Model RBAC; role assignment with cross-line isolation enforcement.
 
 |WF-23
 |<<wf-pack-mgmt, Pack Management>>
-|FR-5.1, FR-5.2, FR-5.3 (<<sect-product-requirements>>)
+|<<FR-5.1>>, <<FR-5.2>>, <<FR-5.3>>
 |Pack lifecycle (Draft → Testing → Published → Deprecated → Retired); version pinning for active audits.
 
 |WF-24
 |<<wf-model-registry-admin, Model Registry Admin>>
-|FR-7.3 (<<sect-product-requirements>>)
+|<<FR-9.3>>
 |Model lifecycle (Draft → Staging → Approved → Deprecated); call-time gating — fail closed if no approved model.
 
 |WF-25
 |<<wf-system-settings, System Settings>>
-|FR-7.4 (<<sect-product-requirements>>)
+|<<FR-9.4>>
 |Tenant configuration, threshold overrides, notification settings.
 
 |WF-26
 |<<wf-audit-trail, Audit Trail Viewer>>
-|FR-7.5 (<<sect-product-requirements>>)
+|<<FR-9.5>>
 |Immutable event log viewer; filterable by entity, actor, event type, date range.
 |===
 
@@ -934,7 +934,7 @@ Admin screens cover user management, pack lifecycle, model registry, system conf
 *Services:* Auth Service (JWT + RBAC), Pack Engine, Model Registry, Audit Trail Event Store, System Configuration Service.
 *RBAC enforcement:* Roles are `qc_reviewer`, `qc_manager`, `compliance_analyst`, `compliance_officer`, `auditor`, `audit_director`, `admin`.
 Cross-line isolation enforced at DB level (RLS) and API level (middleware).
-*Architecture detail:* <<sect-architecture-by-workflow>>.
+*Architecture detail:* <<sect-architecture-overview>>.
 
 '''
 

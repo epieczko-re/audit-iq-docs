@@ -21,12 +21,12 @@ Dashboards provide read-only operational and executive views across all audits.
 
 |WF-19
 |<<wf-exec-dashboard, Executive Dashboard>>
-|FR-8.10
+|<<FR-8.10>>
 |KPIs (audit count, findings, compliance rate, avg resolution), compliance trend chart, severity breakdown.
 
 |WF-20
 |<<wf-mgr-dashboard, Manager Dashboard>>
-|FR-8.10
+|<<FR-8.10>>
 |Active audits, critical findings, overdue remediations, team workload, pending approvals.
 
 |WF-21

@@ -23,27 +23,27 @@ Admin screens cover user management, pack lifecycle, model registry, system conf
 
 |WF-22
 |<<wf-user-mgmt, User Management>>
-|FR-9.1, FR-9.2
+|<<FR-9.1>>, <<FR-9.2>>
 |Three Lines Model RBAC; role assignment with cross-line isolation enforcement.
 
 |WF-23
 |<<wf-pack-mgmt, Pack Management>>
-|FR-5.1, FR-5.2, FR-5.3
+|<<FR-5.1>>, <<FR-5.2>>, <<FR-5.3>>
 |Pack lifecycle (Draft → Testing → Published → Deprecated → Retired); version pinning for active audits.
 
 |WF-24
 |<<wf-model-registry-admin, Model Registry Admin>>
-|FR-9.3
+|<<FR-9.3>>
 |Model lifecycle (Draft → Staging → Approved → Deprecated); call-time gating — fail closed if no approved model.
 
 |WF-25
 |<<wf-system-settings, System Settings>>
-|FR-9.4
+|<<FR-9.4>>
 |Tenant configuration, threshold overrides, notification settings.
 
 |WF-26
 |<<wf-audit-trail, Audit Trail Viewer>>
-|FR-9.5
+|<<FR-9.5>>
 |Immutable event log viewer; filterable by entity, actor, event type, date range.
 |===
 
@@ -234,10 +234,15 @@ Key interactions will include: event search, entity-scoped filtering (by audit, 
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
+[[FR-5.1]]
 |FR-5.1 |System shall support creating, versioning, publishing, and retiring audit packs. |Given an admin publishing HMDA pack v1.1, when published, then v1.0 remains available for existing audit runs, v1.1 is available for new runs, and the version change is logged. |P0
+[[FR-5.2]]
 |FR-5.2 |Phase 1 shall ship with a pre-built HMDA origination QC audit pack. |Given the HMDA pack, when used on sample HMDA data, then it validates all 110 reportable fields with appropriate rules and generates expected findings. |P0
+[[FR-5.3]]
 |FR-5.3 |Active audit runs pin to a specific pack version and do not auto-upgrade. |Given an active audit using HMDA pack v1.0, when v1.1 is published, then the active audit continues using v1.0 until explicitly migrated. |P0
+[[FR-5.4]]
 |FR-5.4 |Pack manifest shall conform to the <<sect-pack-manifest-schema, Pack Manifest JSON Schema>>. |Given a pack manifest JSON, when validated against the schema, then validation passes with no errors. |P0
+[[FR-5.5]]
 |FR-5.5 |Pack changes shall be validated in a test harness before publication. |Given a modified pack, when test harness runs against sample data, then expected findings are generated, unexpected findings are flagged, and validation report is produced. |P1
 |===
 
@@ -246,10 +251,15 @@ Key interactions will include: event search, entity-scoped filtering (by audit, 
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
+[[FR-9.1]]
 |FR-9.1 |RBAC with roles aligned to the IIA Three Lines Model (<<sect-concept-of-operations>>): *First-Line Roles (QC):* `qc_reviewer`, `qc_manager`; *Second-Line Roles (Compliance):* `compliance_analyst`, `compliance_officer`; *Third-Line Roles (Internal Audit):* `auditor`, `audit_director`; plus *Cross-Line:* `executive`, `it_admin`. Permission matrix defined in <<sect-rbac-permission-matrix>>. |Given a `qc_reviewer` user, when they attempt to modify a compliance finding created by the second line, then access is denied with "Cross-line access denied" message. Given a `compliance_analyst`, when they attempt to approve an audit report, then access is denied with "Insufficient permissions" message. |P0
+[[FR-9.2]]
 |FR-9.2 |Segregation of duties: reviewers cannot approve their own findings; each line maintains independent judgment — first-line roles cannot modify second- or third-line findings, and vice versa. |Given a `qc_reviewer` who created a finding, when they attempt to close it, then system blocks with "Segregation of duties violation" message and logs the attempt. Given a `compliance_analyst`, when they attempt to edit a first-line QC finding, then system blocks with "Cross-line isolation violation" message. |P0
+[[FR-9.3]]
 |FR-9.3 |Multi-tenant isolation using row-level security (Phase 1). |Given Tenant A and Tenant B sharing the same database, when Tenant A queries findings, then only Tenant A's data is returned. Cross-tenant data access is impossible at the database level. |P0
+[[FR-9.4]]
 |FR-9.4 |SSO integration (SAML 2.0 / OIDC). |Given a client with SAML 2.0 IdP, when configured, then users authenticate via SSO with no AuditIQ-specific password. |P0
+[[FR-9.5]]
 |FR-9.5 |Audit log access for IT administrators: searchable, filterable, exportable. |Given an IT Admin, when they access the audit log, then they can filter by user, action type, date range, and entity, and export results as CSV. |P1
 |===
 
