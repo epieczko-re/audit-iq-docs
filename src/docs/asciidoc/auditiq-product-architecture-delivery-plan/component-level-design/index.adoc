@@ -109,6 +109,199 @@ graph TB
 
 *Color legend:* [blue]#Blue# = Client & Data Pipeline | [orange]#Orange# = Core Platform | [green]#Green# = Intelligence | [purple]#Purple# = Storage
 
+[[sect-data-model]]
+=== Entity-Relationship Diagram (Conceptual)
+
+The diagram below shows the relationships between all platform data entities — from the tenant and identity hierarchy through audit operations to the immutable event store.
+Each entity's DDL is co-located with the component that owns it in the subsections that follow, consistent with a bounded-context / microservice architecture where each service owns its data.
+The `model_registry` table is defined in <<sect-model-registry>>.
+
+[mermaid]
+----
+---
+title: AuditIQ Entity-Relationship Diagram (Conceptual)
+---
+erDiagram
+    tenants {
+        uuid tenant_id PK
+        varchar tenant_name
+        varchar tier
+        varchar status
+    }
+
+    institutions {
+        uuid institution_id PK
+        uuid tenant_id FK
+        varchar institution_name
+        varchar charter_type
+        varchar regulatory_agency
+        boolean hmda_reporter
+    }
+
+    users {
+        uuid user_id PK
+        uuid tenant_id FK
+        varchar email
+        varchar display_name
+        varchar role
+        int defense_line
+    }
+
+    audit_packs {
+        varchar pack_id PK
+        varchar pack_version PK
+        uuid tenant_id FK
+        varchar regulation_domain
+        varchar status
+        jsonb manifest
+    }
+
+    staging_datasets {
+        uuid dataset_id PK
+        uuid tenant_id FK
+        uuid audit_id FK
+        varchar target_schema
+        varchar data_source
+        jsonb payload
+        varchar status
+    }
+
+    audit_runs {
+        uuid audit_id PK
+        uuid tenant_id FK
+        varchar pack_id FK
+        varchar pack_version FK
+        varchar status
+        uuid target_dataset_id FK
+        uuid created_by FK
+    }
+
+    findings {
+        uuid finding_id PK
+        uuid audit_id FK
+        varchar record_id
+        varchar field_id
+        decimal combined_confidence
+        varchar severity
+        varchar status
+    }
+
+    field_mappings {
+        uuid mapping_id PK
+        uuid audit_id FK
+        varchar target_field_id
+        varchar source_field_id
+        decimal confidence
+        varchar status
+    }
+
+    evidence {
+        uuid evidence_id PK
+        uuid audit_id FK
+        uuid finding_id FK
+        varchar sha256_hash
+        varchar s3_path
+    }
+
+    exam_bundles {
+        uuid bundle_id PK
+        uuid tenant_id FK
+        uuid audit_id FK
+        uuid parent_bundle_id FK
+        varchar bundle_version
+        varchar status
+    }
+
+    bundle_approvals {
+        uuid approval_id PK
+        uuid bundle_id FK
+        int defense_line
+        uuid approver_id FK
+    }
+
+    bundle_exceptions {
+        uuid exception_id PK
+        uuid bundle_id FK
+        uuid audit_id FK
+        uuid finding_id FK
+        varchar exception_type
+    }
+
+    policy_documents {
+        uuid document_id PK
+        uuid tenant_id FK
+        uuid institution_id FK
+        varchar document_type
+        varchar status
+    }
+
+    audit_trail_contexts {
+        varchar context_id PK
+        uuid tenant_id FK
+        varchar context_type
+        uuid entity_id
+        varchar status
+    }
+
+    audit_trail_events {
+        uuid event_id PK
+        uuid tenant_id FK
+        uuid audit_id FK
+        varchar entity_type
+        varchar entity_id
+        varchar event_type
+        varchar event_hash
+    }
+
+    model_registry {
+        uuid model_id PK
+        uuid tenant_id FK
+        varchar model_type
+        varchar model_name
+        varchar model_version
+        varchar status
+    }
+
+    %% Tenant hierarchy
+    tenants ||--o{ institutions : "manages"
+    tenants ||--o{ users : "has members"
+    tenants ||--o{ audit_runs : "owns"
+    tenants ||--o{ audit_trail_events : "scopes"
+
+    %% Institution relationships
+    institutions ||--o{ policy_documents : "maintains"
+
+    %% User relationships
+    users ||--o{ audit_runs : "creates"
+    users ||--o{ bundle_approvals : "approves"
+
+    %% Pack and dataset relationships
+    audit_packs ||--o{ audit_runs : "configures"
+    staging_datasets ||--|| audit_runs : "provides data"
+
+    %% Audit run relationships
+    audit_runs ||--o{ findings : "produces"
+    audit_runs ||--o{ evidence : "collects"
+    audit_runs ||--o{ field_mappings : "defines"
+    audit_runs ||--o{ exam_bundles : "generates"
+    audit_runs ||--o{ audit_trail_events : "logs"
+
+    %% Audit context
+    audit_trail_contexts ||--o{ audit_trail_events : "groups"
+
+    %% Finding relationships
+    findings ||--o{ evidence : "supported by"
+    findings ||--o{ bundle_exceptions : "triggers"
+
+    %% Exam bundle relationships
+    exam_bundles ||--o{ bundle_approvals : "requires"
+    exam_bundles ||--o{ bundle_exceptions : "may have"
+    exam_bundles |o--|| exam_bundles : "parent version"
+
+    %% Self-referential
+    policy_documents |o--|| policy_documents : "supersedes"
+----
+
 [[sect-ingestion-service]]
 === Ingestion Service
 
@@ -177,7 +370,54 @@ interface ValidationError {
 
 *Determinism:* Deterministic — same input file always produces same validated output.
 
-*Storage:* Validated records stored in audit.staging_datasets table (temporary, cleaned up after audit completion or 30 days, whichever first).
+==== Staging Dataset Data Model (staging_datasets)
+
+Validated records are stored in the `staging_datasets` table.
+This is a temporary staging area — datasets are cleaned up after audit completion or 30 days, whichever comes first.
+
+[source,sql]
+----
+CREATE TABLE audits.staging_datasets (
+  dataset_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  audit_id UUID,                              -- Nullable during upload; linked on audit creation
+
+  -- Dataset identity
+  dataset_name VARCHAR(512) NOT NULL,
+  target_schema VARCHAR(255) NOT NULL,        -- e.g., 'hmda-lar-2024'
+  data_source VARCHAR(50) NOT NULL,           -- 'csv_upload', 'api_endpoint', 'cross_module'
+
+  -- Validation state
+  status VARCHAR(50) DEFAULT 'uploaded',      -- 'uploaded', 'validating', 'validated', 'rejected', 'expired'
+  record_count INT,
+  records_rejected INT DEFAULT 0,
+  validation_errors JSONB,                    -- Array of ValidationError objects
+
+  -- MISMO-aligned payload
+  payload JSONB,                              -- Flattened MISMO field values per record (see <<sect-mismo-alignment>>)
+
+  -- File metadata
+  original_filename VARCHAR(512),
+  file_size_bytes BIGINT,
+  sha256_hash VARCHAR(64),
+  encoding VARCHAR(50) DEFAULT 'UTF-8',
+
+  -- Lifecycle
+  uploaded_by UUID NOT NULL,
+  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  validated_at TIMESTAMP,
+  expires_at TIMESTAMP,                       -- Auto-computed: uploaded_at + 30 days
+
+  -- Audit trail link
+  audit_event_id UUID,
+
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (uploaded_by) REFERENCES users(user_id)
+);
+CREATE INDEX idx_staging_tenant ON audits.staging_datasets(tenant_id);
+CREATE INDEX idx_staging_audit ON audits.staging_datasets(audit_id) WHERE audit_id IS NOT NULL;
+CREATE INDEX idx_staging_expiry ON audits.staging_datasets(expires_at) WHERE status != 'expired';
+----
 
 [[sect-doc-processing]]
 === Document Processing Service (Docling + OCR)
@@ -714,6 +954,93 @@ Target: ≤25% override rate on CD-supported fields by end of Phase 1b UAT.
 
 *Phase 2 upgrade path:* Embedding-based candidate expansion (using the shared domain-fine-tuned sentence transformer — see <<sect-embedding-domain-finetuning>>) → LLM-based reranking → LogMap ontology track (leveraging the unified compliance graph — see <<sect-two-layer-embeddings>>) → isotonic regression calibration.
 
+[[sect-mismo-alignment]]
+==== MISMO Alignment Strategy
+
+*Design Principle:* AuditIQ's canonical data model adopts MISMO (Mortgage Industry Standards Maintenance Organization) Reference Model naming conventions and field definitions for all loan-level attributes.
+This alignment reduces translation friction when ingesting data from LOS, servicing, and origination systems — most of which already export MISMO-formatted data — and increases credibility with examiners who recognize MISMO field names.
+
+*Scope of MISMO Adoption:*
+
+* *Canonical loan data fields:* All loan-level attributes stored in `staging_datasets` and referenced in `findings` use MISMO Reference Model v3.x naming where a corresponding MISMO data point exists.
+Examples: `LoanIdentifier`, `BorrowerMailingAddress`, `PropertyValuationAmount`, `ActionTaken` (HMDA), `RateSpreadPercent`.
+* *Document classification:* Evidence documents are classified using the MISMO Document Custodian taxonomy (e.g., `BorrowerAuthorization`, `CreditReport`, `AppraisalReport`) for consistent naming across packs and evidence uploads.
+* *HMDA Reporting Dataset:* Phase 1 HMDA packs map directly to the MISMO HMDA Reporting Dataset, which provides a well-defined field set for LAR data.
+This covers all fields required for HMDA compliance auditing.
+* *Audit Pack field references:* Pack `field_mappings` definitions reference MISMO canonical names as the target schema.
+Source fields (from customer uploads) are mapped _to_ MISMO names by the schema mapping engine.
+
+*What is NOT MISMO-aligned:*
+
+* *Audit operational tables:* `audit_runs`, `findings`, `field_mappings`, `evidence`, and `audit_trail.events` use AuditIQ-native schemas.
+These are operational/workflow constructs with no MISMO equivalent.
+* *Pack configuration schema:* Audit Packs remain proprietary JSON (<<sect-audit-pack-spec>>).
+Packs _reference_ MISMO field names in their rules, but the pack format itself is not a MISMO construct.
+* *AI/ML metadata:* Confidence scores, provenance metadata, and model evaluation data are AuditIQ-specific.
+
+*Implementation Approach — Flattened Subset:*
+
+MISMO's full XML schema is deeply nested and verbose (thousands of data points).
+AuditIQ adopts a *flattened subset* relevant to each audit domain:
+
+* *Phase 1 (HMDA):* ~80 MISMO data points from the HMDA Reporting Dataset, flattened into a single-level JSON structure stored in `staging_datasets.payload`.
+Field names match MISMO exactly (e.g., `ActionTakenType`, `LienStatusType`, `LoanPurposeType`).
+* *Phase 2+ (additional regulations):* Each new Audit Pack defines its MISMO subset in the pack manifest under `canonical_schema.mismo_fields[]`.
+The schema mapping engine validates that all referenced MISMO fields exist in the MISMO Reference Model dictionary.
+* *Unmapped fields:* Fields that have no MISMO equivalent (custom institution fields, derived metrics) use a `custom:` namespace prefix (e.g., `custom:InternalRiskScore`) to clearly distinguish them from MISMO-standard fields.
+
+*MISMO Reference Model Dictionary:*
+
+AuditIQ maintains a lookup table of adopted MISMO fields:
+
+[source,sql]
+----
+CREATE TABLE reference.mismo_dictionary (
+  mismo_field_id VARCHAR(255) PRIMARY KEY, -- e.g., 'ActionTakenType'
+  mismo_xpath VARCHAR(1024), -- Full MISMO XML path for traceability
+  data_type VARCHAR(50), -- 'string', 'decimal', 'date', 'integer', 'enum'
+  enum_values TEXT[], -- For enumerated types, valid values
+  regulation_domain VARCHAR(100)[], -- e.g., '{hmda}', '{trid, hmda}'
+  description TEXT,
+  mismo_version VARCHAR(20) DEFAULT '3.6', -- MISMO Reference Model version
+  added_in_auditiq_version VARCHAR(20),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_mismo_domain ON reference.mismo_dictionary USING GIN (regulation_domain);
+----
+
+This dictionary is populated during pack deployment and used by the schema mapping engine to validate field references and generate mapping suggestions.
+
+==== Schema Mapping Data Model (field_mappings)
+
+[source,sql]
+----
+CREATE TABLE audits.field_mappings (
+  mapping_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id UUID NOT NULL,
+  target_field_id VARCHAR(255) NOT NULL,
+  source_field_id VARCHAR(255),
+
+  -- Confidence & matching details
+  confidence DECIMAL(3,2), -- 0.0–1.0
+  matching_reason TEXT,
+
+  -- Approval
+  status VARCHAR(50), -- 'suggested', 'approved', 'rejected'
+  approved_by UUID,
+  approved_at TIMESTAMP,
+  override_reason TEXT, -- If user overrode auto-suggestion
+
+  -- Versioning
+  version_hash VARCHAR(64), -- For reproducibility
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (approved_by) REFERENCES users(user_id)
+);
+CREATE INDEX idx_mappings_audit ON audits.field_mappings(audit_id);
+----
+
 [[sect-normalization-engine]]
 === Normalization Engine
 
@@ -1149,6 +1476,74 @@ interface StatusTransition {
 }
 ----
 
+==== Findings Data Model (findings)
+
+[source,sql]
+----
+CREATE TABLE audits.findings (
+  finding_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id UUID NOT NULL,
+  record_id VARCHAR(255) NOT NULL, -- Target record ID from uploaded dataset
+  field_id VARCHAR(255) NOT NULL, -- Field in target schema
+
+  -- Comparison details
+  rule_id VARCHAR(255), -- Pack rule that triggered this finding
+  target_value TEXT,
+  source_value TEXT,
+  match_result VARCHAR(50), -- 'match', 'mismatch', 'unable_to_determine'
+
+  -- Confidence & severity
+  mapping_confidence DECIMAL(3,2), -- 0.0–1.0
+  extraction_confidence DECIMAL(3,2), -- 0.0–1.0
+  rule_confidence DECIMAL(3,2), -- 0.0–1.0
+  combined_confidence DECIMAL(3,2), -- min(mapping, extraction, rule)
+  severity VARCHAR(50), -- 'critical', 'high', 'medium', 'low', 'informational'
+
+  -- Lifecycle
+  status VARCHAR(50) DEFAULT 'identified', -- State machine
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by UUID,
+
+  -- Triage
+  triaged_at TIMESTAMP,
+  triaged_by UUID,
+  root_cause VARCHAR(255),
+
+  -- Remediation
+  remediation_owner UUID,
+  due_date DATE,
+  corrective_action TEXT,
+  corrected_at TIMESTAMP,
+
+  -- Retest
+  retested_at TIMESTAMP,
+  retested_by UUID,
+  retest_result VARCHAR(50), -- 'passed', 'failed'
+
+  -- Closure
+  closed_at TIMESTAMP,
+  closed_by UUID,
+  resolution VARCHAR(255),
+
+  -- Regulation
+  regulation_citation VARCHAR(255), -- e.g., '12 CFR 1003.2'
+
+  -- Audit trail link
+  audit_event_id UUID, -- Foreign key to audit_trail.events
+
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (created_by) REFERENCES users(user_id),
+  FOREIGN KEY (triaged_by) REFERENCES users(user_id),
+  FOREIGN KEY (remediation_owner) REFERENCES users(user_id),
+  FOREIGN KEY (retested_by) REFERENCES users(user_id),
+  FOREIGN KEY (closed_by) REFERENCES users(user_id)
+);
+CREATE INDEX idx_findings_audit ON audits.findings(audit_id);
+CREATE INDEX idx_findings_status ON audits.findings(status);
+CREATE INDEX idx_findings_severity ON audits.findings(severity);
+CREATE INDEX idx_findings_confidence ON audits.findings(combined_confidence);
+----
+
 *Segregation of duties:* Before closing a finding, system checks: if current_user == created_by, then deny with error message and log violation attempt.
 
 
@@ -1312,6 +1707,49 @@ interface EvidenceRecord {
 }
 ----
 
+==== Evidence Data Model (evidence)
+
+[source,sql]
+----
+CREATE TABLE audits.evidence (
+  evidence_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  audit_id UUID NOT NULL,
+  finding_id UUID, -- Optional: if attached to a finding
+
+  -- File metadata
+  filename VARCHAR(512) NOT NULL,
+  file_size_bytes BIGINT,
+  mime_type VARCHAR(100),
+  sha256_hash VARCHAR(64) NOT NULL UNIQUE,
+
+  -- Chain-of-custody
+  uploaded_by UUID NOT NULL,
+  uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  document_classification VARCHAR(100),
+  source_system VARCHAR(100),
+
+  -- Version control
+  superseded_by UUID, -- If this evidence was replaced
+  supersedes UUID, -- If this supersedes an older version
+
+  -- Storage
+  s3_path VARCHAR(512) NOT NULL,
+  full_text_indexed BOOLEAN DEFAULT FALSE,
+
+  -- Audit trail link
+  audit_event_id UUID NOT NULL, -- Foreign key to audit_trail.events
+
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (finding_id) REFERENCES audits.findings(finding_id),
+  FOREIGN KEY (uploaded_by) REFERENCES users(user_id),
+  FOREIGN KEY (superseded_by) REFERENCES audits.evidence(evidence_id),
+  FOREIGN KEY (supersedes) REFERENCES audits.evidence(evidence_id)
+);
+CREATE INDEX idx_evidence_audit ON audits.evidence(audit_id);
+CREATE INDEX idx_evidence_finding ON audits.evidence(finding_id);
+CREATE INDEX idx_evidence_hash ON audits.evidence(sha256_hash);
+----
+
 *Append-only semantics:* When a user “replaces” an evidence file, the system: 1.
 Stores the new file with a new evidence_id 2.
 Creates a “supersedes” link from new to old 3.
@@ -1428,35 +1866,50 @@ Per NIST SP 800-53 Rev 5 AU-9 and FFIEC IT Examination Handbook:
 
 ==== Event Store Table
 
+*Platform extensibility note:* The `entity_type` and `audit_id` columns are deliberately generic.
+`entity_type` is a VARCHAR discriminator — not an enum — so that future platform modules (complaint management, standalone policy management, document control workflows) can store events in the same immutable log without schema migration.
+`audit_id` is nullable for non-audit entities (e.g., standalone policy lifecycle events, complaint intake events).
+This design ensures that the audit trail infrastructure built for MVP serves as the enterprise-grade event backbone for all future modules, avoiding costly event store duplication.
+
 [source,sql]
 ----
 CREATE TABLE audit_trail.events (
-  event_id UUID PRIMARY KEY,
-  tenant_id UUID NOT NULL,
-  sequence_id BIGINT NOT NULL,              -- Global monotonic per tenant
-  audit_id UUID NOT NULL,
-  timestamp TIMESTAMPTZ NOT NULL,           -- Server-assigned only
-  entity_type VARCHAR(50) NOT NULL,
+  event_id UUID PRIMARY KEY,                   -- UUID v7 (time-sortable)
+  tenant_id UUID NOT NULL,                     -- Multi-tenant isolation
+  sequence_id BIGINT NOT NULL,                 -- Global monotonic per tenant
+  audit_id UUID,                               -- Nullable: non-audit entities (complaints, policy lifecycle) have no audit_id
+  timestamp TIMESTAMPTZ NOT NULL,              -- Server-assigned only; no client timestamps
+  entity_type VARCHAR(50) NOT NULL,            -- Extensible discriminator: 'finding', 'mapping', 'evidence', 'audit_run', 'policy_document', 'complaint', etc.
   entity_id VARCHAR(255) NOT NULL,
   event_type VARCHAR(100) NOT NULL,
+
   actor_id VARCHAR(255) NOT NULL,
   actor_role VARCHAR(50) NOT NULL,
-  payload JSONB NOT NULL,                   -- Must be RFC 8785-serializable
+
+  payload JSONB NOT NULL,                      -- Must be RFC 8785-serializable
+
+  -- Hash chain for tamper detection (RFC 8785 canonical JSON + SHA-256)
   previous_event_hash VARCHAR(64) NOT NULL,
   event_hash VARCHAR(64) NOT NULL UNIQUE,
+
+  -- Cryptographic anchoring (WORM-stored every N events)
   is_anchor BOOLEAN DEFAULT FALSE,
-  anchor_hash VARCHAR(64),                  -- Populated only when is_anchor = true
+  anchor_hash VARCHAR(64),                     -- Populated only when is_anchor = true
+
   source_system VARCHAR(100) NOT NULL,
   api_version VARCHAR(20) NOT NULL,
   schema_version VARCHAR(20) NOT NULL DEFAULT '1.0',
-  UNIQUE (tenant_id, sequence_id),          -- Enforces monotonic per tenant
-  FOREIGN KEY (audit_id) REFERENCES audits(audit_id)
+
+  UNIQUE (tenant_id, sequence_id),             -- Enforces monotonic per tenant
+  -- audit_id FK is NOT enforced: allows non-audit entities (policy_document, complaint) to use the event store
+  -- Application-level validation ensures audit_id references a valid audit_run when entity_type is audit-scoped
 );
 
 -- Performance indexes
-CREATE INDEX idx_audit_events ON audit_trail.events(audit_id, timestamp);
-CREATE INDEX idx_entity_events ON audit_trail.events(entity_id);
-CREATE INDEX idx_actor_events ON audit_trail.events(actor_id);
+CREATE INDEX idx_events_audit ON audit_trail.events(audit_id, timestamp) WHERE audit_id IS NOT NULL;
+CREATE INDEX idx_events_entity ON audit_trail.events(entity_id);
+CREATE INDEX idx_events_entity_type ON audit_trail.events(entity_type, timestamp);
+CREATE INDEX idx_events_actor ON audit_trail.events(actor_id);
 CREATE INDEX idx_tenant_sequence ON audit_trail.events(tenant_id, sequence_id);
 CREATE INDEX idx_anchor_events ON audit_trail.events(tenant_id, is_anchor) WHERE is_anchor = TRUE;
 
@@ -1486,6 +1939,38 @@ All anchor hashes match WORM-stored values
 
 * When snapshots are materialized, compute snapshot hash and store in event stream
 * Periodic re-materialization from events; compare against stored snapshot hash; mismatch = drift alert
+
+==== Audit Context Data Model (audit_trail.contexts)
+
+An audit context groups related events into a logical session.
+The `audit_context_id` on `audit_runs` links the audit to its event context, enabling efficient replay and investigation scoping.
+
+[source,sql]
+----
+CREATE TABLE audit_trail.contexts (
+  context_id VARCHAR(255) PRIMARY KEY,        -- Format: 'audit:{audit_id}' or 'policy:{document_id}' or 'system:{operation}'
+  tenant_id UUID NOT NULL,
+  context_type VARCHAR(50) NOT NULL,          -- 'audit', 'policy_review', 'system_operation', 'complaint'
+  entity_id UUID,                             -- Primary entity this context tracks (audit_id, document_id, etc.)
+
+  -- Lifecycle
+  opened_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  closed_at TIMESTAMP,                        -- Set when the tracked entity reaches a terminal state
+  status VARCHAR(50) DEFAULT 'open',          -- 'open', 'closed', 'archived'
+
+  -- Summary (populated on close for fast lookup)
+  event_count INT DEFAULT 0,
+  first_event_id UUID,
+  last_event_id UUID,
+  first_event_hash VARCHAR(64),
+  last_event_hash VARCHAR(64),
+
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id)
+);
+CREATE INDEX idx_contexts_tenant ON audit_trail.contexts(tenant_id);
+CREATE INDEX idx_contexts_entity ON audit_trail.contexts(entity_id) WHERE entity_id IS NOT NULL;
+CREATE INDEX idx_contexts_status ON audit_trail.contexts(status) WHERE status = 'open';
+----
 
 [[sect-reporting-service]]
 === Reporting Service
@@ -1787,6 +2272,146 @@ interface BundleApprovalRequest {
 *Storage:* Generated bundles stored in Azure Blob Storage under `tenant-{tenant_id}/bundles/audit_{audit_id}/v{version}/`.
 Retention follows the same 7-year lifecycle policy as source documents.
 
+[[sect-exam-bundles-table]]
+==== Exam Bundle Data Model (exam_bundles)
+
+[source,sql]
+----
+CREATE TABLE audits.exam_bundles (
+  bundle_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  audit_id UUID NOT NULL,
+
+  -- Versioning
+  bundle_version VARCHAR(20) NOT NULL,              -- e.g., '2.3'
+  parent_bundle_id UUID,                            -- Previous version in the chain (null for v1.0)
+  version_trigger VARCHAR(100) NOT NULL,            -- 'audit_started', 'pre_scan_complete', 'finding_closed', 'approval_recorded', etc.
+  version_summary TEXT,                             -- Human-readable delta summary
+
+  -- Status
+  status VARCHAR(50) DEFAULT 'draft',               -- 'draft', 'review', 'approved', 'exported', 'superseded'
+
+  -- Content hashes
+  bundle_content_hash VARCHAR(64),                  -- SHA-256 of entire bundle ZIP
+  manifest_hash VARCHAR(64),                        -- SHA-256 of bundle_manifest.json
+
+  -- Coverage snapshot
+  total_findings INT,
+  findings_by_severity JSONB,                       -- {"critical": 2, "high": 5, "medium": 15, "low": 20, "informational": 5}
+  coverage_pct DECIMAL(5,2),                        -- % of population tested
+  avg_combined_confidence DECIMAL(3,2),             -- Overall confidence average
+
+  -- Approval tracking
+  first_line_approved_by UUID,
+  first_line_approved_at TIMESTAMP,
+  second_line_approved_by UUID,
+  second_line_approved_at TIMESTAMP,
+  third_line_approved_by UUID,
+  third_line_approved_at TIMESTAMP,
+  all_lines_approved BOOLEAN DEFAULT FALSE,
+
+  -- Storage
+  storage_path VARCHAR(512),                        -- Azure Blob path to generated bundle ZIP
+  exported_at TIMESTAMP,                            -- When bundle was downloaded/transmitted
+  exported_by UUID,
+
+  -- Metadata
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by UUID NOT NULL,
+
+  -- Audit trail link
+  audit_event_id UUID,                              -- Link to event store for bundle lifecycle events
+
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (parent_bundle_id) REFERENCES audits.exam_bundles(bundle_id),
+  FOREIGN KEY (created_by) REFERENCES users(user_id),
+  FOREIGN KEY (exported_by) REFERENCES users(user_id),
+
+  UNIQUE (audit_id, bundle_version)                 -- One version per audit
+);
+CREATE INDEX idx_bundles_audit ON audits.exam_bundles(audit_id, bundle_version);
+CREATE INDEX idx_bundles_tenant ON audits.exam_bundles(tenant_id);
+CREATE INDEX idx_bundles_status ON audits.exam_bundles(status);
+----
+
+==== Bundle Approvals Data Model (Line-of-Defense Sign-Offs)
+
+*Tracks individual approval actions on exam bundles — one row per approval event:*
+
+[source,sql]
+----
+CREATE TABLE audits.bundle_approvals (
+  approval_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  bundle_id UUID NOT NULL,
+  tenant_id UUID NOT NULL,
+
+  -- Approval details
+  defense_line INT NOT NULL,                        -- 1 (QC), 2 (Compliance), 3 (Internal Audit)
+  role VARCHAR(50) NOT NULL,                        -- 'qc_manager', 'compliance_officer', 'audit_director'
+  approver_id UUID NOT NULL,
+  approved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  -- Scope
+  scope VARCHAR(100) NOT NULL,                      -- 'all_qc_findings', 'compliance_layer_review', 'independent_assurance_sample'
+  findings_reviewed INT NOT NULL,
+  findings_approved INT,
+  findings_escalated INT DEFAULT 0,
+
+  -- Sign-off
+  sign_off_statement TEXT,
+  digital_signature_hash VARCHAR(64),
+
+  -- Audit trail link
+  audit_event_id UUID NOT NULL,
+
+  FOREIGN KEY (bundle_id) REFERENCES audits.exam_bundles(bundle_id),
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (approver_id) REFERENCES users(user_id)
+);
+CREATE INDEX idx_bundle_approvals_bundle ON audits.bundle_approvals(bundle_id);
+CREATE INDEX idx_bundle_approvals_line ON audits.bundle_approvals(defense_line);
+----
+
+==== Bundle Exceptions Data Model (Override & Exception Tracking)
+
+*Records every human override of system-generated confidence, severity, or rule application:*
+
+[source,sql]
+----
+CREATE TABLE audits.bundle_exceptions (
+  exception_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  bundle_id UUID NOT NULL,
+  tenant_id UUID NOT NULL,
+  audit_id UUID NOT NULL,
+
+  -- Exception details
+  exception_type VARCHAR(50) NOT NULL,              -- 'confidence_override', 'severity_override', 'rule_suppression', 'evidence_unavailable'
+  finding_id UUID,                                  -- Null for rule-level exceptions
+  actor_id UUID NOT NULL,
+  actor_role VARCHAR(50) NOT NULL,
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  -- Override values
+  original_value JSONB NOT NULL,                    -- {"field": "combined_confidence", "value": 0.72}
+  overridden_to JSONB NOT NULL,                     -- {"field": "combined_confidence", "value": 0.92}
+  justification TEXT NOT NULL,
+  evidence_reference VARCHAR(255),                  -- Link to supporting evidence or policy document
+
+  -- Audit trail link
+  audit_event_id UUID NOT NULL,
+
+  FOREIGN KEY (bundle_id) REFERENCES audits.exam_bundles(bundle_id),
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (audit_id) REFERENCES audits.audit_runs(audit_id),
+  FOREIGN KEY (finding_id) REFERENCES audits.findings(finding_id),
+  FOREIGN KEY (actor_id) REFERENCES users(user_id)
+);
+CREATE INDEX idx_bundle_exceptions_bundle ON audits.bundle_exceptions(bundle_id);
+CREATE INDEX idx_bundle_exceptions_audit ON audits.bundle_exceptions(audit_id);
+CREATE INDEX idx_bundle_exceptions_type ON audits.bundle_exceptions(exception_type);
+----
+
 [[sect-rbac-permission-matrix]]
 === RBAC & Permission Matrix
 
@@ -1810,6 +2435,43 @@ Retention follows the same 7-year lifecycle policy as source documents.
 * Reviewer cannot close own findings (query: `finding.created_by != current_user`)
 * Reviewer cannot approve own findings (query: `finding.created_by != current_user`)
 * Senior Reviewer cannot retest own triages (query: `finding.triaged_by != current_user`)
+
+==== User Data Model (users)
+
+The `users` table is the identity anchor for all actor references across the platform.
+Authentication is delegated to Azure AD (SSO); this table stores the platform-specific profile, role assignment, and tenant membership.
+
+[source,sql]
+----
+CREATE TABLE users (
+  user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+
+  -- Identity (synced from Azure AD)
+  external_id VARCHAR(255) NOT NULL UNIQUE,   -- Azure AD object ID
+  email VARCHAR(255) NOT NULL,
+  display_name VARCHAR(255) NOT NULL,
+
+  -- Platform role
+  role VARCHAR(50) NOT NULL,                  -- 'reviewer', 'senior_reviewer', 'manager', 'audit_lead', 'executive', 'it_admin'
+  defense_line INT,                           -- 1 (QC), 2 (Compliance), 3 (Internal Audit); NULL for IT Admin / Executive
+
+  -- Status
+  status VARCHAR(50) DEFAULT 'active',        -- 'active', 'suspended', 'deactivated'
+  last_login_at TIMESTAMP,
+
+  -- Metadata
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_by UUID,                            -- Admin who provisioned the user
+
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id)
+);
+CREATE INDEX idx_users_tenant ON users(tenant_id);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_external ON users(external_id);
+CREATE INDEX idx_users_role ON users(tenant_id, role);
+----
 
 [[sect-ai-governance-approval-workflow]]
 === AI Governance & Approval Workflow
@@ -2370,6 +3032,93 @@ interface StateTransitionEvent {
   metadata: Record<string, any>; // Mutation-specific data
   timestamp: string; // ISO 8601
 }
+----
+
+==== Audit Run Data Model (audit_runs)
+
+[source,sql]
+----
+CREATE TABLE audits.audit_runs (
+  audit_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL, -- Multi-tenancy
+  pack_id VARCHAR(255) NOT NULL, -- e.g., 'hmda-origination'
+  pack_version VARCHAR(20) NOT NULL, -- e.g., '1.0.0'
+  audit_name VARCHAR(512),
+  audit_scope VARCHAR(100), -- 'origination', 'servicing', etc.
+  created_by UUID NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  status VARCHAR(50) DEFAULT 'created', -- Enum: created, validating, ready, in_progress, review_complete, reporting, finalized
+
+  -- Input data
+  target_dataset_id UUID NOT NULL, -- Foreign key to staging_datasets
+  target_record_count INT,
+
+  -- Execution tracking
+  started_at TIMESTAMP,
+  completed_at TIMESTAMP,
+  execution_mode VARCHAR(50), -- 'manual', 'ocr_assisted', 'automated'
+
+  -- Configuration
+  second_review_percentage DECIMAL(5,2) DEFAULT 0.0,
+  confidence_threshold DECIMAL(3,2) DEFAULT 0.5,
+
+  -- Audit trail link
+  audit_context_id VARCHAR(255), -- Foreign key to audit_trail.contexts
+
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (created_by) REFERENCES users(user_id),
+  FOREIGN KEY (target_dataset_id) REFERENCES audits.staging_datasets(dataset_id)
+);
+CREATE INDEX idx_audit_tenant ON audits.audit_runs(tenant_id);
+CREATE INDEX idx_audit_pack ON audits.audit_runs(pack_id, pack_version);
+----
+
+==== Audit Pack Data Model (audit_packs)
+
+The `audit_packs` table stores versioned pack definitions.
+Packs are immutable once published — modifications require a new version.
+The Orchestration Service loads the specified pack version on `createAudit` and pins it for the duration of the audit run.
+
+[source,sql]
+----
+CREATE TABLE audits.audit_packs (
+  pack_id VARCHAR(255) NOT NULL,              -- e.g., 'hmda-origination'
+  pack_version VARCHAR(20) NOT NULL,          -- Semantic version, e.g., '1.0.0'
+  tenant_id UUID,                             -- NULL = global (platform-provided); non-NULL = tenant-specific custom pack
+
+  -- Pack identity
+  display_name VARCHAR(512) NOT NULL,         -- e.g., 'HMDA Origination Audit Pack'
+  description TEXT,
+  regulation_domain VARCHAR(100) NOT NULL,    -- e.g., 'hmda', 'trid', 'cra', 'bsa_aml'
+  audit_scope VARCHAR(100),                   -- 'origination', 'servicing', 'combined'
+
+  -- Manifest
+  manifest JSONB NOT NULL,                    -- Full pack manifest JSON (rules, field definitions, evidence requirements, thresholds)
+  manifest_hash VARCHAR(64) NOT NULL,         -- SHA-256 of canonical JSON manifest for integrity verification
+
+  -- Governance
+  status VARCHAR(50) NOT NULL DEFAULT 'draft', -- 'draft', 'published', 'deprecated', 'retired'
+  published_by UUID,
+  published_at TIMESTAMP,
+  deprecated_at TIMESTAMP,
+  superseded_by_version VARCHAR(20),          -- Next version in the chain
+
+  -- Validation
+  validation_status VARCHAR(50),              -- 'passed', 'failed', 'not_validated'
+  validation_errors JSONB,                    -- Schema check, rule syntax, and evidence requirement errors
+
+  -- Metadata
+  created_by UUID NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (pack_id, pack_version),
+  FOREIGN KEY (created_by) REFERENCES users(user_id),
+  FOREIGN KEY (published_by) REFERENCES users(user_id)
+);
+CREATE INDEX idx_packs_status ON audits.audit_packs(status);
+CREATE INDEX idx_packs_regulation ON audits.audit_packs(regulation_domain);
+CREATE INDEX idx_packs_tenant ON audits.audit_packs(tenant_id) WHERE tenant_id IS NOT NULL;
 ----
 
 '''
@@ -3115,6 +3864,83 @@ Quota overages return 429 with a `Retry-After` header and a human-readable messa
 * *Penetration testing:* Annual external penetration test includes tenant isolation bypass attempts (IDOR, JWT manipulation, direct database access).
 * *Monitoring:* Application logs are audited weekly for any query that returns results where `result.tenant_id != request.tenant_id` — this should never occur and triggers a P0 incident if detected.
 
+==== Tenant Data Model (tenants)
+
+The `tenants` table is the root of the multi-tenancy hierarchy.
+Every row in every business table carries a `tenant_id` FK that traces back to this table.
+Row-Level Security policies reference `tenants.tenant_id` as the isolation boundary.
+
+[source,sql]
+----
+CREATE TABLE tenants (
+  tenant_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+
+  -- Identity
+  tenant_name VARCHAR(255) NOT NULL,
+  tenant_slug VARCHAR(100) NOT NULL UNIQUE,   -- URL-safe identifier, e.g., 'abc-bank'
+
+  -- Subscription
+  tier VARCHAR(50) NOT NULL DEFAULT 'standard', -- 'standard', 'professional', 'enterprise'
+  status VARCHAR(50) NOT NULL DEFAULT 'active', -- 'active', 'suspended', 'deactivated'
+
+  -- Quotas (overridable per-tenant; defaults from tier)
+  max_concurrent_audits INT,
+  max_storage_bytes BIGINT,
+  max_api_requests_per_minute INT,
+
+  -- SSO configuration
+  sso_provider VARCHAR(100),                  -- 'azure_ad', 'okta', 'saml_generic'
+  sso_tenant_id VARCHAR(255),                 -- Azure AD tenant ID or equivalent
+  sso_domain VARCHAR(255),                    -- e.g., 'abcbank.com'
+
+  -- Metadata
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_tenants_slug ON tenants(tenant_slug);
+CREATE INDEX idx_tenants_status ON tenants(status);
+----
+
+==== Institution Data Model (institutions)
+
+A tenant (the subscribing organization) may manage audits for one or more financial institutions.
+This table captures the institution-level identity and regulatory profile that policy documents and audit packs reference.
+
+[source,sql]
+----
+CREATE TABLE institutions (
+  institution_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+
+  -- Identity
+  institution_name VARCHAR(512) NOT NULL,
+  charter_type VARCHAR(100),                  -- 'national_bank', 'state_bank', 'credit_union', 'thrift', 'mortgage_company'
+  regulatory_agency VARCHAR(100),             -- 'OCC', 'FDIC', 'NCUA', 'CFPB', 'FRB', 'state'
+  lei VARCHAR(20),                            -- Legal Entity Identifier (ISO 17442)
+  rssd_id VARCHAR(20),                        -- Federal Reserve RSSD ID
+  nmls_id VARCHAR(20),                        -- NMLS ID for mortgage licensees
+
+  -- HMDA-specific
+  hmda_reporter BOOLEAN DEFAULT FALSE,        -- Whether this institution files HMDA LAR
+  hmda_respondent_id VARCHAR(20),             -- HMDA Respondent ID
+
+  -- Contact
+  primary_contact_name VARCHAR(255),
+  primary_contact_email VARCHAR(255),
+
+  -- Status
+  status VARCHAR(50) DEFAULT 'active',        -- 'active', 'inactive', 'onboarding'
+
+  -- Metadata
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id)
+);
+CREATE INDEX idx_institutions_tenant ON institutions(tenant_id);
+CREATE INDEX idx_institutions_hmda ON institutions(hmda_reporter) WHERE hmda_reporter = TRUE;
+----
+
 '''
 
 [[sect-monitoring-alerting]]
@@ -3270,6 +4096,140 @@ The ten AI risk scenarios defined in <<sect-ai-governance>> require specific mon
 |===
 
 '''
+
+[[sect-policy-documents-table]]
+=== Policy Document Library (Data Model)
+
+*Strategic rationale:* The Institution Policy Profile (<<sect-institution-policy-profile>>) currently embeds a `policy_document_registry` array inside the profile JSON.
+This table promotes policy documents to a first-class entity, decoupled from any specific audit or policy profile.
+This decoupling enables three future capabilities at near-zero marginal cost:
+
+. *Standalone Policy Library:* Institutions can manage their policy document inventory, review cycles, and version chains without creating an audit or a policy profile — delivering immediate value during onboarding, before the first audit runs.
+. *Document Control Workflows:* The `status` lifecycle and `next_review_date` field enable a policy review cycle engine using the same state-machine and event-publishing infrastructure as audit runs and findings.
+. *Cross-Audit Policy Reuse:* Multiple audit packs and policy profiles can reference the same policy document without duplication, maintaining a single source of truth for policy version chains.
+
+[source,sql]
+----
+CREATE TABLE compliance.policy_documents (
+  document_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  tenant_id UUID NOT NULL,
+  institution_id UUID NOT NULL,
+
+  -- Document identity
+  title VARCHAR(512) NOT NULL,                 -- e.g., 'ABC Bank HMDA Data Integrity Policy v3.2'
+  document_type VARCHAR(50) NOT NULL,          -- 'board_policy', 'compliance_policy', 'operating_procedure', 'job_aid', 'board_resolution', 'risk_appetite_statement'
+  regulations_addressed TEXT[] NOT NULL,        -- e.g., '{12 CFR 1003, Reg C}'
+
+  -- Version chain
+  version VARCHAR(50),
+  effective_date DATE NOT NULL,
+  supersedes_document_id UUID,                 -- Previous version in the chain
+  superseded_by_document_id UUID,              -- Next version (populated when superseded)
+
+  -- Ownership & review cycle
+  owner VARCHAR(255),                          -- Department or individual responsible
+  department VARCHAR(255),
+  review_cycle_months INT DEFAULT 12,          -- Board-mandated review cadence
+  next_review_date DATE,                       -- Computed: effective_date + review_cycle_months; triggers review workflow when approaching
+  last_reviewed_date DATE,
+  last_reviewed_by UUID,
+
+  -- Lifecycle
+  status VARCHAR(50) DEFAULT 'draft',          -- 'draft', 'under_review', 'approved', 'published', 'expired', 'retired'
+
+  -- Storage & extraction
+  storage_reference VARCHAR(512),              -- URI to document in Azure Blob / institution's document store
+  sha256_hash VARCHAR(64),                     -- Integrity verification
+  ai_extraction_confidence DECIMAL(3,2),       -- Overall confidence from AI extraction pipeline
+
+  -- Audit trail link
+  audit_event_id UUID,                         -- Link to event store for full lifecycle history
+
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id),
+  FOREIGN KEY (supersedes_document_id) REFERENCES compliance.policy_documents(document_id),
+  FOREIGN KEY (superseded_by_document_id) REFERENCES compliance.policy_documents(document_id)
+);
+CREATE INDEX idx_policy_docs_tenant ON compliance.policy_documents(tenant_id, institution_id);
+CREATE INDEX idx_policy_docs_status ON compliance.policy_documents(status);
+CREATE INDEX idx_policy_docs_review ON compliance.policy_documents(next_review_date) WHERE status = 'published';
+CREATE INDEX idx_policy_docs_regulation ON compliance.policy_documents USING GIN (regulations_addressed);
+----
+
+*Relationship to Institution Policy Profile:* The Policy Profile's `policy_document_registry` array references `document_id` values from this table.
+This table is the source of truth for document metadata; the profile captures the point-in-time snapshot used for a specific audit overlay.
+
+*Review cycle engine (Phase 2+):* When `next_review_date` approaches (configurable alert window, default 30 days), the Workflow Engine creates a review workflow event.
+The review follows the same dual-approval pattern as Policy Profile review (<<sect-ai-policy-pipeline>>, Phase 5).
+Every review event is recorded in `audit_trail.events` with `entity_type = 'policy_document'`.
+
+[[sect-data-architecture-cross-cutting]]
+=== Data Architecture Cross-Cutting Concerns
+
+==== Data Types and Constraints
+
+* *UUIDs:* All primary keys are UUIDs for distributed systems compatibility
+* *Timestamps:* Stored in UTC, always timestamptz in PostgreSQL
+* *Confidence scores:* DECIMAL(3,2) — allows 0.00 to 1.00 with 2 decimal precision
+* *Text fields:* Use TEXT for findings/evidence; VARCHAR(n) for enums and short strings
+* *JSON payloads:* JSONB in PostgreSQL for efficient querying and indexing
+* *Hashes:* VARCHAR(64) for SHA-256 (hex-encoded)
+* *Tenant isolation:* Every table includes tenant_id; row-level security policies enforce isolation at DB level (TODO: Implement RLS policies)
+
+==== Indexing Strategy
+
+*High-impact queries:*
+
+[arabic]
+. Find all findings for an audit: `findings(audit_id, status)`
+. Find critical/aging findings: `findings(severity, created_at)`
+. Search evidence by metadata: `evidence(audit_id, document_classification)`
+. Audit trail searches: `events(audit_id, timestamp)` and `events(actor_id)`
+. Dashboard metrics: `findings(audit_id, status, severity)` with aggregation
+
+*TODO:* Query plan analysis and potential partitioning strategy for 100K+ records.
+
+[[sect-versioning-schema-evolution]]
+==== Versioning & Schema Evolution
+
+*Approach:* Schema versioning via semantic versioning on tables; migrations tracked in schema_migrations table.
+
+[source,sql]
+----
+CREATE TABLE schema_migrations (
+  migration_id UUID PRIMARY KEY,
+  migration_version VARCHAR(20), -- e.g., '1.1.0'
+  description VARCHAR(512),
+  executed_at TIMESTAMP,
+  execution_time_ms INT,
+  status VARCHAR(50), -- 'success', 'failed', 'rolled_back'
+  sql_script TEXT,
+  UNIQUE(migration_version)
+);
+----
+
+*Policy:*
+
+* New audit runs always use latest pack version and schema
+* Active audits remain pinned to their pack version; no auto-upgrade
+* Schema changes are backward-compatible within MINOR versions
+* MAJOR schema changes require audit run completion or explicit migration
+
+==== Analytics Storage (Separate Read-Only Replica)
+
+*Rationale:* Aggregation queries (dashboards, trend reports) impact operational DB.
+A read-only replica is cheaper and doesn't contend with transactional workload.
+
+*Approach:* Stream findings, status transitions, and metrics to a separate analytics database (Aurora or Redshift) via Change Data Capture or nightly batch export.
+
+*Analytics tables (TODO — Phase 2):*
+
+* `findings_snapshot`: Denormalized findings with all key attributes for fast queries
+* `daily_metrics`: Pre-aggregated counts by status, severity, date
+* `user_performance`: Metrics per reviewer (findings created, resolved, error rate)
+* `audit_timeline`: Timeline of key milestones per audit run
 
 [[sect-ai-rule-generation]]
 === AI Rule Generation (Phase 2 — Vision)
