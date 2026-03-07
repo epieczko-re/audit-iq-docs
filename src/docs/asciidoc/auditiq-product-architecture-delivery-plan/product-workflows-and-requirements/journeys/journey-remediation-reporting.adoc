@@ -1,28 +1,573 @@
-= Journey: Remediation & Reporting
-:toc:
+=== Journey: Remediation & Reporting
 
-:summary: TL;DR
+This journey covers the 9-state finding remediation lifecycle, SLA tracking, report generation, and exam-ready bundle export.
+Findings flow from identification through closure with approval gates at each transition.
 
-== Personas & Roles
+==== Overview
 
-== Goal / Success Criteria
+*Primary workflows:* the Workflow 1 diagram above (end-to-end closure/reporting) and execution-mode workflows (5-7).
+*Execution modes:* Manual, OCR-Assisted, Automated Pre-Scan.
 
-== End-to-End Flow
+*Screen progression in this journey:*
 
-== Step-by-step Flow (maps to implementation)
-. Step — Remediation & Reporting (maps to Stage 4)
-include::../_stage-4-remediation-reporting.adoc[]
+. <<wf-remediation, WF-14 Remediation Tracking>> — assign owners, execute corrective action, and request retest.
+. <<wf-aging, WF-15 Aging Dashboard>> — monitor SLA deadlines and overdue findings.
+. <<wf-findings-register, WF-18 Findings Register>> — review full status inventory before final outputs.
+. <<wf-report-gen, WF-16 Report Generation>> — generate regulator-ready reports.
+. <<wf-bundle-export, WF-17 Exam-Ready Bundle Export>> — assemble and export the immutable artifact set.
 
-== Screens & Wireframes
+==== Screens
 
-== Functional Requirements (by epic)
+[cols="8%,25%,32%,35%",options="header"]
+|===
+|WF # |Screen |Requirements |Summary
 
-== Data / Services Architecture
+|WF-14
+|<<wf-remediation, Remediation Tracking>>
+|FR-6.1, FR-6.2
+|9-state remediation lifecycle; SLA-driven due dates (Critical: 1d, High: 3d, Medium: 7d, Low: 14d).
 
-== Non-functional Requirements
+|WF-15
+|<<wf-aging, Aging Dashboard>>
+|FR-6.3
+|SLA violation alerts; overdue findings sorted by age and severity.
 
-== Acceptance Criteria & Test Cases
+|WF-16
+|<<wf-report-gen, Report Generation>>
+|FR-8.1
+|Audit summary report template selection; HTML/PDF export; findings breakdown.
 
-== Implementation Notes
-* Sprint mapping: See Implementation → Workflow Delivery Matrix
-* Dependencies / Risks
+|WF-17
+|<<wf-bundle-export, Exam-Ready Bundle Export>>
+|FR-8.4, FR-8.5, FR-8.6, FR-8.7
+|14-artifact versioned ZIP bundle with approval manifests, coverage stats, change log, pipeline provenance.
+
+|WF-18
+|<<wf-findings-register, Findings Register>>
+|FR-8.1
+|Complete findings list with export, filtering, and status summary.
+|===
+
+[[wf-remediation]]
+===== WF-14: Remediation Tracking
+
+*Purpose:* Track corrective actions across all findings in remediation.
+Shows assignment, due dates, evidence uploads, and SLA compliance.
+
+*Roles:* Reviewer (remediation owner), Senior Reviewer, Manager.
+
+*Flowbite components:* Table, Badge, Progress Bar, Form, Button, DatePicker.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Remediation Tracking</b>
+  { Home > Findings > Remediation }
+  ===
+  {+
+    <b>Remediation Summary</b>
+    {#
+      <b>Assigned</b> | <b>In Progress</b> | <b>Corrected (Pending Retest)</b> | <b>Retest Failed</b> | <b>Overdue</b>
+      12 | 7 | 3 | 1 | <color:Red><b>2</b></color>
+    }
+  }
+  ---
+  { ^Owner: All^ | ^Severity: All^ | ^Status: All^ | "Search...           " [Search] }
+  ---
+  {#
+    <b>Finding</b> | <b>Severity</b> | <b>Owner</b> | <b>Corrective Action</b> | <b>Due Date</b> | <b>Status</b> | <b>Evidence</b> | <b>Actions</b>
+    F-001 | <color:Red>Critical</color> | Jane Smith | Update HMDA LAR | <color:Red>2026-03-05</color> | <color:Orange>In Progress</color> | 0 files | [Update] [Upload]
+    F-003 | <color:Orange>High</color> | Bob Johnson | Verify rate | 2026-03-08 | <color:Orange>In Progress</color> | 1 file | [Update] [Upload]
+    F-007 | <color:Gold>Medium</color> | Jane Smith | Fix address format | 2026-03-12 | <color:Green>Corrected</color> | 2 files | [Request Retest]
+    F-010 | <color:Orange>High</color> | Bob Johnson | Re-extract data | 2026-03-06 | <color:Red>Retest Failed</color> | 1 file | [Update] [Upload]
+  }
+  ---
+  { [Export Corrective Action Log] | . | [Bulk Assign] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Due Date* turns red when past SLA: Critical 1 day, High 3 days, Medium 7 days, Low 14 days
+* *[Update]* opens inline form for corrective action description and status change
+* *[Upload]* opens file picker for evidence attachment (linked to finding)
+* *[Request Retest]* transitions finding to `retest_pending`; retester must differ from remediation owner
+* *[Export Corrective Action Log]* generates CSV per exam-ready bundle format (<<sect-exam-ready-bundle>>)
+* *[Bulk Assign]* opens modal to reassign multiple findings to a different owner
+
+'''
+
+[[wf-aging]]
+===== WF-15: Aging Dashboard
+
+*Purpose:* Monitor findings that exceed SLA thresholds.
+Auto-escalation alerts for untriaged findings, overdue remediations, and stalled retests.
+
+*Roles:* Manager, Audit Lead, Compliance Officer.
+
+*Flowbite components:* Alert, Table, Badge, Card, Chart.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Aging Dashboard</b>
+  { Home > Findings > Aging }
+  ===
+  <color:Red><b>! 5 findings exceed SLA thresholds</b></color>
+  ===
+  {+
+    <b>SLA Violations by Severity</b>
+    {#
+      <b>Severity</b> | <b>SLA</b> | <b>Violations</b> | <b>Oldest</b>
+      Critical | Triage within 1 day | <color:Red><b>2</b></color> | 3 days old
+      High | Triage within 3 days | <color:Red><b>1</b></color> | 5 days old
+      Medium | Triage within 7 days | <color:Orange><b>2</b></color> | 9 days old
+      Low | Triage within 14 days | 0 | —
+    }
+  }
+  ---
+  {+
+    <b>Overdue Findings</b>
+    {#
+      <b>Finding</b> | <b>Audit</b> | <b>Severity</b> | <b>Status</b> | <b>Age</b> | <b>SLA Breach</b> | <b>Owner</b> | <b>Actions</b>
+      F-002 | AUD-2026-001 | <color:Red>Critical</color> | Identified | 3d | <color:Red>+2d over</color> | Unassigned | [Triage Now] [Escalate]
+      F-011 | AUD-2026-001 | <color:Red>Critical</color> | Identified | 3d | <color:Red>+2d over</color> | Unassigned | [Triage Now] [Escalate]
+      F-019 | AUD-2026-002 | <color:Orange>High</color> | Triaged | 5d | <color:Red>+2d over</color> | Bob Johnson | [Follow Up] [Escalate]
+      F-025 | AUD-2026-001 | <color:Gold>Medium</color> | Remediation | 9d | <color:Orange>+2d over</color> | Jane Smith | [Follow Up]
+      F-028 | AUD-2026-002 | <color:Gold>Medium</color> | Remediation | 9d | <color:Orange>+2d over</color> | Bob Johnson | [Follow Up]
+    }
+  }
+  ---
+  {+
+    <b>Remediation Overdue</b>
+    {#
+      <b>Finding</b> | <b>Owner</b> | <b>Due Date</b> | <b>Days Overdue</b> | <b>Actions</b>
+      F-001 | Jane Smith | 2026-03-05 | <color:Red>1 day</color> | [Send Reminder] [Reassign]
+    }
+  }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Alert banner* shows total SLA violations; updates in real-time
+* *[Triage Now]* opens finding detail with triage section pre-expanded
+* *[Escalate]* transitions finding to `escalated` status and notifies designated manager
+* *[Send Reminder]* sends email/notification to remediation owner
+* *[Follow Up]* opens inline comment for manager to add follow-up notes
+* SLA thresholds per severity defined in <<sect-glossary, Canonical Glossary>>: Critical 1d, High 3d, Medium 7d, Low 14d
+
+'''
+
+[[wf-report-gen]]
+===== WF-16: Report Generation
+
+*Purpose:* Configure and generate audit summary reports.
+Select report template, customize sections, review AI-generated narratives, and export in multiple formats.
+
+*Roles:* Manager, Audit Lead.
+
+*Flowbite components:* Form, Checkbox Group, Select, Preview Panel, Button, Badge.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Generate Report: AUD-2026-001</b>
+  { Home > Audits > AUD-2026-001 > Reports > Generate }
+  ===
+  {
+    {+
+      <b>Report Configuration</b>
+      ---
+      {
+        Report Template | ^hmda-audit-report-v1             ^
+        Report Title    | "HMDA Q1 2026 Origination Audit Report  "
+        Format          | [X] PDF  [] XLSX  [] CSV  [] JSON
+      }
+      ---
+      <b>Sections to Include:</b>
+      {
+        [X] Cover Page (audit period, pack, auditor, signatures)
+        [X] Executive Summary (pass/fail, key metrics)
+        [X] Detailed Findings Table (all findings with status)
+        [X] Confidence Score Summary (distribution by tier)
+        [X] Remediation Status (corrective actions, owners)
+        [X] Audit Trail Summary (key events, timestamps)
+        [X] Sampling Methodology (population, method, strata)
+        [X] Attestation (digital signature block)
+        [] AI Model Provenance Appendix (all AI calls)
+      }
+      ---
+      <b>AI-Generated Sections:</b>
+      {#
+        <b>Section</b> | <b>Status</b> | <b>Action</b>
+        Executive Summary Narrative | <color:Orange>Pending Approval</color> | [Review]
+        Findings Trend Analysis | <color:Green>Approved</color> | [View]
+        Recommendations | <color:Orange>Pending Approval</color> | [Review]
+      }
+    }
+    |
+    {+
+      <b>Report Preview</b>
+      ---
+      {+
+        .
+        <b>HMDA Q1 2026 Origination</b>
+        <b>Audit Report</b>
+        .
+        Audit Period: Jan 1 – Mar 31, 2026
+        Pack: hmda-origination v1.0
+        Records Audited: 50
+        .
+        <b>Results Summary:</b>
+        Total Findings: 47
+        Critical: 3  |  High: 8
+        Medium: 15  |  Low: 12
+        Informational: 9
+        .
+        Overall Assessment:
+        <color:Orange>PASS WITH OBSERVATIONS</color>
+        .
+        (Full report preview continues...)
+        .
+      }
+    }
+  }
+  ===
+  { [Cancel] | [Save Draft] | . | [Approve AI Sections] | [Generate Report >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Report Template* dropdown loads pack-specific templates with predefined sections
+* *Sections* checklist allows customization; some sections mandatory (Cover Page, Findings Table, Attestation)
+* *AI-Generated Sections* table shows approval status; all AI sections require Manager approval before report generation
+* *Report Preview* panel (right side) shows live preview that updates as options change
+* *[Generate Report >>]* validates all AI sections approved, then generates PDF/CSV/XLSX
+* Assessment is auto-calculated: Pass (0 Critical, 0 High), Pass with Observations (>0 High, 0 Critical), Fail (>0 Critical)
+
+'''
+
+[[wf-bundle-export]]
+===== WF-17: Exam Pack Dossier
+
+*Purpose:* View, approve, and export the exam pack dossier — a continuously updated, versioned bundle containing all audit artifacts, coverage statistics, approval manifests, and change history for regulatory examination.
+Shows bundle version chain, current coverage, approval status, and integrity verification.
+
+*Roles:* Manager, Audit Lead, Compliance Officer, Audit Director.
+
+*Flowbite components:* Checklist, Card, Button, Badge, Code Block, Alert.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Exam-Ready Bundle: AUD-2026-001</b>
+  { Home > Audits > AUD-2026-001 > Bundle }
+  ===
+  {+
+    <b>Bundle Manifest</b>
+    {#
+      Bundle ID | BDL-2026-001-v1
+      Audit | HMDA Q1 2026 Origination (AUD-2026-001)
+      Pack | hmda-origination v1.0
+      Organization | Acme Federal Credit Union
+      Audit Period | 2026-01-01 to 2026-03-31
+      Created By | Jane Smith (Manager)
+    }
+  }
+  ---
+  {+
+    <b>Bundle Contents</b>
+    {#
+      <b>[X]</b> | <b>File</b> | <b>Size</b> | <b>SHA-256</b> | <b>Status</b>
+      [X] | audit_summary_report.pdf | 2.4 MB | a3f8c2e1... | <color:Green>Ready</color>
+      [X] | findings_register.csv | 145 KB | b7d4f1a2... | <color:Green>Ready</color>
+      [X] | findings_register.pdf | 890 KB | c9e2d3b4... | <color:Green>Ready</color>
+      [X] | corrective_action_log.csv | 42 KB | d1f5e6c7... | <color:Green>Ready</color>
+      [X] | audit_trail_excerpt.json | 1.2 MB | e3g7h8i9... | <color:Green>Ready (PII Redacted)</color>
+      [X] | source_document_index.json | 28 KB | f4j1k2l3... | <color:Green>Ready</color>
+      [X] | pack_configuration.json | 156 KB | g5m2n3o4... | <color:Green>Ready</color>
+      [X] | sampling_methodology.md | 8 KB | h6p3q4r5... | <color:Green>Ready</color>
+      [X] | reproducibility_attestation.json | 12 KB | i7s4t5u6... | <color:Green>Ready</color>
+      [X] | bundle_manifest.json | 4 KB | (computed at export) | —
+    }
+  }
+  ---
+  {+
+    <b>Integrity Verification</b>
+    {
+      Bundle Hash (SHA-256): | <color:Green>j8v5w6x7y8z9a0b1c2d3e4f5...</color> [Copy]
+      Hash Chain Verified:   | <color:Green>PASS — 342 events, no gaps</color>
+      PII Redaction Status:  | <color:Green>PASS — audit trail redacted</color>
+      All AI Content Approved: | <color:Green>PASS — 8/8 narratives approved</color>
+    }
+  }
+  ===
+  { [Cancel] | [Verify Bundle Integrity] | . | [Download Bundle (ZIP)] | [Email Bundle] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Bundle Contents* checklist shows all files with SHA-256 checksums; all checked by default
+* *Integrity Verification* section runs automated checks: hash chain continuity, PII redaction completeness, AI content approval
+* *[Download Bundle (ZIP)]* generates and downloads the structured ZIP (<<sect-exam-ready-bundle>>)
+* *[Verify Bundle Integrity]* re-runs all hash verifications and displays pass/fail
+* *[Copy]* copies bundle hash to clipboard for examiner verification
+* *[Email Bundle]* opens email composition with bundle attached (requires confirmation)
+* Bundle cannot be generated if any AI narratives are unapproved or Critical findings are untriaged
+
+'''
+
+[[wf-findings-register]]
+===== WF-18: Findings Register
+
+*Purpose:* Comprehensive findings table for review, export, and regulatory submission.
+Full-featured data table with all finding fields, export capabilities, and audit trail links.
+
+*Roles:* All roles (filtered by RBAC).
+
+*Flowbite components:* Table, Filter, Sort, Export, Badge, Pagination.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Findings Register: AUD-2026-001</b>
+  { Home > Audits > AUD-2026-001 > Findings Register }
+  ===
+  { ^Severity: All^ | ^Status: All^ | ^Confidence: All^ | ^Rule: All^ | "Search...       " [Search] | . | [Export CSV] [Export PDF] }
+  ---
+  {#
+    <b>Finding</b> | <b>Record</b> | <b>Rule</b> | <b>Field</b> | <b>Target</b> | <b>Source</b> | <b>Sev</b> | <b>Conf</b> | <b>Status</b> | <b>Approver</b> | <b>Date</b>
+    F-001 | 10045 | HMDA-R001 | Loan Amt | $250,000 | $251,500 | <color:Red>Crit</color> | <color:Green>.92</color> | Triaged | — | 03-03
+    F-002 | 10045 | HMDA-R015 | Action | 1 | 6 | <color:Red>Crit</color> | <color:Orange>.78</color> | Escalated | — | 03-03
+    F-003 | 10046 | HMDA-R008 | Rate | 6.25% | 6.50% | <color:Orange>High</color> | <color:Green>.91</color> | Closed | J. Smith | 03-04
+    F-004 | 10047 | HMDA-R022 | Addr | 123 Main | 123 Main St | <color:Gold>Med</color> | <color:Orange>.67</color> | Triaged | — | 03-03
+    F-005 | 10045 | HMDA-R031 | Close Dt | 02/15/26 | 02/15/26 | <color:RoyalBlue>Low</color> | <color:Green>.88</color> | Closed | B. Jones | 03-05
+  }
+  ---
+  { Showing 1–5 of 47 | [< Prev] [1] [2] [3] [Next >] | . | Columns: [Customize] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *[Export CSV]* generates findings register in exam-ready bundle format: finding_id, rule_id, rule_name, target_record_id, severity, confidence scores (3 layers + combined), evidence_ids, narrative, approver_id, approval_date, status
+* *[Export PDF]* generates formatted PDF version of the register
+* *[Customize]* columns modal allows showing/hiding columns (all available by default)
+* All columns sortable; multi-column sort supported (shift+click)
+* Clicking a finding ID navigates to <<wf-finding-detail>>
+
+'''
+
+==== Happy Path
+
+[arabic]
+. Finding enters `Identified` state → reviewer triages (confirms severity, assigns remediation owner).
+. Owner receives notification → submits corrective action with evidence within SLA.
+. Independent reviewer verifies correction → retest passed → manager approves closure (required for Critical/High).
+. All findings closed → manager generates audit summary report.
+. Exam-ready bundle exported as versioned ZIP (14 artifacts) → Three Lines Model certification.
+
+==== Key Edge Cases
+
+* *SLA breach:* Remediation owner misses SLA → aging dashboard alerts manager → automatic escalation.
+* *Retest failed:* Reviewer determines correction insufficient → finding returns to `Remediation Assigned` with notes.
+* *Post-export update:* Finding reopened after bundle export → Exam Pack Lifecycle Manager auto-creates new bundle version; previous version marked `superseded`.
+
+==== Functional Requirements
+
+===== Epic 7: Evidence / Attachments + Document Control
+
+[cols="10%,27%,43%,20%",options="header"]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-7.1 |System shall support attaching documents, screenshots, and notes to any finding, review, or corrective action. |Given a finding, when reviewer attaches a PDF and a note, then both are stored with chain-of-custody metadata (uploader, timestamp, SHA-256 hash). |P0
+|FR-7.2 |Evidence records are append-only. New versions of an evidence artifact create new records; originals are never modified or deleted. |Given an evidence file, when a "replacement" is uploaded, then the original remains unchanged, a new evidence record is created with a "supersedes" reference to the original, and both are visible in the audit trail. |P0
+|FR-7.3 |Evidence shall carry chain-of-custody metadata: uploader ID, upload timestamp, SHA-256 hash, associated finding/review IDs, and document classification. |Given any evidence file, when queried, then all chain-of-custody fields are populated and the hash can be independently verified. |P0
+|FR-7.4 |Evidence shall be searchable by metadata (finding ID, document type, date range) and full-text content. |Given a search for "closing disclosure" within a specific audit run, when executed, then all matching evidence files are returned with relevance ranking. |P1
+|===
+
+===== Epic 8: Reporting + Exports
+
+[cols="10%,27%,43%,20%",options="header"]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-8.1 |System shall generate pack-specific audit reports using templates defined in the audit pack manifest. |Given the HMDA pack report template, when report generation is triggered, then a PDF report is produced with all template sections populated from audit data. |P0
+|FR-8.2 |AI-assisted narrative generation for audit summaries: mandatory human review and explicit approval before finalization. |Given a completed audit, when AI narrative is requested, then draft is produced labeled "AI-generated draft — requires approval," and cannot be included in finalized reports until a Manager-role user clicks "Approve." |P0
+|FR-8.3 |Export formats: PDF (formatted reports), CSV (data exports), XLSX (data exports with formatting), JSON (API). |Given a findings export request, when CSV is selected, then all findings with all metadata fields are exported in a clean CSV with headers. |P0
+|FR-8.4 |Exam pack dossier: continuously updated, versioned exam-ready bundle per <<sect-exam-ready-bundle>> specification. Bundle is created at audit start, updated on every material event, and exportable at any point. |Given an active audit, when a finding is created or closed, then a new bundle version is auto-generated within 60 seconds with updated coverage statistics and change log. Given a finalized audit, when exam bundle is exported, then the ZIP contains all 14 files specified in <<sect-exam-ready-bundle>> with valid manifest, hash verification, and version chain. |P0
+|FR-8.5 |Three Lines Model approval manifest: structured sign-off records from QC Manager (first line), Compliance Officer (second line), and Audit Director (third line) before bundle export. |Given a bundle in review status, when all three lines record approvals, then the approval manifest is populated with role, scope, findings count, sign-off statement, and digital signature hash. Bundle export is blocked until all required approvals are recorded. |P0
+|FR-8.6 |Coverage and sampling statistics: machine-readable coverage matrix, confidence distributions, and error metrics included in every bundle version. |Given a completed pre-scan, when coverage statistics are requested, then the response includes rule coverage (rules tested / total rules), confidence tier distribution, error rate, and sampling representativeness check. |P0
+|FR-8.7 |Exceptions and overrides log: every human override of system confidence, severity, or rule application tracked with justification and evidence reference. |Given a reviewer overrides a confidence score, when the override is saved, then an exception record is created with original value, new value, justification, and evidence reference; the exception appears in the next bundle version. |P0
+|FR-8.8 |Bundle version history and diff: version chain showing what changed between any two bundle versions. |Given a bundle with 5 versions, when a diff between v2.0 and v2.3 is requested, then the response shows findings added/closed/reopened, evidence changes, and approvals added between those versions. |P1
+|FR-8.9 |Pipeline provenance: extraction model versions, mapping service versions, rules engine versions, and configuration hashes included in every bundle for reproducibility. |Given a bundle export, when pipeline provenance is generated, then every AI model used is traceable to a <<sect-model-registry>> entry with version and prompt hash. |P0
+|FR-8.10 |Manager and executive dashboards showing: review progress, aging, error rates by field/category, trends vs. prior periods, escalation frequency. |Given an active audit with 1,000 records, when manager opens dashboard, then all metrics load within 5 seconds with current data. |P1
+|===
+
+==== Architecture
+
+===== Components Involved
+
+[cols="30%,70%",options="header"]
+|===
+|Component |Role in This Journey
+
+|*Reporting Service*
+|Generates audit summary reports (HTML/PDF); findings breakdowns; evidence indices; confidence distributions.
+
+|*Exam Pack Lifecycle Manager*
+|Maintains the living dossier from audit creation through finalization; event-driven versioning; 14-artifact bundle.
+
+|*Remediation Workflow Engine*
+|Tracks 9-state finding lifecycle; SLA enforcement (Critical: 1d, High: 3d, Medium: 7d, Low: 14d); breach handling.
+
+|*Immutable Audit Trail*
+|Append-only event log (RFC 8785 canonical JSON, SHA-256 hash chain, global monotonic sequence IDs).
+
+|*WORM Anchor Storage*
+|Cryptographic anchor points for audit trail integrity validation (Phase 1c).
+|===
+
+===== Evidence Chain-of-Custody Workflow
+
+[mermaid]
+----
+sequenceDiagram
+    participant Reviewer
+    participant System
+    participant BlobStore as Azure Blob Storage
+    participant EventStore as Event Store
+
+    Reviewer->>System: Attach evidence to finding
+    System->>System: Compute SHA-256 hash
+    System->>System: Classify document (CD, LE, URLA, etc.)
+    System->>BlobStore: Store file (append-only, immutable)
+    System->>EventStore: EvidenceCreated {evidence_id, finding_id, hash, uploader, timestamp}
+    System-->>Reviewer: Evidence attached with chain-of-custody metadata
+
+    Note over Reviewer: Later — reviewer uploads replacement
+
+    Reviewer->>System: Upload replacement evidence
+    System->>System: Compute SHA-256 hash for new file
+    System->>BlobStore: Store new file (new evidence_id)
+    System->>System: Create "supersedes" link (new → original)
+    System->>EventStore: EvidenceSuperseded {new_id, original_id, reason}
+    Note over BlobStore: Original file remains unchanged and visible in history
+----
+
+===== Evidence Architecture
+
+*Component:* Evidence & Attachment Service (<<sect-component-design>>)
+
+*Chain-of-custody metadata:*
+
+[source,typescript]
+----
+interface EvidenceRecord {
+  evidence_id: string;
+  audit_id: string;
+  finding_id?: string;
+  uploaded_by: userId;
+  uploaded_at: timestamp;
+  filename: string;
+  file_size_bytes: number;
+  mime_type: string;
+  sha256_hash: string;
+  document_classification: 'closing_disclosure' | 'loan_estimate' | 'urla' | 'other';
+  superseded_by?: evidence_id;
+  supersedes?: evidence_id;
+  full_text_indexed: boolean;
+  blob_path: string;
+  audit_event_id: string;
+}
+----
+
+*Append-only semantics:* When a user "replaces" an evidence file, the system: (1) stores the new file with a new evidence_id, (2) creates a "supersedes" link from new to old, (3) marks the original as visible in history (never deleted), (4) audit trail records both the original and the replacement.
+See <<sect-immutability>> for the full immutability/correctability specification.
+
+===== Reporting & Export Workflow
+
+[mermaid]
+----
+sequenceDiagram
+    participant Manager
+    participant System
+    participant AI as AI Reporting Assistant
+    participant BlobStore as Azure Blob Storage
+
+    Manager->>System: Request audit report generation
+    System->>System: Load pack report template
+    System->>System: Aggregate findings by severity, category, field
+    System->>AI: Generate draft executive summary narrative
+    AI->>System: Draft narrative (labeled "AI-generated draft")
+    System-->>Manager: Report preview with AI draft
+
+    alt Manager approves narrative
+        Manager->>System: Approve AI-generated narrative
+        System->>System: Record human_approval event
+    else Manager edits narrative
+        Manager->>System: Edit narrative + approve
+        System->>System: Record edit diff + human_approval event
+    end
+
+    Manager->>System: Finalize report
+    System->>System: Generate PDF report from template
+    System->>System: Assemble exam-ready bundle (ZIP)
+    System->>BlobStore: Store finalized report + bundle
+    System-->>Manager: Download links (PDF report + exam-ready ZIP)
+----
+
+===== Report & Bundle Architecture
+
+*Report template (PDF, Phase 1a MVP):*
+
+....
+Cover Page:
+  - Organization name, audit period, auditor name, date
+
+Executive Summary:
+  - Audit scope (pack, record count, sampling methodology)
+  - Key findings count by severity (critical, major, minor)
+  - Compliance assessment (Pass / Fail / Pass w/ Observations)
+  - Recommended corrective actions (summary)
+
+Detailed Findings:
+  - Table: Finding ID | Rule | Severity | Confidence | Evidence | Narrative | Approver
+
+Audit Trail Summary:
+  - Table: Event ID | Event Type | Timestamp | Actor | Details
+
+Attachments:
+  - Evidence index (source documents, extraction confidence)
+  - Pack version & configuration
+  - Sampling methodology documentation
+....
+
+*Exam pack dossier:* Continuously updated, versioned exam-ready bundle containing all reports, evidence files, audit trail, coverage statistics, approval manifests, exceptions log, change log, pipeline provenance, and Three Lines Model certification — with SHA-256 hash verification on every artifact.
+The bundle is created at audit start and auto-versioned on every material event (finding created/closed, approval recorded, evidence superseded).
+See <<sect-exam-ready-bundle>> for the complete specification.
+
+*AI governance for narratives:* AI-generated report narratives carry mandatory disclaimer "AI-generated draft — requires approval" and cannot be included in finalized reports without explicit Manager-role approval.
+See <<sect-ai-governance>>.
+
+==== Developer Context
+
+*Services:* Findings Management Service (state machine), Remediation Workflow Engine, Reporting Service, Exam Pack Lifecycle Manager, Evidence & Attachment Service.
+*Data flow:* Approved findings → remediation state machine → SLA tracking → report generation → bundle packaging.
+*State machine:* 9 states (Identified → Triaged → Remediation Assigned → Corrected → Retest Passed/Failed → Closed → Escalated → Reopened).
+See <<sect-finding-remediation>> for full state diagram.
+*Architecture detail:* See the Architecture section above for component details, data flows, and API contracts.
+
+'''

@@ -1,28 +1,237 @@
-= Journey: Dashboards & Analytics
-:toc:
+=== Journey: Dashboards & Analytics
 
-:summary: TL;DR
+Dashboards provide read-only operational and executive views across all audits.
 
-== Personas & Roles
+==== Overview
 
-== Goal / Success Criteria
+*Primary workflow alignment:* supports closed-loop visibility for the Workflow 1 diagram above and execution-mode workflows (5-7).
+*Execution modes:* Read-only views across all modes.
 
-== End-to-End Flow
+*Screen progression in this journey:*
 
-== Step-by-step Flow (maps to implementation)
-. Step — Dashboards (maps to Stage 5)
-include::../_stage-5-dashboards.adoc[]
+. <<wf-exec-dashboard, WF-19 Executive Dashboard>> — portfolio-level health and trend monitoring.
+. <<wf-mgr-dashboard, WF-20 Manager Dashboard>> — operational workload, SLAs, and pending approvals.
+. <<wf-drift-monitor, WF-21 Drift Monitoring>> — model and quality drift signals (Phase 2).
 
-== Screens & Wireframes
+==== Screens
 
-== Functional Requirements (by epic)
+[cols="8%,25%,32%,35%",options="header"]
+|===
+|WF # |Screen |Requirements |Summary
 
-== Data / Services Architecture
+|WF-19
+|<<wf-exec-dashboard, Executive Dashboard>>
+|FR-8.10
+|KPIs (audit count, findings, compliance rate, avg resolution), compliance trend chart, severity breakdown.
 
-== Non-functional Requirements
+|WF-20
+|<<wf-mgr-dashboard, Manager Dashboard>>
+|FR-8.10
+|Active audits, critical findings, overdue remediations, team workload, pending approvals.
 
-== Acceptance Criteria & Test Cases
+|WF-21
+|<<wf-drift-monitor, Drift Monitoring>>
+|Phase 2
+|Override rate, confidence accuracy, hallucination rate monitoring (Phase 2).
+|===
 
-== Implementation Notes
-* Sprint mapping: See Implementation → Workflow Delivery Matrix
-* Dependencies / Risks
+[[wf-exec-dashboard]]
+===== WF-19: Executive Dashboard
+
+*Purpose:* Read-only high-level view of audit program health.
+KPIs, compliance trends, and findings summary across all audits.
+
+*Roles:* Executive (read-only), Manager.
+
+*Flowbite components:* Card (KPI), Chart (trends), Table, Badge.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Executive Dashboard</b>
+  { Home > Dashboard }
+  ===
+  {
+    {+
+      <b>Audits</b>
+      ---
+      Total: <b>40</b>
+      Active: <b>12</b>
+      Finalized: <b>28</b>
+    }
+    |
+    {+
+      <b>Findings</b>
+      ---
+      Total: <b>347</b>
+      Open: <b>89</b>
+      Closed: <b>258</b>
+    }
+    |
+    {+
+      <b>Compliance Rate</b>
+      ---
+      .
+      <b><color:Green>94.2%</color></b>
+      Pass + Pass w/ Obs
+    }
+    |
+    {+
+      <b>Avg Resolution</b>
+      ---
+      Critical: <b>0.8d</b>
+      High: <b>2.1d</b>
+      Medium: <b>4.3d</b>
+    }
+  }
+  ---
+  {+
+    <b>Compliance Trend (Last 12 Months)</b>
+    ---
+    (Line chart: monthly compliance rate over time)
+    (X-axis: months, Y-axis: % pass rate)
+    (Annotations: regulatory change events, pack updates)
+  }
+  ---
+  {
+    {+
+      <b>Findings by Severity (This Quarter)</b>
+      ---
+      {#
+        <b>Severity</b> | <b>Count</b> | <b>% of Total</b>
+        Critical | 8 | 2.3%
+        High | 34 | 9.8%
+        Medium | 112 | 32.3%
+        Low | 98 | 28.2%
+        Informational | 95 | 27.4%
+      }
+    }
+    |
+    {+
+      <b>Recent Finalized Audits</b>
+      ---
+      {#
+        <b>Audit</b> | <b>Result</b> | <b>Date</b>
+        HMDA Q4 2025 | <color:Green>Pass</color> | 2026-02-28
+        CRA 2025 | <color:Orange>Observations</color> | 2026-02-15
+        TRID Q3 2025 | <color:Green>Pass</color> | 2026-01-30
+      }
+    }
+  }
+  ---
+  { [View All Audits] | [Download Quarterly Report] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *KPI cards* at top show real-time metrics; update on page load
+* *Compliance Trend* chart interactive: hover for monthly details, click to drill into that month's audits
+* *[View All Audits]* navigates to <<wf-audit-dashboard>> (filtered by Executive's tenant)
+* *[Download Quarterly Report]* generates executive summary PDF
+* All data scoped to user's tenant (multi-tenant isolation via PostgreSQL RLS)
+
+'''
+
+[[wf-mgr-dashboard]]
+===== WF-20: Manager Dashboard
+
+*Purpose:* Operational view for audit managers.
+Shows active audits, critical findings requiring attention, overdue remediations, and team workload.
+
+*Roles:* Manager, Audit Lead.
+
+*Flowbite components:* Card, Table, Badge, Alert, Chart, Button.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Manager Dashboard</b>
+  { Home > Dashboard (Manager) }
+  ===
+  <color:Red><b>! 2 Critical findings untriaged > SLA | 1 remediation overdue</b></color>
+  ===
+  {
+    {+
+      <b>My Active Audits</b>
+      {#
+        <b>Audit</b> | <b>Status</b> | <b>Progress</b> | <b>Findings</b> | <b>Action</b>
+        HMDA Q1 2026 | <color:RoyalBlue>In Progress</color> | 67% | 23 (2 Crit) | [View]
+        CRA 2026 | <color:RoyalBlue>In Progress</color> | 35% | 8 (0 Crit) | [View]
+        TRID Q1 2026 | <color:Orange>Review</color> | 100% | 15 (1 Crit) | [Finalize]
+      }
+    }
+    |
+    {+
+      <b>Team Workload</b>
+      {#
+        <b>Reviewer</b> | <b>Open Findings</b> | <b>Overdue</b>
+        Jane Smith | 14 | <color:Red>1</color>
+        Bob Johnson | 11 | 0
+        Alice Chen | 8 | 0
+      }
+    }
+  }
+  ---
+  {+
+    <b>Critical Findings Requiring Action</b>
+    {#
+      <b>Finding</b> | <b>Audit</b> | <b>Status</b> | <b>Age</b> | <b>Owner</b> | <b>Action</b>
+      F-002 | HMDA Q1 | <color:Red>Identified (3d)</color> | <color:Red>+2d over SLA</color> | Unassigned | [Triage Now]
+      F-011 | HMDA Q1 | <color:Red>Identified (3d)</color> | <color:Red>+2d over SLA</color> | Unassigned | [Triage Now]
+      F-042 | TRID Q1 | <color:Orange>Remediation</color> | 2d | Jane Smith | [Review]
+    }
+  }
+  ---
+  {+
+    <b>Pending Approvals</b>
+    {#
+      <b>Type</b> | <b>Item</b> | <b>Requested By</b> | <b>Action</b>
+      AI Narrative | F-001 narrative (HMDA Q1) | System | [Review & Approve]
+      Finding Closure | F-005 (HMDA Q1) | Jane Smith | [Approve Closure]
+      Report | HMDA Q1 Audit Report | Jane Smith | [Review Report]
+    }
+  }
+  ---
+  { [View Aging Dashboard] | [View All Findings] | [Generate Report] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Alert banner* shows immediate-action items (SLA violations, overdue remediations)
+* *Critical Findings* table shows only findings requiring manager attention; sorted by urgency
+* *Pending Approvals* consolidates all items requiring manager sign-off: AI narratives, finding closures, reports
+* *Team Workload* card helps balance assignments across reviewers
+* *[Triage Now]* navigates to <<wf-finding-detail>> with triage section pre-expanded
+
+[[wf-drift-monitor]]
+===== WF-21: Drift Monitoring (Phase 2)
+
+*Purpose:* Monitor model and confidence drift indicators: override rate, confidence accuracy, hallucination rate.
+Phase 2 screen — not yet wireframed.
+
+*Roles:* Manager, Data Scientist, Model Risk Officer.
+
+*Flowbite components:* Chart, Alert, Table.
+
+[NOTE]
+====
+WF-21 Drift Monitoring is a Phase 2 screen.
+Wireframe and interactions will be designed during Phase 2 planning.
+====
+
+==== Functional Requirements
+
+Dashboard functional requirements are captured in FR-8.10 under <<_epic_8_reporting_exports, Epic 8: Reporting + Exports>> in the Remediation & Reporting journey.
+
+==== Developer Context
+
+*Services:* Reporting Service (analytics queries), PostgreSQL (materialized views for KPIs).
+*Architecture detail:* Dashboard data sourced from audit trail events via aggregation queries; tenant-isolated via RLS.
+
+'''
