@@ -1,12 +1,72 @@
-=== Stage 2: Extraction & Mapping
+=== OCR-Assisted Journey
 
 This stage covers document processing through Docling-Graph, AFC scoring, field extraction review, schema mapping, and synonym dictionary management.
 The system extracts structured data from source documents and maps extracted fields to the HMDA/MISMO target schema.
 
-==== User Journey
+==== Workflow Diagram
 
-The document upload and extraction flow is shown in <<user-journey-overview, Workflow 2>>.
-The schema mapping review flow is shown in <<user-journey-overview, Workflow 3>>.
+==== Workflow 2: Document Upload & Extraction (Docling + AFC)
+
+[mermaid]
+----
+flowchart TD
+    A([User Uploads Documents]) --> B[Document Classifier]
+    B --> C[Docling Conversion]
+    C --> D[OCR Layer]
+    D --> E[AFC Score Computation]
+    E --> F{AFC Routing}
+    F -->|≥ 0.85| G([Auto-Confirm])
+    F -->|0.50 – 0.85| H[Human Review Queue]
+    F -->|< 0.50| I[Manual Entry Required]
+    H --> J[Reviewer Validates]
+    I --> K[Reviewer Enters Correct Value]
+    J --> L{Accept or Override}
+    L -->|Accept| M([Field Value Confirmed])
+    L -->|Override| K
+    K --> M
+----
+
+==== Workflow 3: Schema Mapping Review (Two-Layer Confidence)
+
+[mermaid]
+----
+flowchart TD
+    A([Extracted Fields]) --> B[Hybrid Heuristic Matcher]
+    B --> C[Layer 1 Raw Signals]
+    C --> D[Layer 2 Calibrated Score]
+    D --> E{Routing Decision}
+    E -->|≥ 0.95| F([Auto-Accept])
+    E -->|0.70 – 0.95| G[Human Review]
+    E -->|< 0.70| H[Manual Entry]
+    G --> I{Reviewer Action}
+    I -->|Accept| J
+    I -->|Override| K
+    I -->|Manual| L
+    K --> M[Optional Synonym Update]
+    J --> N([Mapping Approved])
+    L --> N
+    M --> N
+    F --> N
+----
+
+==== Workflow 6: Audit Execution — OCR-Assisted Mode
+
+[mermaid]
+----
+sequenceDiagram
+  participant System
+  participant Docling
+  participant CompEngine as Comparison Engine
+  participant Reviewer
+
+  System->>Docling: Send source documents
+  Docling->>System: Extracted data + AFC scores
+  System->>CompEngine: Apply rules (target vs extracted)
+  CompEngine->>System: Preliminary findings + confidence
+  System->>Reviewer: Pre-populated comparison results
+  Reviewer->>System: Verify flagged items + override
+----
+
 
 ==== Screens
 
@@ -424,7 +484,7 @@ See <<sect-decision-d1, Decision D1>>.
 ===== Document Extraction Workflow
 
 This workflow covers the complete document processing pipeline from upload through field-level confidence routing.
-See also <<user-journey-overview, Workflow 2>> for the detailed UI flowchart.
+See Workflow 2 in this journey for the detailed UI flowchart.
 
 *Actors:* Auditor (upload), System (Docling, OCR, AFC), Reviewer (validation)
 
@@ -528,7 +588,7 @@ Cloud OCR fallback adds 1–3s/page.
 ===== Schema Mapping Workflow
 
 This workflow details how extracted fields are mapped to the HMDA/MISMO target schema with AI assistance and human oversight.
-See also <<user-journey-overview, Workflow 3>> for the detailed UI flowchart.
+See Workflow 3 in this journey for the detailed UI flowchart.
 
 *Actors:* System (matcher), AI (calibration), Reviewer (approval)
 

@@ -1,18 +1,29 @@
-=== Stage 3: Finding Review & Approval
+=== Finding Review & Approval Journey
 
 This stage covers rules engine execution, finding generation, AI narrative creation, effective challenge review, and manager escalation.
 The comparison engine applies pack rules against mapped data; the LLM drafts finding narratives; reviewers exercise effective challenge.
 
-==== User Journey
+==== Workflow Diagram
 
-The findings review and approval flow is shown in <<user-journey-overview, Workflow 4>>.
+==== Workflow 4: Findings Review & Approval (AI Governance Controls)
 
-.Diagram gap
-[NOTE]
-====
-Stage 3 has a workflow diagram for findings review (Workflow 4) but lacks a proper sequence diagram showing the findings service flow — specifically the interaction between Comparison Engine, LLM Integration, Findings Management Service, and the review/escalation cycle.
-The finding lifecycle event sequence diagram (under Architecture below) partially covers this but does not show the full service orchestration including the LLM narrative generation step.
-====
+[mermaid]
+----
+flowchart TD
+    A[Rules Engine Generates Exceptions] --> B[LLM Drafts Finding Narrative]
+    B --> C[AI Label Applied: Requires Human Verification]
+    C --> D[Finding Enters Review Queue]
+    D --> E[Reviewer Opens Finding + Evidence]
+    E --> F[Effective Challenge]
+    F --> G{Reviewer Disposition}
+    G -->|Approve| H[Approve Finding]
+    G -->|Edit| I[Edit Finding]
+    G -->|Reject| J[Reject Finding]
+    H --> K[Document Challenge + Rationale]
+    I --> K
+    J --> K
+    K --> L([Finding Finalized])
+----
 
 ==== Screens
 
@@ -567,7 +578,7 @@ interface FindingOutput {
 ===== Findings Review Workflow
 
 This workflow details the human oversight process for AI-generated findings, enforcing the AI governance red lines from <<sect-ai-governance>>.
-See also <<user-journey-overview, Workflow 4>> for the detailed UI flowchart.
+See Workflow 4 in this journey for the detailed UI flowchart.
 
 *Actors:* Rules Engine, AI (LLM), Reviewer (effective challenge), Manager
 
