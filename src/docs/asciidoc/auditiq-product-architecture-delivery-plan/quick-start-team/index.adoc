@@ -65,7 +65,7 @@ They cover the complete audit lifecycle for HMDA origination using manual and OC
 |10
 |<<wf-bundle-export, WF-17: Exam-Ready Bundle>>
 |P0
-|Exam pack dossier export; three-lines certification.
+|Exam pack dossier export; Three Lines Model certification.
 |===
 
 === Core Services for MVP
@@ -104,7 +104,7 @@ They cover the complete audit lifecycle for HMDA origination using manual and OC
 
 |Auth / RBAC
 |Junior Dev
-|JWT + three-lines-of-defense roles + RLS.
+|JWT + Three Lines Model roles + RLS.
 
 |Model Registry
 |Junior Dev

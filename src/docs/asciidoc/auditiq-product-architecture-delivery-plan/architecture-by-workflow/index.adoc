@@ -240,7 +240,7 @@ NOTE: See <<sect-component-design>> for the detailed component interaction diagr
 
 ==== API Contracts
 
-*Exam bundle artifacts (14):* Coverage statistics, approval manifests (three-lines-of-defense certification), exceptions log, change log, pipeline provenance, findings register, evidence index, audit summary, and more.
+*Exam bundle artifacts (14):* Coverage statistics, approval manifests (Three Lines Model certification), exceptions log, change log, pipeline provenance, findings register, evidence index, audit summary, and more.
 See <<sect-exam-ready-bundle>> for the complete artifact specification.
 
 ==== Non-Functional Requirements
