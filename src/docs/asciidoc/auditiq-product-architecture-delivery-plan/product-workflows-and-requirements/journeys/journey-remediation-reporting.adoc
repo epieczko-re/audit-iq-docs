@@ -24,27 +24,27 @@ Findings flow from identification through closure with approval gates at each tr
 
 |WF-14
 |<<wf-remediation, Remediation Tracking>>
-|FR-6.1, FR-6.2
+|<<FR-6.1>>, <<FR-6.2>>
 |9-state remediation lifecycle; SLA-driven due dates (Critical: 1d, High: 3d, Medium: 7d, Low: 14d).
 
 |WF-15
 |<<wf-aging, Aging Dashboard>>
-|FR-6.3
+|<<FR-6.3>>
 |SLA violation alerts; overdue findings sorted by age and severity.
 
 |WF-16
 |<<wf-report-gen, Report Generation>>
-|FR-8.1
+|<<FR-8.1>>
 |Audit summary report template selection; HTML/PDF export; findings breakdown.
 
 |WF-17
 |<<wf-bundle-export, Exam-Ready Bundle Export>>
-|FR-8.4, FR-8.5, FR-8.6, FR-8.7
+|<<FR-8.4>>, <<FR-8.5>>, <<FR-8.6>>, <<FR-8.7>>
 |14-artifact versioned ZIP bundle with approval manifests, coverage stats, change log, pipeline provenance.
 
 |WF-18
 |<<wf-findings-register, Findings Register>>
-|FR-8.1
+|<<FR-8.1>>
 |Complete findings list with export, filtering, and status summary.
 |===
 
@@ -393,26 +393,41 @@ Full-featured data table with all finding fields, export capabilities, and audit
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
+[[FR-7.1]]
 |FR-7.1 |System shall support attaching documents, screenshots, and notes to any finding, review, or corrective action. |Given a finding, when reviewer attaches a PDF and a note, then both are stored with chain-of-custody metadata (uploader, timestamp, SHA-256 hash). |P0
+[[FR-7.2]]
 |FR-7.2 |Evidence records are append-only. New versions of an evidence artifact create new records; originals are never modified or deleted. |Given an evidence file, when a "replacement" is uploaded, then the original remains unchanged, a new evidence record is created with a "supersedes" reference to the original, and both are visible in the audit trail. |P0
+[[FR-7.3]]
 |FR-7.3 |Evidence shall carry chain-of-custody metadata: uploader ID, upload timestamp, SHA-256 hash, associated finding/review IDs, and document classification. |Given any evidence file, when queried, then all chain-of-custody fields are populated and the hash can be independently verified. |P0
+[[FR-7.4]]
 |FR-7.4 |Evidence shall be searchable by metadata (finding ID, document type, date range) and full-text content. |Given a search for "closing disclosure" within a specific audit run, when executed, then all matching evidence files are returned with relevance ranking. |P1
 |===
 
+[[_epic_8_reporting_exports]]
 ===== Epic 8: Reporting + Exports
 
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
+[[FR-8.1]]
 |FR-8.1 |System shall generate pack-specific audit reports using templates defined in the audit pack manifest. |Given the HMDA pack report template, when report generation is triggered, then a PDF report is produced with all template sections populated from audit data. |P0
+[[FR-8.2]]
 |FR-8.2 |AI-assisted narrative generation for audit summaries: mandatory human review and explicit approval before finalization. |Given a completed audit, when AI narrative is requested, then draft is produced labeled "AI-generated draft — requires approval," and cannot be included in finalized reports until a Manager-role user clicks "Approve." |P0
+[[FR-8.3]]
 |FR-8.3 |Export formats: PDF (formatted reports), CSV (data exports), XLSX (data exports with formatting), JSON (API). |Given a findings export request, when CSV is selected, then all findings with all metadata fields are exported in a clean CSV with headers. |P0
+[[FR-8.4]]
 |FR-8.4 |Exam pack dossier: continuously updated, versioned exam-ready bundle per <<sect-exam-ready-bundle>> specification. Bundle is created at audit start, updated on every material event, and exportable at any point. |Given an active audit, when a finding is created or closed, then a new bundle version is auto-generated within 60 seconds with updated coverage statistics and change log. Given a finalized audit, when exam bundle is exported, then the ZIP contains all 14 files specified in <<sect-exam-ready-bundle>> with valid manifest, hash verification, and version chain. |P0
+[[FR-8.5]]
 |FR-8.5 |Three Lines Model approval manifest: structured sign-off records from QC Manager (first line), Compliance Officer (second line), and Audit Director (third line) before bundle export. |Given a bundle in review status, when all three lines record approvals, then the approval manifest is populated with role, scope, findings count, sign-off statement, and digital signature hash. Bundle export is blocked until all required approvals are recorded. |P0
+[[FR-8.6]]
 |FR-8.6 |Coverage and sampling statistics: machine-readable coverage matrix, confidence distributions, and error metrics included in every bundle version. |Given a completed pre-scan, when coverage statistics are requested, then the response includes rule coverage (rules tested / total rules), confidence tier distribution, error rate, and sampling representativeness check. |P0
+[[FR-8.7]]
 |FR-8.7 |Exceptions and overrides log: every human override of system confidence, severity, or rule application tracked with justification and evidence reference. |Given a reviewer overrides a confidence score, when the override is saved, then an exception record is created with original value, new value, justification, and evidence reference; the exception appears in the next bundle version. |P0
+[[FR-8.8]]
 |FR-8.8 |Bundle version history and diff: version chain showing what changed between any two bundle versions. |Given a bundle with 5 versions, when a diff between v2.0 and v2.3 is requested, then the response shows findings added/closed/reopened, evidence changes, and approvals added between those versions. |P1
+[[FR-8.9]]
 |FR-8.9 |Pipeline provenance: extraction model versions, mapping service versions, rules engine versions, and configuration hashes included in every bundle for reproducibility. |Given a bundle export, when pipeline provenance is generated, then every AI model used is traceable to a <<sect-model-registry>> entry with version and prompt hash. |P0
+[[FR-8.10]]
 |FR-8.10 |Manager and executive dashboards showing: review progress, aging, error rates by field/category, trends vs. prior periods, escalation frequency. |Given an active audit with 1,000 records, when manager opens dashboard, then all metrics load within 5 seconds with current data. |P1
 |===
 
@@ -424,19 +439,19 @@ Full-featured data table with all finding fields, export capabilities, and audit
 |===
 |Component |Role in This Journey
 
-|*Reporting Service*
+|*Reporting Service* (<<sect-reporting-service>>)
 |Generates audit summary reports (HTML/PDF); findings breakdowns; evidence indices; confidence distributions.
 
-|*Exam Pack Lifecycle Manager*
+|*Exam Pack Lifecycle Manager* (<<sect-exam-pack-lifecycle-manager>>)
 |Maintains the living dossier from audit creation through finalization; event-driven versioning; 14-artifact bundle.
 
-|*Remediation Workflow Engine*
+|*Remediation Workflow Engine* (<<sect-finding-remediation>>)
 |Tracks 9-state finding lifecycle; SLA enforcement (Critical: 1d, High: 3d, Medium: 7d, Low: 14d); breach handling.
 
-|*Immutable Audit Trail*
+|*Immutable Audit Trail* (<<sect-audit-trail-event-store>>)
 |Append-only event log (RFC 8785 canonical JSON, SHA-256 hash chain, global monotonic sequence IDs).
 
-|*WORM Anchor Storage*
+|*WORM Anchor Storage* (<<sect-audit-trail-event-store>>)
 |Cryptographic anchor points for audit trail integrity validation (Phase 1c).
 |===
 
@@ -469,7 +484,7 @@ sequenceDiagram
 
 ===== Evidence Architecture
 
-*Component:* Evidence & Attachment Service (<<sect-component-design>>)
+*Component:* Evidence & Attachment Service (<<sect-evidence-attachment-service>>)
 
 *Chain-of-custody metadata:*
 
