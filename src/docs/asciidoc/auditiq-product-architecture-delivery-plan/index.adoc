@@ -50,6 +50,8 @@ include::audit-pack-specification/index.adoc[]
 
 include::regulatory-compliance-and-policy-management/index.adoc[]
 
+include::exam-ready-bundle-specification/index.adoc[]
+
 include::glossary/index.adoc[]
 
 // ============================================================
@@ -111,7 +113,5 @@ include::appendices/index.adoc[]
 include::competitive-intelligence/index.adoc[]
 
 include::decisions-and-open-questions/index.adoc[]
-
-include::exam-ready-bundle-specification/index.adoc[]
 
 include::document-control/index.adoc[]
