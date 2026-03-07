@@ -1418,54 +1418,6 @@ CREATE INDEX idx_audit_tenant ON audits.audit_runs(tenant_id);
 CREATE INDEX idx_audit_pack ON audits.audit_runs(pack_id, pack_version);
 ----
 
-==== Audit Pack Data Model (audit_packs)
-
-The `audit_packs` table stores versioned pack definitions.
-Packs are immutable once published — modifications require a new version.
-The Orchestration Service loads the specified pack version on `createAudit` and pins it for the duration of the audit run.
-
-[source,sql]
-----
-CREATE TABLE audits.audit_packs (
-  pack_id VARCHAR(255) NOT NULL,              -- e.g., 'hmda-origination'
-  pack_version VARCHAR(20) NOT NULL,          -- Semantic version, e.g., '1.0.0'
-  tenant_id UUID,                             -- NULL = global (platform-provided); non-NULL = tenant-specific custom pack
-
-  -- Pack identity
-  display_name VARCHAR(512) NOT NULL,         -- e.g., 'HMDA Origination Audit Pack'
-  description TEXT,
-  regulation_domain VARCHAR(100) NOT NULL,    -- e.g., 'hmda', 'trid', 'cra', 'bsa_aml'
-  audit_scope VARCHAR(100),                   -- 'origination', 'servicing', 'combined'
-
-  -- Manifest
-  manifest JSONB NOT NULL,                    -- Full pack manifest JSON (rules, field definitions, evidence requirements, thresholds)
-  manifest_hash VARCHAR(64) NOT NULL,         -- SHA-256 of canonical JSON manifest for integrity verification
-
-  -- Governance
-  status VARCHAR(50) NOT NULL DEFAULT 'draft', -- 'draft', 'published', 'deprecated', 'retired'
-  published_by UUID,
-  published_at TIMESTAMP,
-  deprecated_at TIMESTAMP,
-  superseded_by_version VARCHAR(20),          -- Next version in the chain
-
-  -- Validation
-  validation_status VARCHAR(50),              -- 'passed', 'failed', 'not_validated'
-  validation_errors JSONB,                    -- Schema check, rule syntax, and evidence requirement errors
-
-  -- Metadata
-  created_by UUID NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
-  PRIMARY KEY (pack_id, pack_version),
-  FOREIGN KEY (created_by) REFERENCES users(user_id),
-  FOREIGN KEY (published_by) REFERENCES users(user_id)
-);
-CREATE INDEX idx_packs_status ON audits.audit_packs(status);
-CREATE INDEX idx_packs_regulation ON audits.audit_packs(regulation_domain);
-CREATE INDEX idx_packs_tenant ON audits.audit_packs(tenant_id) WHERE tenant_id IS NOT NULL;
-----
-
 '''
 
 [[sect-audit-pack-technical-spec]]
@@ -1969,6 +1921,54 @@ See <<sect-key-concepts>> for the strategic rationale behind the pack model.
     }
   }
 }
+----
+
+==== Audit Pack Data Model (audit_packs)
+
+The `audit_packs` table stores versioned pack definitions.
+Packs are immutable once published — modifications require a new version.
+The Orchestration Service loads the specified pack version on `createAudit` and pins it for the duration of the audit run.
+
+[source,sql]
+----
+CREATE TABLE audits.audit_packs (
+  pack_id VARCHAR(255) NOT NULL,              -- e.g., 'hmda-origination'
+  pack_version VARCHAR(20) NOT NULL,          -- Semantic version, e.g., '1.0.0'
+  tenant_id UUID,                             -- NULL = global (platform-provided); non-NULL = tenant-specific custom pack
+
+  -- Pack identity
+  display_name VARCHAR(512) NOT NULL,         -- e.g., 'HMDA Origination Audit Pack'
+  description TEXT,
+  regulation_domain VARCHAR(100) NOT NULL,    -- e.g., 'hmda', 'trid', 'cra', 'bsa_aml'
+  audit_scope VARCHAR(100),                   -- 'origination', 'servicing', 'combined'
+
+  -- Manifest
+  manifest JSONB NOT NULL,                    -- Full pack manifest JSON (rules, field definitions, evidence requirements, thresholds)
+  manifest_hash VARCHAR(64) NOT NULL,         -- SHA-256 of canonical JSON manifest for integrity verification
+
+  -- Governance
+  status VARCHAR(50) NOT NULL DEFAULT 'draft', -- 'draft', 'published', 'deprecated', 'retired'
+  published_by UUID,
+  published_at TIMESTAMP,
+  deprecated_at TIMESTAMP,
+  superseded_by_version VARCHAR(20),          -- Next version in the chain
+
+  -- Validation
+  validation_status VARCHAR(50),              -- 'passed', 'failed', 'not_validated'
+  validation_errors JSONB,                    -- Schema check, rule syntax, and evidence requirement errors
+
+  -- Metadata
+  created_by UUID NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (pack_id, pack_version),
+  FOREIGN KEY (created_by) REFERENCES users(user_id),
+  FOREIGN KEY (published_by) REFERENCES users(user_id)
+);
+CREATE INDEX idx_packs_status ON audits.audit_packs(status);
+CREATE INDEX idx_packs_regulation ON audits.audit_packs(regulation_domain);
+CREATE INDEX idx_packs_tenant ON audits.audit_packs(tenant_id) WHERE tenant_id IS NOT NULL;
 ----
 
 [[sect-pack-rule-engine]]
