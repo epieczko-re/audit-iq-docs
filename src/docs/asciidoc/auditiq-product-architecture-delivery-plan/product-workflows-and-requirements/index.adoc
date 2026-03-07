@@ -5,38 +5,32 @@
 
 ____
 This section is the single reference for every MVP screen, workflow, functional requirement, and architecture detail in AuditIQ.
-It is organized around user journeys first, with the supporting stage details immediately after each journey context so readers can move from flow to screens to requirements without jumping sections.
+
+**Organization:** This section is organized around **user journeys**. Each journey is an end-to-end specification containing flow diagrams, personas, step-by-step flows (mapped to implementation stages where helpful), screens and wireframes, functional requirements (by epic), data & service crosswalks, NFRs, and acceptance criteria.
 
 *How to read this section:*
 
-* *User Journey Overview* — seven end-to-end workflow diagrams across the three execution modes (Manual, OCR-Assisted, Automated Pre-Scan).
-* *Stages 1–6* — per-stage detail aligned to the journeys: screens, wireframes, interactions, functional requirements by epic, and service architecture.
-* *Non-Functional Requirements* — cross-cutting quality attributes and performance targets.
-* *Acceptance Criteria Summary* — summary of acceptance testing approach.
-* *Reference Material* — global layout, screen inventory, and UI development strategy for implementation lookup.
+* *User Journey Overview* — end-to-end workflow diagrams across execution modes (Manual, OCR-Assisted, Automated Pre-Scan).
+* *Journeys* — one document per user journey containing flow → screens → requirements → NFRs → acceptance criteria.
+* *Implementation* — stage-level canonical definitions and the Workflow Delivery Matrix (delivery/sprint mapping). Stage 1–6 are maintained as implementation artifacts and are referenced from journeys.
+* *Reference Material* — global layout, screen inventory, and UI development strategy.
 
-*Read this section first when estimating sprint work.*
-Each lifecycle stage maps directly to one or more sprints in the Workflow Delivery Matrix (<<sect-workflow-delivery-matrix>>).
+Read this section first when estimating sprint work.
 ____
 
 include::_user-journey-overview.adoc[]
 
-include::_stage-1-upload-ingestion.adoc[]
+// Journeys — each journey contains the flow and includes the relevant stage-level details
+include::journeys/journey-upload-ingestion.adoc[]
+include::journeys/journey-extraction-mapping.adoc[]
+include::journeys/journey-finding-review.adoc[]
+include::journeys/journey-remediation-reporting.adoc[]
+include::journeys/journey-dashboards.adoc[]
+include::journeys/journey-admin-registry.adoc[]
 
-include::_stage-2-extraction-mapping.adoc[]
-
-include::_stage-3-finding-review.adoc[]
-
-include::_stage-4-remediation-reporting.adoc[]
-
-include::_stage-5-dashboards.adoc[]
-
-include::_stage-6-admin-registry.adoc[]
-
-include::_nfr-and-acceptance.adoc[]
+// Implementation and references
+include::implementation/workflow-delivery-matrix.adoc[]
 
 include::_global-layout.adoc[]
-
 include::_screen-inventory.adoc[]
-
 include::_ui-dev-strategy.adoc[]

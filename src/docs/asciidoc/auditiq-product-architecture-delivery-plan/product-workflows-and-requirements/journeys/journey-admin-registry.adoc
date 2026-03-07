@@ -1,0 +1,28 @@
+= Journey: Admin & Registry
+:toc:
+
+:summary: TL;DR
+
+== Personas & Roles
+
+== Goal / Success Criteria
+
+== End-to-End Flow
+
+== Step-by-step Flow (maps to implementation)
+. Step — Admin & Registry (maps to Stage 6)
+include::../_stage-6-admin-registry.adoc[]
+
+== Screens & Wireframes
+
+== Functional Requirements (by epic)
+
+== Data / Services Architecture
+
+== Non-functional Requirements
+
+== Acceptance Criteria & Test Cases
+
+== Implementation Notes
+* Sprint mapping: See Implementation → Workflow Delivery Matrix
+* Dependencies / Risks

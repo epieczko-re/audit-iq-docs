@@ -1,0 +1,36 @@
+= Journey: Upload & Ingestion
+:toc:
+
+:summary: TL;DR — what this journey achieves in one sentence.
+
+== Personas & Roles
+*Primary persona:* ...
+
+== Goal / Success Criteria
+* Success: ...
+
+== End-to-End Flow (diagram)
+// Insert or include the flow diagram if needed
+
+== Step-by-step Flow (maps to implementation)
+. Step 1 — Upload & Ingest (maps to Stage 1)
+include::../_stage-1-upload-ingestion.adoc[]
+
+== Screens & Wireframes
+// Screens, wireframes, annotations
+
+== Functional Requirements (by epic)
+// Organized by epic
+
+== Data / Services Architecture
+// Crosswalk to components and services; link to architecture docs
+
+== Non-functional Requirements
+// Journey-specific NFRs, performance targets
+
+== Acceptance Criteria & Test Cases
+// Examples of acceptance criteria and test coverage notes
+
+== Implementation Notes
+* Sprint mapping: See Implementation → Workflow Delivery Matrix
+* Dependencies / Risks

@@ -1,0 +1,28 @@
+= Journey: Finding Review
+:toc:
+
+:summary: TL;DR
+
+== Personas & Roles
+
+== Goal / Success Criteria
+
+== End-to-End Flow
+
+== Step-by-step Flow (maps to implementation)
+. Step — Finding Review (maps to Stage 3)
+include::../_stage-3-finding-review.adoc[]
+
+== Screens & Wireframes
+
+== Functional Requirements (by epic)
+
+== Data / Services Architecture
+
+== Non-functional Requirements
+
+== Acceptance Criteria & Test Cases
+
+== Implementation Notes
+* Sprint mapping: See Implementation → Workflow Delivery Matrix
+* Dependencies / Risks
