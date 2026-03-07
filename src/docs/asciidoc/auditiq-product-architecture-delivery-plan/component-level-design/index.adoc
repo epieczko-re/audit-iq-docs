@@ -305,12 +305,58 @@ erDiagram
 [[sect-ingestion-service]]
 === Ingestion Service
 
+The Ingestion Service is the entry point for all structured data entering AuditIQ.
+It receives *target datasets* — the tabular loan-level records (e.g., HMDA LAR files) that define the population of loans under audit — and validates, normalizes, and stages them for downstream processing.
+
+*Why a separate service from Document Processing:* Target datasets and source documents follow fundamentally different pipelines.
+Target datasets are structured data (CSV rows, API payloads) that require schema validation, encoding normalization, and relational staging — all deterministic operations with no AI involvement.
+Source documents (PDFs, scanned images) require OCR, layout analysis, field extraction, and confidence scoring — the domain of the <<sect-doc-processing, Document Processing Service>>.
+Separating these concerns keeps the ingestion path fast, deterministic, and independently testable, while the document processing path can scale separately with its heavier compute requirements (Docling, OCR fallback, AFC scoring).
+
+*Relationship to Document Processing:* The two services operate on different data types within the same audit but converge downstream at the <<sect-schema-mapping-service, Schema Mapping Service>>.
+The Ingestion Service produces validated target records in the staging area; the Document Processing Service produces extracted fields from source documents.
+The Schema Mapping Service then maps extracted document fields onto the target schema so the <<sect-comparison-engine, Comparison Engine>> can compare source evidence against target values.
+
+*When the Document Processing Service is not used:* In *Manual* execution mode, the Ingestion Service stages the target dataset and source documents are uploaded to Blob Storage, but no automated extraction occurs.
+Reviewers compare documents to target records manually in a side-by-side viewer.
+In *Automated Pre-Scan* mode, both target and source data are structured (no PDFs), so the Ingestion Service handles both inputs and the Document Processing Service is bypassed entirely.
+Only *OCR-Assisted* mode engages both services in sequence.
+
+.Service Boundary: Ingestion vs Document Processing
+[mermaid]
+----
+flowchart LR
+  subgraph ingestion["Ingestion Service (deterministic)"]
+    A[CSV / API / Cross-Module] --> B[Schema Validation]
+    B --> C[Encoding Normalization]
+    C --> D[SHA-256 Checksums]
+    D --> E[Staging Tables]
+  end
+
+  subgraph docproc["Document Processing Service (AI-assisted)"]
+    F[PDF / TIFF / Images] --> G[Malware Scan]
+    G --> H[Docling Extraction]
+    H --> I[AFC Scoring]
+    I --> J[Extracted Fields]
+  end
+
+  E --> K[Schema Mapping Service]
+  J --> K
+  K --> L[Comparison Engine]
+
+  style ingestion fill:#f0f7ff,stroke:#4A6FA5,color:#000
+  style docproc fill:#f5f0ff,stroke:#7B68EE,color:#000
+  style K fill:#e0fff0,stroke:#2E8B57,color:#000
+  style L fill:#e0fff0,stroke:#2E8B57,color:#000
+----
+
 *Responsibilities:*
 
 * Accept target datasets (CSV, API endpoint, cross-module transfer)
-* Validate format and completeness
-* Detect and report encoding issues
-* Store validated data in staging area
+* Validate format and completeness against the audit pack's schema definition
+* Detect and report encoding issues (non-UTF-8 sources)
+* Compute per-record SHA-256 checksums for integrity verification
+* Store validated data in the staging area with lifecycle management (30-day TTL)
 
 *Input contracts:*
 
