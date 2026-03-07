@@ -524,7 +524,7 @@ Use this matrix alongside the Workflow & Screen Guide (<<sect-workflow-screen-gu
 |Infrastructure
 |—
 |AKS, PostgreSQL, Redis, CI/CD, monitoring
-|NFR-9.1
+|<<epic-9,NFR-9.1>>
 |0
 |Senior Dev 2 + Junior Dev
 |Dev environment usable; CI/CD green; monitoring dashboards live.
@@ -532,8 +532,8 @@ Use this matrix alongside the Workflow & Screen Guide (<<sect-workflow-screen-gu
 
 |Extraction POC
 |—
-|Docling-Graph, AFC v2 prototype, LiteLLM
-|FR-2.1, FR-2.2
+|<<sect-docling-graph,Docling-Graph>>, AFC v2 prototype, LiteLLM
+|<<epic-2,FR-2.1, FR-2.2>>
 |0
 |Senior Dev 1
 |>=85% precision on key HMDA fields at AFC >=0.85; deterministic output.
@@ -542,7 +542,7 @@ Use this matrix alongside the Workflow & Screen Guide (<<sect-workflow-screen-gu
 |Test Data
 |—
 |HMDA test corpus, pack draft
-|FR-5.2
+|<<epic-5,FR-5.2>>
 |0
 |Analyst
 |>=200 loans, 5+ lenders, ground truth labels.
@@ -551,18 +551,18 @@ Use this matrix alongside the Workflow & Screen Guide (<<sect-workflow-screen-gu
 8+|*Phase 1a: Core Pipeline & Workflow (Sprints 1-2, Mar 31 – Apr 25)*
 
 |Upload & Ingestion
-|WF-01, WF-02, WF-04
-|Ingestion Service, Blob Storage, Document Classifier
-|FR-1.1, FR-1.2, FR-1.3, FR-1.4, FR-1.5
+|<<wf-audit-dashboard,WF-01>>, <<wf-audit-config,WF-02>>, <<wf-doc-upload,WF-04>>
+|Ingestion Service, <<sect-document-store,Blob Storage>>, Document Classifier
+|<<epic-1,FR-1.1, FR-1.2, FR-1.3, FR-1.4, FR-1.5>>
 |1
 |Senior Dev 2 + Junior Dev
 |CSV upload + validation <=60s/5K records; document upload + classification; schema validation.
 |Phase 0 infrastructure.
 
 |Extraction Pipeline
-|WF-03, WF-05
-|Document Processing Service, Docling-Graph (production), AFC v2, Celery workers
-|FR-2.1, FR-2.2, FR-2.3, FR-2.5
+|<<wf-audit-progress,WF-03>>, <<wf-processing-status,WF-05>>
+|<<sect-doc-processing,Document Processing Service>>, <<sect-docling-graph,Docling-Graph>> (production), AFC v2, Celery workers
+|<<epic-2,FR-2.1, FR-2.2, FR-2.3, FR-2.5>>
 |1
 |Senior Dev 1
 |Production extraction pipeline; 3-tier fallback; AFC routing.
@@ -570,17 +570,17 @@ Use this matrix alongside the Workflow & Screen Guide (<<sect-workflow-screen-gu
 
 |Core Data Model
 |—
-|PostgreSQL (all core entities), Immutable Audit Trail
-|FR-7.5
+|PostgreSQL (all core entities), <<sect-audit-trail-event-store,Immutable Audit Trail>>
+|<<epic-7,FR-7.5>>
 |1-2
 |Senior Dev 2
 |Data model per spec; audit trail with RFC 8785 + SHA-256; state machine.
 |Phase 0 database.
 
 |Evidence & Review UI
-|WF-06, WF-07
+|<<wf-extraction-review,WF-06>>, <<wf-doc-viewer,WF-07>>
 |Evidence Management, Manual Extraction UI
-|FR-2.3, FR-2.4
+|<<epic-2,FR-2.3, FR-2.4>>
 |2
 |Junior Dev
 |Split-pane extraction review; document viewer with bounding boxes.
@@ -588,17 +588,17 @@ Use this matrix alongside the Workflow & Screen Guide (<<sect-workflow-screen-gu
 
 |Pack Engine
 |—
-|Audit Pack Engine, HMDA pack definition
-|FR-5.1, FR-5.2, FR-5.3, FR-5.4
+|<<sect-pack-rule-engine,Audit Pack Engine>>, HMDA pack definition
+|<<epic-5,FR-5.1, FR-5.2, FR-5.3, FR-5.4>>
 |2
 |Senior Dev 2 + Analyst
-|Declarative JSON loader; HMDA pack complete with 37 Key Data Fields.
+|Declarative JSON loader; HMDA pack complete with <<sect-37-key-data-fields,37 Key Data Fields>>.
 |Data model (Sprint 1).
 
 |Model Registry
-|WF-24
-|Model Registry (Postgres + API)
-|FR-7.3
+|<<wf-model-registry-admin,WF-24>>
+|<<sect-model-registry,Model Registry>> (Postgres + API)
+|<<epic-7,FR-7.3>>
 |2
 |Junior Dev
 |CRUD + lifecycle state machine; call-time gating.
@@ -607,45 +607,45 @@ Use this matrix alongside the Workflow & Screen Guide (<<sect-workflow-screen-gu
 8+|*Phase 1b: Intelligence & Scoring (Sprints 3-4, Apr 28 – May 23)*
 
 |Schema Mapping
-|WF-08, WF-09
-|Schema Mapping Service, Synonym Dictionary, Graph Edge Boosting
-|FR-3.1, FR-3.2, FR-3.3, FR-3.4
+|<<wf-mapping-review,WF-08>>, <<wf-synonym-dict,WF-09>>
+|<<sect-schema-mapping-service,Schema Mapping Service>>, Synonym Dictionary, <<sect-graph-edge-taxonomy,Graph Edge Boosting>>
+|<<epic-3,FR-3.1, FR-3.2, FR-3.3, FR-3.4>>
 |3
 |Senior Dev 1
-|Hybrid matcher v1; two-layer confidence; >=95% precision at >=0.90; override rate <=25%.
+|Hybrid matcher v1; <<sect-two-layer-confidence,two-layer confidence>>; >=95% precision at >=0.90; override rate <=25%.
 |Extraction pipeline + pack engine.
 
 |Rules & Findings
-|WF-10, WF-11, WF-12b
+|<<wf-findings-queue,WF-10>>, <<wf-finding-detail,WF-11>>, <<wf-record-comparison,WF-12b>>
 |Normalization Engine, Comparison Engine, Findings Management
-|FR-4.1, FR-4.2, FR-4.3, FR-4.4, FR-4.5, FR-4.6, FR-4.7
+|<<epic-4,FR-4.1, FR-4.2, FR-4.3, FR-4.4, FR-4.5, FR-4.6, FR-4.7>>
 |3
 |Senior Dev 2
-|Pack rules execute; findings with 6 attributes; Stage 1 + Stage 2; error rate alerting.
+|Pack rules execute; findings with 6 attributes; <<sect-stage-2-rules,Stage 1 + Stage 2>>; error rate alerting.
 |Schema mapping output + pack rules.
 
 |AI Narratives
-|WF-12
-|LLM Integration, PII Redaction, Provenance Logger
-|FR-4.4
+|<<wf-ai-narrative,WF-12>>
+|LLM Integration, PII Redaction, <<sect-ai-provenance,Provenance Logger>>
+|<<epic-4,FR-4.4>>
 |4
 |Senior Dev 2
 |AI-drafted narratives with citations; 21-field provenance; PII redacted; 3 disclaimers.
 |Findings generation (Sprint 3).
 
 |Manager Workflow
-|WF-13, WF-20
+|<<wf-escalation,WF-13>>, <<wf-mgr-dashboard,WF-20>>
 |Escalation, Approval Gates, Manager Dashboard
-|FR-6.1
+|<<epic-6,FR-6.1>>
 |4
 |Junior Dev
 |Escalation UI; approval gates; manager dashboard with alerts.
 |Finding states + audit events.
 
 |AI Governance UI
-|WF-12, WF-21
-|AI badges, confidence scores, disclaimers
-|FR-4.4
+|<<wf-ai-narrative,WF-12>>, <<wf-drift-monitor,WF-21>>
+|<<sect-ai-governance,AI badges, confidence scores, disclaimers>>
+|<<epic-4,FR-4.4>>
 |4
 |Junior Dev
 |AI-Generated badges; mandatory disclaimers; approval buttons; drift monitoring basics.
@@ -653,8 +653,8 @@ Use this matrix alongside the Workflow & Screen Guide (<<sect-workflow-screen-gu
 
 |CRA + ECOA Packs
 |—
-|Pack definitions + test cases
-|FR-5.2
+|<<sect-audit-pack-spec,Pack definitions>> + test cases
+|<<epic-5,FR-5.2>>
 |3-4
 |Analyst
 |Complete rule definitions, field mappings, test validation.
@@ -663,45 +663,45 @@ Use this matrix alongside the Workflow & Screen Guide (<<sect-workflow-screen-gu
 8+|*Phase 1c: Hardening & Launch Prep (Sprints 5-6, May 26 – Jun 27)*
 
 |Remediation
-|WF-14, WF-15
-|Remediation Workflow Engine, SLA Enforcement
-|FR-6.1, FR-6.2, FR-6.3
+|<<wf-remediation,WF-14>>, <<wf-aging,WF-15>>
+|<<sect-finding-remediation,Remediation Workflow Engine>>, SLA Enforcement
+|<<epic-6,FR-6.1, FR-6.2, FR-6.3>>
 |5
 |Senior Dev 2
 |9-state lifecycle; SLA tracking; aging alerts.
 |Findings management (Sprint 3).
 
 |Reporting & Export
-|WF-16, WF-17, WF-18, WF-19
-|Reporting Service, Exam Pack Lifecycle Manager
-|FR-8.1, FR-8.4, FR-8.5, FR-8.6, FR-8.7
+|<<wf-report-gen,WF-16>>, <<wf-bundle-export,WF-17>>, <<wf-findings-register,WF-18>>, <<wf-exec-dashboard,WF-19>>
+|Reporting Service, <<sect-exam-pack-lifecycle-manager,Exam Pack Lifecycle Manager>>
+|<<epic-8,FR-8.1, FR-8.4, FR-8.5, FR-8.6, FR-8.7>>
 |5
 |Senior Dev 2
-|Audit summary (HTML/PDF); 14-artifact bundle; coverage stats; three-lines certification.
+|Audit summary (HTML/PDF); <<sect-exam-ready-bundle,14-artifact bundle>>; <<sect-coverage-and-sampling,coverage stats>>; <<sect-defense-lines-certification,three-lines certification>>.
 |Remediation + audit trail.
 
 |Performance
 |—
-|Extraction optimization, vLLM deployment, WORM anchors
-|NFR-9.1
+|Extraction optimization, <<sect-model-deployment,vLLM deployment>>, <<sect-immutability,WORM anchors>>
+|<<epic-9,NFR-9.1>>
 |5-6
 |Senior Dev 1
 |Extraction <2s/page (P95); WORM anchor storage operational.
 |All services deployed.
 
 |Admin Screens
-|WF-22, WF-23, WF-25, WF-26
-|Auth, Pack Mgmt, System Settings, Audit Trail Viewer
-|FR-7.1, FR-7.2, FR-7.4, FR-7.5
+|<<wf-user-mgmt,WF-22>>, <<wf-pack-mgmt,WF-23>>, <<wf-system-settings,WF-25>>, <<wf-audit-trail,WF-26>>
+|Auth, Pack Mgmt, System Settings, <<sect-audit-trail-event-store,Audit Trail Viewer>>
+|<<epic-7,FR-7.1, FR-7.2, FR-7.4, FR-7.5>>
 |5
 |Junior Dev
-|User management with RBAC; pack lifecycle UI; settings; audit trail viewer.
+|User management with <<sect-rbac-permission-matrix,RBAC>>; pack lifecycle UI; settings; audit trail viewer.
 |Core services stable.
 
 |Security & Testing
 |—
 |Penetration testing, integration tests, UAT
-|NFR-9.2
+|<<epic-9,NFR-9.2>>
 |5-6
 |External + All
 |Zero critical security findings; 100+ test audits; 3+ beta customers complete UAT.

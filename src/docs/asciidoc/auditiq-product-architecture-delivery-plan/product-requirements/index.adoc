@@ -3,6 +3,7 @@
 
 === Functional Requirements (Organized by Epics)
 
+[[epic-1]]
 ==== Epic 1: Data Ingestion / Connectors
 
 [cols="10%,27%,43%,20%",options="header"]
@@ -243,6 +244,7 @@ Shows Docling processing status, page grades, fallback triggers, and per-documen
 
 '''
 
+[[epic-2]]
 ==== Epic 2: Document Extraction (Docling/OCR)
 
 [cols="10%,27%,43%,20%",options="header"]
@@ -520,6 +522,7 @@ Used standalone or embedded in extraction review and finding detail screens.
 
 '''
 
+[[epic-3]]
 ==== Epic 3: Schema Mapping + Mapping UI
 
 [cols="10%,27%,43%,20%",options="header"]
@@ -761,6 +764,7 @@ Reviewers can add, edit, and deactivate synonym pairs that improve future mappin
 
 '''
 
+[[epic-4]]
 ==== Epic 4: Audit Execution + Comparison Engine
 
 [cols="10%,27%,43%,20%",options="header"]
@@ -897,6 +901,7 @@ interface FindingOutput {
 
 '''
 
+[[epic-5]]
 ==== Epic 5: Audit Pack Management
 
 [cols="10%,27%,43%,20%",options="header"]
@@ -949,6 +954,7 @@ See <<sect-pack-manifest-schema>> for the full Pack Manifest JSON Schema and <<s
 
 '''
 
+[[epic-6]]
 ==== Epic 6: Findings Management + Remediation Workflow
 
 [cols="10%,27%,43%,20%",options="header"]
@@ -1540,6 +1546,7 @@ Auto-escalation alerts for untriaged findings, overdue remediations, and stalled
 
 '''
 
+[[epic-7]]
 ==== Epic 7: Evidence / Attachments + Document Control
 
 [cols="10%,27%,43%,20%",options="header"]
@@ -1610,6 +1617,7 @@ See <<sect-immutability>> for the full immutability/correctability specification
 
 '''
 
+[[epic-8]]
 ==== Epic 8: Reporting + Exports
 
 [cols="10%,27%,43%,20%",options="header"]
@@ -1906,6 +1914,7 @@ Full-featured data table with all finding fields, export capabilities, and audit
 
 '''
 
+[[epic-9]]
 ==== Epic 9: Admin / RBAC / Tenancy
 
 [cols="10%,27%,43%,20%",options="header"]
@@ -2118,6 +2127,7 @@ RBAC configuration with role-based permissions per the AuditIQ access control mo
 
 '''
 
+[[epic-10]]
 ==== Epic 10: Audit Lifecycle Management
 
 [cols="10%,27%,43%,20%",options="header"]

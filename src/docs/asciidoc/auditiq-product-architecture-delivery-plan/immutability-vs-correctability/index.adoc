@@ -213,6 +213,12 @@ You can see what was finalized, what changed, and why.”
 * <<sect-decision-d3, Decision D3>>: Design tier rationale, failure modes, three-tier architecture
 * Audit Trail Defensibility Report: Detailed threat model, risk heat map, and recommended design changes
 
+*Related screens:*
+
+* <<wf-audit-trail,WF-26: Audit Trail Viewer>> — browse and verify the immutable event log with hash chain integrity
+* <<wf-finding-detail,WF-11: Finding Detail>> — view finding state transitions and compensating events
+* <<wf-bundle-export,WF-17: Exam-Ready Bundle Export>> — export audit trail as evidence artifact
+
 '''
 
 [[wf-audit-trail]]

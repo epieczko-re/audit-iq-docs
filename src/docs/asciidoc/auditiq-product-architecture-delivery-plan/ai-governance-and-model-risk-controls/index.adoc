@@ -332,8 +332,8 @@ Empty or boilerplate notes are a red flag.
 |===
 |Stage |Check |Responsible |Action
 |*Generation (automated)* |Citation verification: Does narrative mention evidence that actually exists in extracted data? |Narrative engine |Flag if <0.80 citation accuracy; lower confidence; human review required
-|*Reviewer QA* |Human review: Auditor re-reads narrative + original document; approves or rejects |Reviewer |Cannot finalize without explicit “Approve AI narrative” click
-|*Manager approval* |Manager spot-checks AI narratives in escalated findings |Manager |Random 10% sample audit of AI narratives; flag issues for retraining
+|*Reviewer QA* |Human review: Auditor re-reads narrative + original document; approves or rejects (<<wf-ai-narrative,WF-12>>) |Reviewer |Cannot finalize without explicit “Approve AI narrative” click
+|*Manager approval* |Manager spot-checks AI narratives in escalated findings (<<wf-escalation,WF-13>>) |Manager |Random 10% sample audit of AI narratives; flag issues for retraining
 |*Post-launch* |Override rate tracking: % of AI narratives rejected by humans |Data team |Alert if rejection rate >10% (indicate model drift)
 |===
 
@@ -389,10 +389,10 @@ Phase 2:
 [cols="25%,25%,25%,25%",options="header"]
 |===
 |UI Element |Indicator |Placement |User Action
-|*AI-generated narrative in finding* |Badge: “🤖 AI-Generated” + tooltip |Above narrative text |“Approve” button (required) or “Edit/Override” (not in MVP)
-|*AI-suggested mapping* |Badge: “🤖 Suggested (confidence: 0.87)” |Next to field mapping |“Accept” or “Override with justification”
-|*AI confidence score* |Visual bar chart + numeric value |With finding score |Explains basis (extraction + mapping + rule confidence)
-|*Report disclaimer* |Footer: “This report includes AI-generated content. See findings for details.” |PDF footer + HTML |No click required; informational
+|*AI-generated narrative in finding* |Badge: “🤖 AI-Generated” + tooltip |Above narrative text (<<wf-ai-narrative,WF-12>>, <<wf-finding-detail,WF-11>>) |”Approve” button (required) or “Edit/Override” (not in MVP)
+|*AI-suggested mapping* |Badge: “🤖 Suggested (confidence: 0.87)” |Next to field mapping (<<wf-mapping-review,WF-08>>) |”Accept” or “Override with justification”
+|*AI confidence score* |Visual bar chart + numeric value |With finding score (<<wf-finding-detail,WF-11>>) |Explains basis (extraction + mapping + rule confidence)
+|*Report disclaimer* |Footer: “This report includes AI-generated content. See findings for details.” |PDF footer + HTML (<<wf-report-gen,WF-16>>) |No click required; informational
 |===
 
 *Hover tooltip example:*
@@ -446,6 +446,15 @@ Per Interagency Guidance on Third-Party Relationships (OCC 2023-17 / FDIC FIL-29
 * <<sect-ai-governance, UI Labeling>>: UI labeling and transparency requirements
 * *<<sect-model-registry, Model Registry>>:* Schema, API contract, lifecycle governance, and validation requirements for all AI model artifacts referenced by provenance fields
 * AI Regulatory Acceptance Report: Full regulatory analysis, risk exposure assessment, and recommended controls
+
+*Related screens:*
+
+* <<wf-ai-narrative,WF-12: AI Narrative Approval>> — batch approval of AI-generated narratives
+* <<wf-drift-monitor,WF-21: Drift Monitoring>> — model confidence calibration monitoring
+* <<wf-model-registry-admin,WF-24: Model Registry Admin>> — model lifecycle and validation management
+* <<wf-finding-detail,WF-11: Finding Detail>> — AI-generated narrative display with governance badges
+* <<wf-mapping-review,WF-08: Mapping Review>> — AI-suggested field mapping review
+* <<wf-audit-trail,WF-26: Audit Trail Viewer>> — immutable event log with AI provenance events
 
 '''
 

@@ -250,3 +250,10 @@ Packs opt into Docling-Graph by setting this flag and providing template referen
 * *<<sect-model-registry>>:* Model Registry — Pydantic template versions, sentence transformer, and ontology embedding models registered as model artifacts
 * *<<sect-embedding-architecture>>:* Sentence Transformer Embedding Architecture — two-layer embedding model that produces `implements` edges
 * *<<sect-regulatory-compliance>>:* Regulatory Compliance & Policy Management — Policy Profile Creation Pipeline that consumes `implements` edges for graph-first alignment
+
+*Related screens:*
+
+* <<wf-processing-status,WF-05: Processing Status>> — monitors Docling-Graph extraction progress
+* <<wf-extraction-review,WF-06: Field Extraction Review>> — review extracted graph node properties
+* <<wf-doc-viewer,WF-07: Document Viewer>> — view source documents with bounding boxes from graph extraction
+* <<wf-mapping-review,WF-08: Mapping Review>> — review graph-aware field mappings

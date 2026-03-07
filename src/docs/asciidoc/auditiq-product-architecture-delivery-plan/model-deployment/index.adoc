@@ -189,3 +189,9 @@ Operational guardrails:
 * *<<sect-ai-provenance>>:* Provenance logging requirements
 * *<<sect-ai-governance, Third-Party AI Provider Requirements>>:* Third-party AI provider requirements
 * *<<sect-model-registry>>:* Model Registry approvals and controls
+
+*Related screens:*
+
+* <<wf-model-registry-admin,WF-24: Model Registry Admin>> — register and approve self-hosted model versions
+* <<wf-drift-monitor,WF-21: Drift Monitoring>> — monitor deployed model calibration and performance
+* <<wf-processing-status,WF-05: Processing Status>> — track extraction jobs running on deployed models
