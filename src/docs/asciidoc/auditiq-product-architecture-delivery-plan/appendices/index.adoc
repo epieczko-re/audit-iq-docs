@@ -10,71 +10,189 @@ All other sections reference these definitions; if a value in another section co
 When thresholds are tuned, update *this file first*, then propagate.
 ____
 
-==== General Terms
+==== Glossary of Terms
 
-*Audit (noun):* A review of lending compliance for one or more loan records against a pack of rules and policies.
+[cols="25%,75%",options="header"]
+|===
+|Term |Definition
 
-*Audit Event:* Immutable timestamped record of a change to audit state (e.g., "finding created", "manager approval", "report finalized").
+|*Audit*
+|A review of lending compliance for one or more loan records against a pack of rules and policies.
+
+|*Audit Event*
+|Immutable timestamped record of a change to audit state (e.g., "finding created", "manager approval", "report finalized").
 See Appendix C.
 
-*Audit Pack (or Pack):* A declarative JSON specification defining rules, scoring weights, evidence requirements, and narratives for a compliance audit category (e.g., HMDA, CRA, ECOA).
+|*Audit Pack (or Pack)*
+|A declarative JSON specification defining rules, scoring weights, evidence requirements, and narratives for a compliance audit category (e.g., HMDA, CRA, ECOA).
 See <<sect-audit-pack-spec>>.
 
-*Audit Trail / Audit Log:* Complete record of all events (extractions, approvals, corrections) for an audit.
+|*Audit Trail / Audit Log*
+|Complete record of all events (extractions, approvals, corrections) for an audit.
 Append-only; forms basis of regulatory compliance proof.
 
-*Calibration:* Process of tuning confidence score thresholds to match historical reviewer decisions.
+|*Calibration*
+|Process of tuning confidence score thresholds to match historical reviewer decisions.
 See <<sect-confidence-calibration>>.
 
-*Confidence Score:* Numeric value (0.0–1.0) representing the AI system's certainty in a data extraction, schema mapping, or finding.
+|*CFPB (Consumer Financial Protection Bureau)*
+|Federal agency responsible for consumer protection in the financial sector.
+Issues regulations (Regulation C, Regulation B, Regulation Z) and enforcement actions relevant to AuditIQ's audit domains.
+
+|*Confidence Score*
+|Numeric value (0.0–1.0) representing the AI system's certainty in a data extraction, schema mapping, or finding.
 Composed of mapping confidence + extraction confidence + rule confidence.
 
-*Docling:* Open-source document parsing library that extracts text, tables, images from PDFs.
+|*`corroborates` Edge*
+|A graph edge linking extracted field values across documents for the same loan (e.g., loan_amount matching across Closing Disclosure and Loan Estimate).
+Created by the Docling-Graph extraction pipeline.
+Drives `graph_corrob_score` in AFC v2.
+See <<sect-graph-edge-taxonomy>>.
+
+|*CRA (Community Reinvestment Act)*
+|Federal law requiring banks to meet the credit needs of the communities they serve, including low- and moderate-income neighborhoods.
+
+|*Cross-Space Cosine Similarity*
+|A similarity metric computed between vectors from two different embedding spaces — specifically, between a document sentence embedding (produced by the sentence transformer) and an ontology node embedding (produced by OWL2Vec* or on2vec).
+Used during graph anchoring to identify candidate concept nodes for a given policy sentence.
+
+|*Docling*
+|Open-source document parsing library that extracts text, tables, images from PDFs.
 Used for HMDA document extraction in Phase 1a.
 
-*Evidence:* A document, table cell, or data field that is linked to a finding as proof of compliance or violation.
+|*ECOA (Equal Credit Opportunity Act)*
+|Federal law prohibiting credit discrimination on the basis of race, color, religion, national origin, sex, marital status, age, or receipt of public assistance.
+Regulation B implements ECOA.
 
-*Finding:* A structured record of a single compliance issue (or absence thereof) identified during an audit.
+|*Evidence*
+|A document, table cell, or data field that is linked to a finding as proof of compliance or violation.
+
+|*FCRA (Fair Credit Reporting Act)*
+|Federal law governing the collection, dissemination, and use of consumer credit information.
+
+|*FFIEC (Federal Financial Institutions Examination Council)*
+|Interagency body that prescribes uniform principles, standards, and report forms for examining financial institutions.
+FFIEC IT Examination Handbook governs audit trail and information security controls.
+
+|*Finding*
+|A structured record of a single compliance issue (or absence thereof) identified during an audit.
 Contains finding_id, target_record_id, rule_id, severity, confidence, narrative, approver.
 
-*Human-in-Loop:* Requirement for human (reviewer or manager) to explicitly approve or correct an AI-generated result before finalization.
+|*GLBA (Gramm-Leach-Bliley Act)*
+|Federal law requiring financial institutions to explain their information-sharing practices and safeguard sensitive data.
+Regulation P implements GLBA privacy requirements.
 
-*Immutability:* Property that audit events, evidence files, and finalized findings cannot be deleted or retroactively modified.
+|*Graph Anchoring*
+|The process of linking an unstructured policy or regulation sentence to a precise concept node in the compliance knowledge graph via cross-space cosine similarity between sentence embeddings (Layer 2) and ontology node embeddings (Layer 1), confirmed by an LLM reranker.
+Produces `implements` edges in the graph.
+See <<sect-embedding-architecture>>.
+
+|*HMDA (Home Mortgage Disclosure Act)*
+|Federal law requiring financial institutions to collect and report data about mortgage lending activity.
+Regulation C implements HMDA and defines ~110 reportable data fields per loan application.
+
+|*Human-in-Loop*
+|Requirement for human (reviewer or manager) to explicitly approve or correct an AI-generated result before finalization.
+
+|*IIA Three Lines Model*
+|Principles-based governance framework published by The Institute of Internal Auditors (IIA) in July 2020, replacing the older "Three Lines of Defense" model.
+Defines six principles: (1) Governance, (2) Governing body roles, (3) Management and first- and second-line roles, (4) Third-line roles, (5) Third-line independence, (6) Creating and protecting value.
+First-line roles deliver products/services and own risk day-to-day; second-line roles provide expertise, monitoring, and challenge on risk-related matters; third-line roles (internal audit) provide independent assurance and advice.
+The "lines" denote roles, not organizational silos, and all operate concurrently.
+AuditIQ maps first-line roles to QC (`qc_reviewer`, `qc_manager`), second-line roles to Compliance (`compliance_analyst`, `compliance_officer`), and third-line roles to Internal Audit (`auditor`, `audit_director`).
+See <<sect-three-lines-model-gap>> and <<sect-concept-of-operations>>.
+
+|*Immutability*
+|Property that audit events, evidence files, and finalized findings cannot be deleted or retroactively modified.
 Corrections are recorded as new compensating events (<<sect-immutability>>).
 
-*LogMap:* Semantic web ontology matching library; AuditIQ evaluates it as a potential schema matcher replacement in Phase 2.
+|*`implements` Edge*
+|A graph edge of type `PolicySentence ──implements──→ OntologyNode` created during graph anchoring.
+Links an institution's policy or procedure sentence to the regulatory concept it addresses.
+Distinct from `corroborates` edges, which link extracted field values across loan documents.
+See <<sect-graph-edge-taxonomy>>.
 
-*Manager:* Reviewer role with authority to escalate findings, adjust severity, and approve audit finalization.
+|*LogMap*
+|Semantic web ontology matching library; AuditIQ evaluates it as a potential schema matcher replacement in Phase 2.
 
-*Pack Manifest:* JSON file defining pack metadata, rule list, evidence requirements, and versioning.
+|*Manager*
+|Reviewer role with authority to escalate findings, adjust severity, and approve audit finalization.
+
+|*MISMO (Mortgage Industry Standards Maintenance Organization)*
+|Industry body that maintains the standard data model for mortgage transactions.
+AuditIQ uses a flattened subset of the MISMO Reference Model v3.x as its canonical schema (<<sect-decision-d6>>).
+
+|*NIST AI RMF (AI Risk Management Framework)*
+|Voluntary framework from the National Institute of Standards and Technology for managing AI risk.
+Organized around four functions: Govern, Map, Measure, Manage.
+
+|*on2vec*
+|An extension of ontology embedding that integrates graph neural network (GNN) structural features with sentence transformer text features into a single embedding.
+An alternative or complement to OWL2Vec* for generating ontology node embeddings.
+See <<sect-two-layer-embeddings>>.
+
+|*OWL2Vec**
+|An ontology embedding method that generates vector representations of OWL ontology nodes by combining random walks over the graph structure with textual features from labels and descriptions.
+Used to produce Layer 1 (structural) embeddings for the unified compliance knowledge graph.
+See <<sect-two-layer-embeddings>>.
+
+|*Pack Manifest*
+|JSON file defining pack metadata, rule list, evidence requirements, and versioning.
 See Appendix B.
 
-*Reviewer:* Primary auditor role; responsible for extracting evidence, creating findings, and requesting overrides.
+|*Regulation C*
+|The implementing regulation for HMDA, issued by the CFPB.
+Specifies data collection, reporting, and disclosure requirements for mortgage lenders.
 
-*RLS (Row-Level Security):* PostgreSQL feature that restricts data access based on user tenant.
+|*Reviewer*
+|Primary auditor role; responsible for extracting evidence, creating findings, and requesting overrides.
+
+|*RLS (Row-Level Security)*
+|PostgreSQL feature that restricts data access based on user tenant.
 AuditIQ relies on RLS for tenant isolation.
 
-*Sampling:* Random or stratified selection of records from a population to audit.
+|*Sampling*
+|Random or stratified selection of records from a population to audit.
 Pack can define sampling methodology.
 
-*Schema Matcher:* Component that maps extracted HMDA field values to audit pack schema fields with confidence scores.
+|*Schema Matcher*
+|Component that maps extracted HMDA field values to audit pack schema fields with confidence scores.
 See <<sect-schema-mapping-service>>.
 
-*Snapshot:* Immutable record of audit state at a point in time (used for reproducibility & rollback to prior version without re-running extraction).
+|*Sentence Transformer (SBERT)*
+|A variant of the BERT architecture optimized for producing semantically meaningful sentence-level embeddings.
+AuditIQ uses a single domain-fine-tuned SBERT model shared across the Regulatory Citation Engine and the Policy Alignment Pipeline, fine-tuned on financial regulatory language for negation sensitivity, numeric threshold context, and deontic language precision.
+See <<sect-embedding-domain-finetuning>>.
+
+|*Snapshot*
+|Immutable record of audit state at a point in time (used for reproducibility & rollback to prior version without re-running extraction).
 See <<sect-immutability>>.
 
-*Source Documents (Source Data):* The evidence documents against which target records are compared — original loan file artifacts (PDFs, images, or a second structured dataset in record-to-record audits).
+|*SOC 2 (Service Organization Control 2)*
+|AICPA audit framework that certifies a service organization's controls for security, availability, processing integrity, confidentiality, and privacy.
+AuditIQ targets SOC 2 Type II readiness by June 30, 2026.
+
+|*Source Documents (Source Data)*
+|The evidence documents against which target records are compared — original loan file artifacts (PDFs, images, or a second structured dataset in record-to-record audits).
 Extraction from source documents produces confidence scores (AFC) because OCR and layout parsing introduce uncertainty.
 See <<sect-target-source-schemas>>.
 
-*SOC 2:* Service Organization Control audit; certifies security, availability, and confidentiality controls.
-AuditIQ target compliance by Jun 30.
+|*SR 11-7 / OCC 2011-12*
+|Interagency supervisory guidance on Model Risk Management.
+Requires model inventory, validation, effective challenge, governance, and documentation for any model used in a decision process.
 
-*Target Dataset (Target Data):* The structured loan records under audit — the institution's own data as filed, originated, or reported.
+|*Target Dataset (Target Data)*
+|The structured loan records under audit — the institution's own data as filed, originated, or reported.
 Validated deterministically during ingestion against the audit pack schema.
 See <<sect-target-source-schemas>>.
 
-*Tenant:* A customer organization in the multi-tenant AuditIQ system; data isolated by row-level security + encryption.
+|*Tenant*
+|A customer organization in the multi-tenant AuditIQ system; data isolated by row-level security + encryption.
+
+|*TRID (TILA-RESPA Integrated Disclosure)*
+|Combined disclosure rules under the Truth in Lending Act (TILA) and Real Estate Settlement Procedures Act (RESPA).
+Requires Loan Estimate and Closing Disclosure forms for most residential mortgage loans.
+|===
 
 ==== Confidence Metrics
 
@@ -294,105 +412,6 @@ Severity is immutable once finding is triaged unless explicitly re-scored by Man
 |Low confidence — manual entry / reject
 |===
 
-==== Regulatory Terminology
-
-[cols="25%,75%",options="header"]
-|===
-|Term |Definition
-
-|*HMDA (Home Mortgage Disclosure Act)*
-|Federal law requiring financial institutions to collect and report data about mortgage lending activity.
-Regulation C implements HMDA and defines ~110 reportable data fields per loan application.
-
-|*Regulation C*
-|The implementing regulation for HMDA, issued by the CFPB.
-Specifies data collection, reporting, and disclosure requirements for mortgage lenders.
-
-|*CRA (Community Reinvestment Act)*
-|Federal law requiring banks to meet the credit needs of the communities they serve, including low- and moderate-income neighborhoods.
-
-|*ECOA (Equal Credit Opportunity Act)*
-|Federal law prohibiting credit discrimination on the basis of race, color, religion, national origin, sex, marital status, age, or receipt of public assistance.
-Regulation B implements ECOA.
-
-|*TRID (TILA-RESPA Integrated Disclosure)*
-|Combined disclosure rules under the Truth in Lending Act (TILA) and Real Estate Settlement Procedures Act (RESPA).
-Requires Loan Estimate and Closing Disclosure forms for most residential mortgage loans.
-
-|*FCRA (Fair Credit Reporting Act)*
-|Federal law governing the collection, dissemination, and use of consumer credit information.
-
-|*MISMO (Mortgage Industry Standards Maintenance Organization)*
-|Industry body that maintains the standard data model for mortgage transactions.
-AuditIQ uses a flattened subset of the MISMO Reference Model v3.x as its canonical schema (<<sect-decision-d6>>).
-
-|*SR 11-7 / OCC 2011-12*
-|Interagency supervisory guidance on Model Risk Management.
-Requires model inventory, validation, effective challenge, governance, and documentation for any model used in a decision process.
-
-|*NIST AI RMF (AI Risk Management Framework)*
-|Voluntary framework from the National Institute of Standards and Technology for managing AI risk.
-Organized around four functions: Govern, Map, Measure, Manage.
-
-|*CFPB (Consumer Financial Protection Bureau)*
-|Federal agency responsible for consumer protection in the financial sector.
-Issues regulations (Regulation C, Regulation B, Regulation Z) and enforcement actions relevant to AuditIQ's audit domains.
-
-|*FFIEC (Federal Financial Institutions Examination Council)*
-|Interagency body that prescribes uniform principles, standards, and report forms for examining financial institutions.
-FFIEC IT Examination Handbook governs audit trail and information security controls.
-
-|*GLBA (Gramm-Leach-Bliley Act)*
-|Federal law requiring financial institutions to explain their information-sharing practices and safeguard sensitive data.
-Regulation P implements GLBA privacy requirements.
-
-|*SOC 2 (Service Organization Control 2)*
-|AICPA audit framework that certifies a service organization's controls for security, availability, processing integrity, confidentiality, and privacy.
-AuditIQ targets SOC 2 Type II readiness by June 30, 2026.
-|===
-
-==== AI & Embedding Terminology
-
-[cols="25%,75%",options="header"]
-|===
-|Term |Definition
-
-|*Sentence Transformer (SBERT)*
-|A variant of the BERT architecture optimized for producing semantically meaningful sentence-level embeddings.
-AuditIQ uses a single domain-fine-tuned SBERT model shared across the Regulatory Citation Engine and the Policy Alignment Pipeline, fine-tuned on financial regulatory language for negation sensitivity, numeric threshold context, and deontic language precision.
-See <<sect-embedding-domain-finetuning>>.
-
-|*OWL2Vec**
-|An ontology embedding method that generates vector representations of OWL ontology nodes by combining random walks over the graph structure with textual features from labels and descriptions.
-Used to produce Layer 1 (structural) embeddings for the unified compliance knowledge graph.
-See <<sect-two-layer-embeddings>>.
-
-|*on2vec*
-|An extension of ontology embedding that integrates graph neural network (GNN) structural features with sentence transformer text features into a single embedding.
-An alternative or complement to OWL2Vec* for generating ontology node embeddings.
-See <<sect-two-layer-embeddings>>.
-
-|*Graph Anchoring*
-|The process of linking an unstructured policy or regulation sentence to a precise concept node in the compliance knowledge graph via cross-space cosine similarity between sentence embeddings (Layer 2) and ontology node embeddings (Layer 1), confirmed by an LLM reranker.
-Produces `implements` edges in the graph.
-See <<sect-embedding-architecture>>.
-
-|*Cross-Space Cosine Similarity*
-|A similarity metric computed between vectors from two different embedding spaces — specifically, between a document sentence embedding (produced by the sentence transformer) and an ontology node embedding (produced by OWL2Vec* or on2vec).
-Used during graph anchoring to identify candidate concept nodes for a given policy sentence.
-
-|*`implements` Edge*
-|A graph edge of type `PolicySentence ──implements──→ OntologyNode` created during graph anchoring.
-Links an institution's policy or procedure sentence to the regulatory concept it addresses.
-Distinct from `corroborates` edges, which link extracted field values across loan documents.
-See <<sect-graph-edge-taxonomy>>.
-
-|*`corroborates` Edge*
-|A graph edge linking extracted field values across documents for the same loan (e.g., loan_amount matching across Closing Disclosure and Loan Estimate).
-Created by the Docling-Graph extraction pipeline.
-Drives `graph_corrob_score` in AFC v2.
-See <<sect-graph-edge-taxonomy>>.
-|===
 
 '''
 
