@@ -361,6 +361,24 @@ Key interactions will include: event search, entity-scoped filtering (by audit, 
 
 '''
 
+==== Happy Path
+
+[arabic]
+. IT Admin configures SSO/SAML integration → creates users with defense line and role assignments → system enforces one-user-per-defense-line isolation.
+. IT Admin sets confidence thresholds and SLA timelines in System Settings → changes logged to audit trail with before/after values.
+. Manager creates a new audit pack (Draft) → defines rules, scoring weights, and evidence requirements → submits for test harness validation.
+. Test harness executes against sample data → validation passes → Manager publishes pack → pack available for new audits; existing audits remain pinned to prior version.
+. Model Risk Officer registers a new AI/ML model → uploads performance metrics → reviews against acceptance criteria → approves model → model available at call-time.
+. IT Admin reviews audit trail for recent administrative activity → filters by event type and date range → confirms no anomalies.
+
+==== Key Edge Cases
+
+* *Pack validation failure:* Test harness detects unexpected findings or missing rules → Manager receives failure report with specifics → revises pack and resubmits; publication blocked until validation passes.
+* *No approved model at call-time:* All models for a capability are deprecated or in Draft/Staging → system refuses AI calls (fail-closed gating) → Manager sees error "No approved model for extraction"; audits requiring that capability are blocked.
+* *Cross-line role assignment attempt:* IT Admin attempts to assign a user to multiple defense lines → system enforces single-line constraint and rejects the change with "One user = one defense line" validation error.
+* *Segregation of duties violation:* A user who created a finding attempts to close it → system blocks with "Segregation of duties violation" and logs the attempt as an immutable audit event.
+* *Model deprecation with active audits:* Model Risk Officer deprecates a model version while audits are in progress → active audits continue with the current model; only new audits use the latest approved version.
+
 ==== Functional Requirements
 
 ===== Epic 5: Audit Pack Management

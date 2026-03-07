@@ -336,6 +336,24 @@ WF-21 Drift Monitoring is a Phase 2 screen.
 Wireframe and interactions will be designed during Phase 2 planning.
 ====
 
+==== Happy Path
+
+[arabic]
+. Executive opens Executive Dashboard → KPI cards render with current audit count, open findings, compliance rate, and average resolution time.
+. Executive reviews Compliance Trend chart → clicks a data point to drill into that month's audits and findings summary.
+. Executive downloads Quarterly Report PDF → shares with board or regulators.
+. Manager opens Manager Dashboard → sees active audits with progress, critical findings requiring triage, and pending approvals.
+. Manager clicks *[Triage Now]* on an SLA-violating critical finding → navigates to Finding Detail with triage pre-expanded → assigns and triages finding.
+. Manager reviews and approves pending AI narrative → human approval event recorded in audit trail.
+
+==== Key Edge Cases
+
+* *No audit data yet:* New tenant with zero audits → dashboards render empty-state cards with guidance ("Create your first audit to see metrics here").
+* *SLA violation backlog:* Multiple critical findings exceed SLA simultaneously → alert banner stacks violations; sorted by overdue duration so the most urgent items surface first.
+* *Cross-tenant data leak attempt:* User manipulates API query parameters → PostgreSQL RLS enforces tenant isolation at the database level; cross-tenant data is architecturally inaccessible.
+* *Stale dashboard data:* Aggregation engine lag exceeds 30-second refresh target → system displays "Data as of [timestamp]" indicator; WebSocket reconnect triggers automatic refresh.
+* *Executive requests drill-down beyond read-only scope:* Executive clicks a finding from drill-down view → navigated to read-only Finding Detail; edit controls are hidden per RBAC role.
+
 ==== Functional Requirements
 
 Dashboard functional requirements are captured in FR-8.10 under <<_epic_8_reporting_exports, Epic 8: Reporting + Exports>> in the Remediation & Reporting journey.
