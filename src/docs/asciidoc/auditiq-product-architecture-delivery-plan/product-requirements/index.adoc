@@ -61,7 +61,7 @@ sequenceDiagram
 
 ===== Ingestion Architecture
 
-*Component:* Ingestion Service (<<sect-component-design>>)
+*Component:* Ingestion Service (<<sect-ingestion-service>>)
 
 *Input contracts:*
 
@@ -842,7 +842,7 @@ sequenceDiagram
 
 ===== Comparison Engine Architecture
 
-*Components:* Normalization Engine + Comparison & Rules Engine (<<sect-component-design>>)
+*Components:* Normalization Engine (<<sect-normalization-engine>>) + Comparison & Rules Engine (<<sect-comparison-rules-engine>>)
 
 *Normalization (pack-defined rules):*
 
@@ -1011,7 +1011,7 @@ flowchart TD
 
 ===== Finding Lifecycle & Escalation Architecture
 
-*Component:* Findings Management Service (<<sect-component-design>>)
+*Component:* Findings Management Service (<<sect-findings-management>>)
 
 *Finding lifecycle state machine:*
 
@@ -1580,7 +1580,7 @@ sequenceDiagram
 
 ===== Evidence Architecture
 
-*Component:* Evidence & Attachment Service (<<sect-component-design>>)
+*Component:* Evidence & Attachment Service (<<sect-evidence-attachment-service>>)
 
 *Chain-of-custody metadata:*
 
@@ -1966,7 +1966,7 @@ flowchart TD
 
 ===== RBAC & Tenancy Architecture
 
-*Components:* Auth & RBAC Service, PostgreSQL Row-Level Security (<<sect-component-design>>)
+*Components:* Auth & RBAC Service (<<sect-rbac-permission-matrix>>), PostgreSQL Row-Level Security (<<sect-multi-tenancy-isolation>>)
 
 *Roles (IIA Three Lines Model aligned):*
 
@@ -2202,7 +2202,7 @@ stateDiagram-v2
 
 ===== Audit Lifecycle Architecture
 
-*Component:* Audit Lifecycle Manager (<<sect-component-design>>)
+*Component:* Audit Lifecycle Manager (<<sect-audit-orchestration>>)
 
 *State management:* The Audit Lifecycle Manager owns the state machine and enforces valid transitions.
 Each transition emits an immutable audit event to the Event Store.

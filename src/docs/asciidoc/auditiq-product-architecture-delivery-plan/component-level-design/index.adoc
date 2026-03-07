@@ -109,6 +109,7 @@ graph TB
 
 *Color legend:* [blue]#Blue# = Client & Data Pipeline | [orange]#Orange# = Core Platform | [green]#Green# = Intelligence | [purple]#Purple# = Storage
 
+[[sect-ingestion-service]]
 === Ingestion Service
 
 *Responsibilities:*
@@ -713,6 +714,7 @@ Target: ≤25% override rate on CD-supported fields by end of Phase 1b UAT.
 
 *Phase 2 upgrade path:* Embedding-based candidate expansion (using the shared domain-fine-tuned sentence transformer — see <<sect-embedding-domain-finetuning>>) → LLM-based reranking → LogMap ontology track (leveraging the unified compliance graph — see <<sect-two-layer-embeddings>>) → isotonic regression calibration.
 
+[[sect-normalization-engine]]
 === Normalization Engine
 
 *Responsibilities:*
@@ -838,6 +840,7 @@ This prevents silent mismatches when source documents contain decomposed charact
 *Determinism:* Deterministic — same input + same rules = same output.
 Unicode NFC normalization and banker's rounding are both deterministic operations.
 
+[[sect-comparison-rules-engine]]
 === Comparison & Rules Engine
 
 *Responsibilities:*
@@ -894,6 +897,7 @@ interface FindingOutput {
 *Determinism:* Fully deterministic.
 Same inputs → same findings.
 
+[[sect-findings-management]]
 === Findings Management Service
 
 *Responsibilities:*
@@ -1098,6 +1102,7 @@ The Findings Management Service monitors for cross-finding patterns that indicat
 
 Pattern alerts are informational — they do not change finding state but are included in the exam pack dossier's coverage statistics to give examiners visibility into systemic risk signals.
 
+[[sect-evidence-attachment-service]]
 === Evidence & Attachment Service
 
 *Responsibilities:*
@@ -1315,6 +1320,7 @@ All anchor hashes match WORM-stored values
 * When snapshots are materialized, compute snapshot hash and store in event stream
 * Periodic re-materialization from events; compare against stored snapshot hash; mismatch = drift alert
 
+[[sect-reporting-service]]
 === Reporting Service
 
 *Responsibilities:*
@@ -1369,6 +1375,7 @@ Report finalized, exported, and stored immutably
 * *XLSX:* Excel format with formatting, multiple sheets (findings, summary, metrics)
 * *JSON:* Machine-readable export for API consumers
 
+[[sect-reporting-service-output]]
 === Reporting Service Output Contracts
 
 *Report output:*
@@ -1637,6 +1644,7 @@ Retention follows the same 7-year lifecycle policy as source documents.
 * Reviewer cannot approve own findings (query: `finding.created_by != current_user`)
 * Senior Reviewer cannot retest own triages (query: `finding.triaged_by != current_user`)
 
+[[sect-ai-governance-approval-workflow]]
 === AI Governance & Approval Workflow
 
 *Core principle:* Every AI output is advisory, non-finalized, and requires explicit human approval before inclusion in official records.

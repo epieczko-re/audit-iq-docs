@@ -551,7 +551,7 @@ No AI is involved in audit lifecycle operations.
 |===
 |Component |Role in This Journey
 
-|*Ingestion Service* (<<sect-component-design>>)
+|*Ingestion Service* (<<sect-ingestion-service>>)
 |Validates target dataset (CSV/API) against pack-defined schema; computes per-record SHA-256 checksums; stores validated records in staging tables.
 
 |*Azure Blob Storage* (<<sect-document-store>>)
@@ -598,7 +598,7 @@ sequenceDiagram
 
 ===== Ingestion Architecture
 
-*Component:* Ingestion Service (<<sect-component-design>>)
+*Component:* Ingestion Service (<<sect-ingestion-service>>)
 
 *Input contracts:*
 
@@ -677,7 +677,7 @@ stateDiagram-v2
 
 ===== Audit Lifecycle Architecture
 
-*Component:* Audit Lifecycle Manager (<<sect-component-design>>)
+*Component:* Audit Lifecycle Manager (<<sect-audit-orchestration>>)
 
 *State management:* The Audit Lifecycle Manager owns the state machine and enforces valid transitions.
 Each transition emits an immutable audit event to the Event Store.

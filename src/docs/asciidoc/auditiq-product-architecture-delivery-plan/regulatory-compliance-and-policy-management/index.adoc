@@ -574,7 +574,7 @@ OWL2Vec* generates these embeddings by walking the OWL graph structure and combi
 The on2vec approach extends this by integrating GNN-based graph structure with sentence transformer text features into a single embedding.
 
 *Layer 2 — Document sentence embeddings (textual):* Every sentence extracted from a regulation, guidance document, institution policy, or procedure is embedded using the domain-fine-tuned sentence transformer.
-Embeddings are stored in Qdrant (the same vector store used by the Regulatory Citation Engine — see <<sect-component-design>>) with metadata tagging the source document, sentence position, and document type.
+Embeddings are stored in Qdrant (the same vector store used by the Regulatory Citation Engine — see <<sect-regulatory-citation-engine>>) with metadata tagging the source document, sentence position, and document type.
 Sentence-level granularity is required because individual policy sentences carry distinct obligations that paragraph-level chunking would conflate.
 
 *Cross-space anchoring:* When a policy sentence is embedded, it is not stored as a free-floating vector.
@@ -952,7 +952,7 @@ The fine-tuning cycle operates as follows:
 
 . *Accumulate:* Policy documents from multiple institutions are processed; graph anchoring edges accumulate.
 . *Extract pairs:* Positive pairs from same-node anchors; negative and hard-negative pairs from different-node anchors within the same regulatory domain.
-. *Fine-tune:* When the training corpus reaches a minimum threshold (≥ 500 labeled pairs — aligned with the calibration thresholds in <<sect-component-design>>), the sentence transformer is fine-tuned and a new version is registered in the Model Registry.
+. *Fine-tune:* When the training corpus reaches a minimum threshold (≥ 500 labeled pairs — aligned with the calibration thresholds in <<sect-scoring-framework>>), the sentence transformer is fine-tuned and a new version is registered in the Model Registry.
 . *Re-anchor:* Optionally, existing policy sentences are re-embedded with the improved model and re-anchored, improving alignment quality for previously processed institutions.
 . *Repeat:* Each cycle produces a model that anchors more accurately, which generates higher-quality training pairs for the next cycle.
 

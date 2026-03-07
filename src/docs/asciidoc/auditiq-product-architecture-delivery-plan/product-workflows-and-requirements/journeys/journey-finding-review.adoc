@@ -534,16 +534,16 @@ AI-generated narratives, suggestions, and advisory outputs are explicitly non-de
 |===
 |Component |Role in This Journey
 
-|*Normalization Engine* (<<sect-component-design>>)
+|*Normalization Engine* (<<sect-normalization-engine>>)
 |Pack-defined normalization rules per field (currency stripping, date parsing, address formatting, Unicode NFC).
 
-|*Comparison & Rules Engine* (<<sect-component-design>>)
+|*Comparison & Rules Engine* (<<sect-comparison-rules-engine>>)
 |Applies pack rules to normalized mapped data; supports exact match, tolerance-based, conditional logic, cross-field validation, lookup validation.
 
 |*LLM Integration (LiteLLM)* (<<sect-ai-governance>>)
 |Generates finding narratives with citations; rate-limited; PII-redacted inputs; cost-monitored.
 
-|*Findings Management Service* (<<sect-component-design>>)
+|*Findings Management Service* (<<sect-findings-management>>)
 |Creates findings with 6 required attributes (target value, source value, rule, confidence, severity, citation); manages 9-state lifecycle.
 
 |*Provenance Logger* (<<sect-ai-governance>>)
@@ -616,7 +616,7 @@ sequenceDiagram
 
 ===== Comparison Engine Architecture
 
-*Components:* Normalization Engine + Comparison & Rules Engine (<<sect-component-design>>)
+*Components:* Normalization Engine (<<sect-normalization-engine>>) + Comparison & Rules Engine (<<sect-comparison-rules-engine>>)
 
 *Normalization (pack-defined rules):*
 
@@ -719,7 +719,7 @@ flowchart TD
 
 ===== Finding Lifecycle & Escalation Architecture
 
-*Component:* Findings Management Service (<<sect-component-design>>)
+*Component:* Findings Management Service (<<sect-findings-management>>)
 
 *Finding lifecycle state machine:*
 

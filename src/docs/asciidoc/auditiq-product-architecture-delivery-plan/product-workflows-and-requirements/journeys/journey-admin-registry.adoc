@@ -351,7 +351,7 @@ flowchart TD
 
 ===== RBAC & Tenancy Architecture
 
-*Components:* Auth & RBAC Service, PostgreSQL Row-Level Security (<<sect-component-design>>)
+*Components:* Auth & RBAC Service (<<sect-rbac-permission-matrix>>), PostgreSQL Row-Level Security (<<sect-multi-tenancy-isolation>>)
 
 *Roles (IIA Three Lines Model aligned):*
 
