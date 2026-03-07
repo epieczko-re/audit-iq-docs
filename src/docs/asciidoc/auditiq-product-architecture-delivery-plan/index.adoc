@@ -2,7 +2,7 @@
 :subtitle: RiskExec — Comprehensive Specification v0.30
 :doctype: book
 :author: Erik Pieczkowski
-:revnumber: 0.30
+:revnumber: 0.32
 :revdate: 2026-03-07
 :build-timestamp: local build
 :toc:
@@ -47,8 +47,6 @@ include::product-workflows-and-requirements/index.adoc[]
 = Part IV: Architecture & Design
 
 include::architecture-overview/index.adoc[]
-
-include::scoring-framework/index.adoc[]
 
 include::component-level-design/index.adoc[]
 
