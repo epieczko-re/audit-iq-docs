@@ -1,0 +1,623 @@
+=== Stage 2: Extraction & Mapping
+
+This stage covers document processing through Docling-Graph, AFC scoring, field extraction review, schema mapping, and synonym dictionary management.
+The system extracts structured data from source documents and maps extracted fields to the HMDA/MISMO target schema.
+
+==== User Journey
+
+The document upload and extraction flow is shown in <<user-journey-overview, Workflow 2>>.
+The schema mapping review flow is shown in <<user-journey-overview, Workflow 3>>.
+
+==== Screens
+
+[cols="8%,25%,32%,35%",options="header"]
+|===
+|WF # |Screen |Requirements |Summary
+
+|WF-03
+|<<wf-audit-progress, Audit Progress Monitor>>
+|FR-10.3, FR-10.4
+|Real-time phase progress (upload, extraction, mapping, rules, review, finalization); AFC routing distribution.
+
+|WF-06
+|<<wf-extraction-review, Field Extraction Review>>
+|FR-2.1, FR-2.2, FR-2.3
+|Split-pane: document viewer (left) + extracted fields with AFC badges (right); accept/edit/enter actions.
+
+|WF-07
+|<<wf-doc-viewer, Document Viewer>>
+|FR-2.4
+|Full-page viewer with zoom, search, field bounding-box overlays; loads within 3s per page.
+
+|WF-08
+|<<wf-mapping-review, Mapping Review>>
+|FR-3.1, FR-3.2, FR-3.3
+|Two-layer confidence routing; auto-accept (>=0.95), human review (0.70-0.94), manual (<0.70); alternatives + override.
+
+|WF-09
+|<<wf-synonym-dict, Synonym Dictionary>>
+|FR-3.4
+|CRUD for curated synonym pairs; overrides from mapping review feed back here for approval.
+|===
+
+[[wf-audit-progress]]
+===== WF-03: Audit Progress Monitor
+
+*Purpose:* Real-time view of audit execution progress across all phases.
+Shows document processing status, extraction completion, mapping progress, and findings generation.
+
+*Roles:* All roles with access to the audit.
+Reviewers see progress for their assigned records; Managers see aggregate progress across all records and reviewers.
+
+*Flowbite components:* Progress Bar, Timeline, Badge, Card, Table.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Audit Progress: HMDA Q1 2026 Origination</b>
+  { Home > Audits > AUD-2026-001 > Progress }
+  ===
+  {+
+    <b>Phase Progress</b>
+    {#
+      <b>Phase</b> | <b>Status</b> | <b>Progress</b> | <b>Details</b>
+      1. Dataset Upload      | <color:Green>Complete</color>    | 100% | 50 records validated
+      2. Document Upload      | <color:Green>Complete</color>    | 100% | 127 documents classified
+      3. Extraction (Docling) | <color:RoyalBlue>Running</color> | 78%  | 99/127 documents processed
+      4. Schema Mapping       | <color:Orange>Pending</color>    | 12%  | 6/50 records mapped
+      5. Rules Engine         | <color:Gray>Not Started</color>  | 0%   | —
+      6. Findings Review      | <color:Gray>Not Started</color>  | 0%   | —
+      7. Finalization         | <color:Gray>Not Started</color>  | 0%   | —
+    }
+  }
+  ---
+  {+
+    <b>Extraction Summary</b>
+    {#
+      <b>Metric</b> | <b>Count</b> | <b>%</b>
+      Fields auto-confirmed (AFC >= 0.85)     | 1,247 | 72%
+      Fields requiring review (0.50–0.84)     | 389   | 22%
+      Fields requiring manual entry (< 0.50)  | 104   | 6%
+      Cloud OCR fallbacks triggered            | 12    | —
+    }
+  }
+  ---
+  { [<< Back to Audit] | [View Extraction Queue] | [View Mapping Queue] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* Progress bars update in real-time via WebSocket or polling (30-second interval)
+* Clicking a phase row drills into the detailed view for that phase
+* *Extraction Summary* card shows AFC routing distribution per canonical thresholds (<<sect-glossary>>), updated as documents process
+
+'''
+
+[[wf-extraction-review]]
+===== WF-06: Field Extraction Review
+
+*Purpose:* Core review screen for validating extracted field values.
+Split-pane layout: document viewer on left, extracted fields table on right with AFC confidence badges and accept/override actions.
+
+*Roles:* Reviewer (primary), Senior Reviewer.
+
+*Flowbite components:* Split Pane, Table, Badge, Button, Tooltip, Alert.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Field Extraction Review: CD_Loan_10045.pdf</b>
+  { Home > Audits > AUD-2026-001 > Documents > CD_Loan_10045 > Extraction Review }
+  ===
+  {
+    {+
+      <b>Document Viewer</b>
+      ---
+      Page [1] of 5 | [< Prev] [Next >]
+      [Zoom -] 100% [Zoom +] | [Search]
+      .
+      .
+      (Document rendered here with
+       field bounding boxes overlaid.
+       Clicking a field in the right
+       panel highlights it in the
+       document view.)
+      .
+      .
+      .
+      .
+    }
+    |
+    {+
+      <b>Extracted Fields</b> (42 fields)
+      ---
+      {/ <b>All</b> | <b>Review (8)</b> | <b>Manual (2)</b> | <b>Confirmed (32)</b> }
+      ---
+      {#
+        <b>Field</b> | <b>Value</b> | <b>AFC</b> | <b>Action</b>
+        Borrower Name | JOHN DOE | <color:Green>0.97</color> | <color:Green>Auto</color>
+        Loan Amount | $250,000 | <color:Green>0.94</color> | <color:Green>Auto</color>
+        Interest Rate | 6.25% | <color:Green>0.92</color> | <color:Green>Auto</color>
+        Property Address | 123 Main St | <color:Orange>0.78</color> | [Accept] [Edit]
+        Loan Type | Conventional | <color:Orange>0.72</color> | [Accept] [Edit]
+        Closing Date | 02/15/2026 | <color:Orange>0.68</color> | [Accept] [Edit]
+        PMI Amount | — | <color:Red>0.31</color> | [Enter Value]
+        Co-Borrower Name | — | <color:Red>0.22</color> | [Enter Value]
+      }
+      ---
+      {+
+        <b>AFC Breakdown</b> (selected: Property Address)
+        {#
+          <b>Signal</b> | <b>Weight</b> | <b>Score</b>
+          docling_page_grade | 0.12 | 0.95
+          ocr_segment_confidence | 0.23 | 0.82
+          pattern_validity | 0.20 | 0.70
+          layout_anchor_consistency | 0.18 | 0.75
+          cross_doc_redundancy | 0.12 | 0.60
+          graph_corrob_score | 0.15 | 0.85
+          <b>Composite AFC</b> | <b>1.00</b> | <b><color:Orange>0.78</color></b>
+        }
+      }
+    }
+  }
+  ===
+  { [<< Prev Document] | Fields: 32 confirmed, 8 review, 2 manual | [Save & Continue >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Split-pane* layout: document viewer (left, 55% width) and field panel (right, 45% width); resizable divider
+* *Tabs* filter fields by routing status: All, Review (AFC 0.50–0.84), Manual (AFC <0.50), Confirmed (AFC ≥0.85 or manually accepted)
+* *[Accept]* confirms extracted value as-is; *[Edit]* opens inline text input for correction
+* *[Enter Value]* for manual-entry fields opens text input (no extracted value shown)
+* *AFC Breakdown* panel shows the 6 weighted signals for the selected field (Flowbite Accordion)
+* Clicking a field row highlights the corresponding bounding box in the document viewer
+* *Extraction method badge* shows provenance: `Docling`, `Cloud OCR Fallback`, or `Manual Entry`
+* Color system: green (≥0.85), orange (0.50–0.84), red (<0.50) per <<sect-glossary, Canonical Glossary>>
+
+'''
+
+[[wf-doc-viewer]]
+===== WF-07: Document Viewer
+
+*Purpose:* Full-page document viewing with search, zoom, annotations, and field overlay.
+Used standalone or embedded in extraction review and finding detail screens.
+
+*Roles:* All roles.
+
+*Flowbite components:* Toolbar, Search Input, Button Group, Zoom Controls.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Document Viewer: CD_Loan_10045.pdf</b>
+  { Home > Audits > AUD-2026-001 > Documents > CD_Loan_10045 }
+  ===
+  {
+    { [<< Prev Page] | Page [1] of 5 | [Next Page >>] | . | [Zoom -] [100%] [Zoom +] | . | "Search document...        " [Find] | . | [Download] [Print] }
+  }
+  ---
+  {+
+    .
+    .
+    (Full document page rendered here.)
+    .
+    (Field bounding boxes shown as colored overlays:)
+    (  Green border = high confidence extraction)
+    (  Orange border = needs review)
+    (  Red border = extraction failed)
+    .
+    (Hovering a bounding box shows tooltip:)
+    (  Field: Loan Amount)
+    (  Extracted: $250,000)
+    (  AFC: 0.94)
+    (  Method: Docling)
+    .
+    .
+  }
+  ---
+  {
+    {#
+      <b>Document Metadata</b> | .
+      Type: Closing Disclosure | Loan: 10045
+      Pages: 5 | Size: 2.1 MB
+      Uploaded: 2026-02-15 14:30 UTC | By: Jane Smith
+      SHA-256: a3f8c2... | Extraction: Docling v1.2
+    }
+  }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Zoom* range: 50%–400% with pinch-to-zoom on touch devices
+* *Search* highlights matching text with navigation between results
+* *Bounding box overlays* color-coded by AFC confidence tier
+* *Tooltip on hover* shows field name, extracted value, AFC score, and extraction method
+* *Keyboard navigation:* Left/Right arrows for page navigation, +/- for zoom
+* Document loads in ≤3 seconds per performance NFR (<<sect-architecture-overview>>)
+
+'''
+
+[[wf-mapping-review]]
+===== WF-08: Schema Mapping Review
+
+*Purpose:* Review and approve AI-suggested field mappings from source documents to HMDA/MISMO target schema.
+Two-layer confidence routing: auto-accept (≥0.95), human review (0.70–0.94), manual entry (<0.70).
+
+*Roles:* Reviewer (primary), Senior Reviewer.
+
+*Flowbite components:* Table, Badge, Button, Dropdown, Tooltip, Accordion, Modal.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Schema Mapping Review: AUD-2026-001</b>
+  { Home > Audits > AUD-2026-001 > Mappings }
+  ===
+  {+
+    <b>Mapping Summary</b>
+    {#
+      <b>Auto-Accepted</b> | <b>Needs Review</b> | <b>Manual Entry</b> | <b>Total Fields</b> | <b>Est. Session Time</b>
+      <color:Green>38 (76%)</color> | <color:Orange>9 (18%)</color> | <color:Red>3 (6%)</color> | 50 | ~12 min
+    }
+  }
+  ---
+  {/ <b>Needs Review (9)</b> | <b>Manual Entry (3)</b> | <b>Auto-Accepted (38)</b> | <b>All (50)</b> }
+  ---
+  {#
+    <b>Source Field</b> | <b>Suggested Target</b> | <b>Confidence</b> | <b>Matching Pattern</b> | <b>Alternatives</b> | <b>Action</b>
+    Borrower First Name | applicant_first_name | <color:Green>0.92</color> | Name similarity + synonym | 2 alternatives | [Accept] [Override]
+    Purpose of Loan | loan_purpose_type | <color:Orange>0.81</color> | Synonym dictionary match | 3 alternatives | [Accept] [Override] [Manual]
+    APR Spread | rate_spread | <color:Orange>0.74</color> | Partial name + type match | 4 alternatives | [Accept] [Override] [Manual]
+    Total Interest | — | <color:Red>0.45</color> | No confident match | — | [Map Manually]
+  }
+  ---
+  {+
+    <b>Selected: Purpose of Loan → loan_purpose_type (0.81)</b>
+    ---
+    {
+      Matching signals:
+      {#
+        <b>Signal</b> | <b>Weight</b> | <b>Score</b>
+        Name similarity | 0.30 | 0.65
+        Synonym dictionary | 0.25 | 1.00
+        Type compatibility | 0.20 | 0.90
+        Document-section context | 0.15 | 0.70
+        Historical acceptance | 0.10 | 0.80
+      }
+    }
+    ---
+    <b>Alternative Mappings:</b>
+    {#
+      <b>Target Field</b> | <b>Confidence</b> | <b>Action</b>
+      loan_purpose_description | 0.62 | [Select]
+      purpose_of_refinance | 0.41 | [Select]
+      occupancy_type | 0.22 | [Select]
+    }
+  }
+  ===
+  { [<< Back] | Accepted: 38/50 | Remaining: 12 | [Save Progress] | [Submit All Mappings >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Tabs* filter fields by routing status: Needs Review, Manual Entry, Auto-Accepted, All
+* *[Accept]* confirms the suggested mapping; *[Override]* opens alternatives panel
+* *[Map Manually]* opens dropdown of all target schema fields with type-ahead search
+* *Matching signals* panel shows the 5 weighted signal scores for the selected mapping
+* *[Submit All Mappings >>]* requires all fields to be mapped (accepted, overridden, or manually mapped)
+* Override actions prompt: "Update synonym dictionary with this mapping?" (feeds back to <<wf-synonym-dict>>)
+
+'''
+
+[[wf-synonym-dict]]
+===== WF-09: Synonym Dictionary
+
+*Purpose:* Manage the curated synonym dictionary used by the schema matcher.
+Reviewers can add, edit, and deactivate synonym pairs that improve future mapping suggestions.
+
+*Roles:* Senior Reviewer, Manager, Data Architect.
+
+*Flowbite components:* Table, Form, Modal, Badge, Search.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Synonym Dictionary</b>
+  { Home > Admin > Synonym Dictionary }
+  ===
+  { "Search synonyms...                    " [Search] | . | [+ Add Synonym Pair] }
+  ---
+  {#
+    <b>Source Term</b> | <b>Target Term (MISMO)</b> | <b>Context</b> | <b>Usage Count</b> | <b>Status</b> | <b>Added By</b> | <b>Actions</b>
+    Borrower First Name | applicant_first_name | CD, 1003 | 142 | <color:Green>Active</color> | Jane Smith | [Edit] [Deactivate]
+    Purpose of Loan | loan_purpose_type | 1003 | 87 | <color:Green>Active</color> | Jane Smith | [Edit] [Deactivate]
+    APR Spread | rate_spread | CD | 23 | <color:Green>Active</color> | Auto (override) | [Edit] [Deactivate]
+    Loan Amt | loan_amount | CD | 5 | <color:Orange>Pending Review</color> | Bob Johnson | [Approve] [Reject]
+    Co-Borr Name | coapplicant_name | 1003 | 0 | <color:Gray>Deactivated</color> | Jane Smith | [Reactivate]
+  }
+  ---
+  { Showing 1–5 of 234 entries | [< Prev] [1] [2] [3] [Next >] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *[+ Add Synonym Pair]* opens modal with: Source Term, Target Term (MISMO dropdown), Context (multi-select: CD, 1003, Appraisal, Title)
+* *Usage Count* shows how many times this synonym contributed to an accepted mapping
+* Synonyms from reviewer overrides enter as "Pending Review" status; Senior Reviewer must approve
+* *[Deactivate]* soft-deletes (preserves history); *[Reactivate]* restores
+
+'''
+
+==== Happy Path
+
+[arabic]
+. System processes uploaded documents through Docling-Graph pipeline → extracts text, tables, key-value pairs.
+. AFC v2 scoring (6 signals including `graph_corrob_score`) routes each field: >=0.85 auto-confirm, 0.50-0.84 human review, <0.50 manual entry.
+. Reviewer validates flagged fields in split-pane extraction review → accepts or overrides extracted values.
+. Schema mapping service suggests field mappings with two-layer confidence → reviewer approves mapping set.
+. Approved mappings feed into rules engine.
+
+==== Key Edge Cases
+
+* *Low-quality scan:* Page grade POOR/FAIR → 3-tier fallback: VLM → LLM (Mistral via LiteLLM) → cloud OCR (Azure).
+Each fallback logged with `extraction_method` provenance.
+* *CD-only coverage gap:* With CD-only documents, expect ~10-20% of HMDA fields at >=0.85 confidence.
+Full coverage requires 1003, appraisal, and title documents (Phase 2).
+* *High override rate:* If override rate >25%, triggers confidence recalibration alert (<<sect-glossary>>).
+
+==== Functional Requirements
+
+===== Epic 2: Document Extraction (Docling/OCR)
+
+[cols="10%,27%,43%,20%",options="header"]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-2.1 |System shall process source documents through the Docling-Graph pipeline (Docling + Docling-Graph) to extract text, tables, and key-value pairs as versioned Pydantic objects and a directed knowledge graph (KG). Extraction may use VLM (Docling) or LLM (self-hosted Mistral via LiteLLM) backends. |Given a standard Closing Disclosure PDF, when processed by the Docling-Graph pipeline, then system extracts all key fields (loan amount, interest rate, property address, borrower name) as validated Pydantic objects with ≥85% field-level F1 (normalized) on the Phase 1 evaluation corpus; graph exports available in CSV/Cypher format for downstream processing. |P0
+|FR-2.2 |Each extracted value shall carry an extraction confidence score (AFC 0.0–1.0) that includes graph-derived corroboration signals from the Docling-Graph knowledge graph. |Given an extracted loan amount, when displayed to reviewer, then AFC score is visible with color indicator (green ≥0.85, yellow 0.50–0.84, red <0.50) and includes an explicit `graph_corrob_score` subcomponent showing cross-document graph corroboration strength. |P0
+|FR-2.3 |OCR output shall be presented as assistive/advisory in Phase 1, not authoritative. |Given any OCR-extracted value, when displayed, then it is visually labeled as "AI-extracted (advisory)" and cannot auto-finalize a finding without human confirmation. |P0
+|FR-2.4 |System shall provide a high-fidelity document viewer with page navigation, zoom, text search, and field highlight overlay. |Given a 50-page PDF, when opened in viewer, then page loads within 3 seconds, zoom works from 50% to 400%, text search returns results with highlighting, and extracted fields are overlaid with bounding boxes. |P0
+|FR-2.5 |System shall execute a 3-tier extraction fallback chain: (1) Docling-Graph VLM extraction, (2) Docling-Graph LLM extraction via LiteLLM/self-hosted Mistral, (3) cloud OCR (Azure AI Document Intelligence or equivalent). Fallback from tier 1→2 triggers when AFC < 0.50 for the extracted page; fallback from tier 2→3 triggers when AFC remains < 0.50 after LLM re-extraction or when >30% of key fields on a document remain below 0.50. |Given a low-quality scanned document where Docling-Graph VLM extraction produces AFC < 0.50 on key fields, when fallback triggers, then system attempts LLM extraction via LiteLLM/Mistral first; if still below threshold, re-processes with cloud OCR; each fallback event is logged with `extraction_method` provenance (see <<sect-ai-provenance>>). |P1
+|===
+
+*Deterministic boundary:* OCR extraction is deterministic for a given model version and input.
+The same document processed with the same model version always produces the same extraction.
+Model version is logged as provenance metadata.
+
+*DECISION LOCKED:* Docling-Graph pipeline as baseline extraction engine (MIT-licensed); self-hosted Mistral via LiteLLM as LLM extraction backend; cloud OCR as page-level fallback.
+See <<sect-decision-d1, Decision D1>>.
+
+===== Epic 3: Schema Mapping + Mapping UI
+
+[cols="10%,27%,43%,20%",options="header"]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-3.1 |System shall automatically suggest field-level mappings between target and source schemas using confidence-scored matching. |Given HMDA LAR schema and CD extracted fields, when mapping is requested, then system suggests mappings for ≥80% of reportable fields with confidence scores. |P0
+|FR-3.2 |Each suggested mapping shall carry a mapping confidence score (0.0–1.0). |Given suggested mappings, when displayed in mapping UI, then each shows confidence score with threshold indicators: ≥0.85 auto-accept, 0.50–0.84 human review, <0.50 reject. |P0
+|FR-3.3 |System shall provide a mapping review UI for human approval, rejection, and override. |Given a list of suggested mappings, when reviewer opens mapping UI, then they can accept/reject each mapping, manually create new mappings, and save the approved mapping set as a versioned artifact. |P0
+|FR-3.4 |Approved mappings shall be versioned and reusable across audit runs within the same audit pack. |Given an approved mapping set for HMDA pack v1.0, when a new audit run uses the same pack version, then the approved mappings are pre-loaded and do not require re-approval. |P0
+|===
+
+*Deterministic boundary:* Schema mapping suggestions are deterministic for a given matcher version and input schemas.
+The same inputs always produce the same suggestions.
+
+*DECISION LOCKED:* Simple confidence-scored matcher for v1; LogMap prototype as parallel track.
+See <<sect-decision-d1, Decision D1>>.
+
+==== Architecture
+
+===== Document Extraction Workflow
+
+This workflow covers the complete document processing pipeline from upload through field-level confidence routing.
+See also <<user-journey-overview, Workflow 2>> for the detailed UI flowchart.
+
+*Actors:* Auditor (upload), System (Docling, OCR, AFC), Reviewer (validation)
+
+[mermaid]
+----
+flowchart TD
+    A([User Uploads Documents]) --> B[Document Classifier<br/>CD / 1003 / Appraisal / Other]
+    B --> C[Docling Conversion<br/>PDF → Structured JSON]
+    C --> D[OCR Layer<br/>docling-tesseract, Apache 2.0]
+    D --> E[AFC Score Computation<br/>5 Weighted Signals]
+
+    E -.-> AFC[docling_page_grade 0.15<br/>ocr_segment_conf 0.25<br/>pattern_validity 0.25<br/>layout_anchor 0.20<br/>cross_doc_redundancy 0.15]
+
+    E --> F{AFC Score<br/>Routing?}
+    F -->|≥ 0.85| G([Auto-Confirm<br/>AFC ≥ 0.85])
+    F -->|0.50 – 0.85| H[Human Review Queue<br/>0.50 ≤ AFC < 0.85]
+    F -->|< 0.50| I[Manual Entry Required<br/>AFC < 0.50]
+
+    H --> J[Reviewer Validates<br/>Extracted Value]
+    I --> K[Reviewer Enters<br/>Correct Value]
+    J --> L{Accept<br/>or Override?}
+    L -->|Accept| M
+    L -->|Override| K
+    K --> M([Field Value Confirmed<br/>→ Schema Mapping])
+    G --> M
+
+    C -->|Page-grade POOR/FAIR| N[Cloud OCR Fallback]
+    N --> E
+
+    style A fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style D fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style E fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style AFC fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style F fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style H fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style I fill:#C0392B,color:#fff,stroke:#922B21
+    style J fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style K fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style L fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style N fill:#4A6FA5,color:#fff,stroke:#2B4570
+----
+
+===== Extraction Architecture
+
+*Component:* Document Processing Service (<<sect-doc-processing>>)
+
+*3-Tier Fallback Chain:*
+
+....
+for each document:
+  // Step 1: Attempt Docling-Graph structured extraction (VLM backend)
+  context = docling.convertDocument(document)
+  graph_result = docling_graph.run_pipeline(
+    context, template=pydantic_template, backend="vlm"
+  )
+  compute afc including graph_corrob_score
+
+  if graph_result.success and afc >= 0.50:
+    persist extraction (Pydantic objects + graph)
+    recordExtractionEvent(auditId, documentId, 'docling_graph_vlm')
+  else:
+    // Step 2: Attempt LLM extraction via LiteLLM (self-hosted Mistral/vLLM)
+    llm_result = docling_graph.run_pipeline(
+      context, template=pydantic_template, backend="llm",
+      provider="litellm", provider_override="mistral"
+    )
+    recompute afc
+
+    if llm_result.success and afc >= 0.50:
+      persist extraction (Pydantic objects + graph)
+      recordExtractionEvent(auditId, documentId, 'docling_graph_llm_mistral')
+    else:
+      // Step 3: Fall back to cloud OCR or manual entry
+      triggerCloudOCRFallback(document)
+      recordFallbackEvent(auditId, documentId, 'cloud_ocr_fallback')
+    end
+  end
+end
+....
+
+*Known Extraction Failure Modes:*
+
+[cols="10%,25%,25%,40%",options="header"]
+|===
+|# |Failure Mode |Likely Impact |Mitigation
+|1 |Scanned PDF with degraded OCR quality |Low AFC on text-heavy fields |Cloud OCR fallback; AFC flags for review
+|2 |Multi-column layouts mis-parsed |Fields assigned to wrong columns |Layout anchor consistency check in AFC
+|3 |Table cells merged/split incorrectly |Numeric values from wrong cell |Table structure validation + cross-doc redundancy
+|4 |Handwritten annotations on printed text |OCR garbles both layers |Fallback to cloud OCR; manual review flag
+|5 |Non-standard document templates |Field extractor patterns don't match |Pattern library per document type; fallback to manual
+|===
+
+*Performance targets:* ~175,000 pages/day on single 8-vCPU / 32GB instance.
+Per-page: ~0.5–2s (standard), ~3–8s (VLM).
+Cloud OCR fallback adds 1–3s/page.
+
+===== Schema Mapping Workflow
+
+This workflow details how extracted fields are mapped to the HMDA/MISMO target schema with AI assistance and human oversight.
+See also <<user-journey-overview, Workflow 3>> for the detailed UI flowchart.
+
+*Actors:* System (matcher), AI (calibration), Reviewer (approval)
+
+[mermaid]
+----
+flowchart TD
+    A([Extracted Fields<br/>from Docling + AFC]) --> B[Hybrid Heuristic Matcher<br/>5 Weighted Signals]
+    B --> C[Layer 1: Raw Signals<br/>conf_extraction, conf_mapping, conf_rule]
+
+    C -.-> COV[Coverage Note:<br/>CD-only = 10–20% at ≥ 0.85<br/>Full coverage requires<br/>1003 + Appraisal + Title]
+
+    C --> D[Layer 2: Calibrated Score<br/>Temperature Scaling /<br/>Isotonic Regression]
+    D --> E{Routing<br/>Decision?}
+    E -->|≥ 0.95| F([Auto-Accept<br/>calibrated ≥ 0.95])
+    E -->|0.70 – 0.95| G[Human Review<br/>0.70 ≤ score < 0.95]
+    E -->|< 0.70| H[Manual Entry<br/>score < 0.70]
+
+    G --> UI[UI Shows:<br/>Suggested mapping,<br/>Confidence badge,<br/>Matching pattern,<br/>Alternatives]
+    UI --> I{Reviewer<br/>Action?}
+    I -->|Accept| J([Accept Suggestion<br/>~10s per field])
+    I -->|Override| K[Override → Select<br/>Alternative ~45s]
+    I -->|Manual| L[Manual Entry<br/>Type Field Name]
+
+    K --> SYN{Update Synonym<br/>Dictionary?}
+    SYN -->|Yes| DICT[Synonym Dictionary<br/>Updated]
+    SYN -->|No| M
+    DICT --> M
+    J --> M
+    L --> M
+    H --> L
+    F --> M([Mapping Approved<br/>→ Rules Engine])
+
+    style A fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style COV fill:#2B3E50,color:#ccc,stroke:#555,stroke-dasharray:5 5
+    style D fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style E fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style F fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style G fill:#20B2AA,color:#fff,stroke:#178A83
+    style H fill:#C0392B,color:#fff,stroke:#922B21
+    style UI fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style I fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style K fill:#20B2AA,color:#fff,stroke:#178A83
+    style L fill:#C0392B,color:#fff,stroke:#922B21
+    style SYN fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style DICT fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+===== Schema Mapping Architecture
+
+*Component:* Schema Mapping Service (<<sect-schema-mapping-service>>)
+
+*Matching Algorithm (Hybrid Heuristic — 5 weighted signals):*
+
+* *Name similarity (0.30):* Levenshtein distance + Jaccard token overlap, boosted by MISMO field description matching
+* *HMDA/CD synonym dictionary (0.25):* Curated domain-specific equivalence table (e.g., `loan_type` ↔ `mortgage_product`, `prop_addr` ↔ `property_address`)
+* *Type compatibility (0.20):* Target (MISMO) and source types must be compatible
+* *Document-section context (0.15):* Boost when source field appears in expected document section (e.g., loan amount in CD page 1)
+* *Historical acceptance (0.10):* Previously approved mappings for this tenant, decayed by recency
+
+*Two-Layer Confidence Design (<<sect-two-layer-confidence>>):*
+
+* *Layer 1 — Raw signals:* `conf_mapping`, `conf_extraction` (AFC), `conf_rule` computed independently
+* *Layer 2 — Calibrated score:* Temperature scaling (Phase 1, ≥200 labeled decisions) or isotonic regression (Phase 2, ≥500 decisions); ECE must be ≤0.05
+
+*Routing thresholds (calibrated score):*
+
+* *≥0.95:* Auto-accept (green checkmark, ~10s visual confirmation)
+* *0.70–0.95:* Human review required (~45s per field)
+* *<0.70:* Manual mapping required (no suggestion shown)
+
+*Reviewer Burden Model:*
+
+[cols=",,,",options="header"]
+|===
+|Scenario |Fields |Override Rate |Est. Session Time
+|CD-only, good extraction |~15–20 CD fields |10–15% |8–12 min
+|CD-only, mixed extraction |~15–20 CD fields |20–30% |15–25 min
+|Full HMDA (Phase 2) |~110 fields |15–25% |30–45 min
+|===
+
+==== Developer Context
+
+*Services:* Document Processing Service (Docling-Graph + AFC), Schema Mapping Service (hybrid heuristic matcher), Synonym Dictionary.
+*Data flow:* Blob Storage → Docling-Graph pipeline → Pydantic template extraction → AFC scoring → field routing → Schema Mapping Service → approved mappings → Rules Engine.
+*API contracts:* 3-tier fallback chain pseudocode, `FindingOutput` interface (see Stage 3 Architecture).
+*Architecture detail:* <<sect-architecture-by-workflow, Extraction and Mapping stage>>.
+
+'''

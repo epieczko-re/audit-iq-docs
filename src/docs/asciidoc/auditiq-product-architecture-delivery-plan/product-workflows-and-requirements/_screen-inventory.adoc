@@ -1,0 +1,41 @@
+[[sect-screen-inventory]]
+=== Screen Inventory
+
+The following 26 MVP screens and 5 future screens compose the complete AuditIQ user interface.
+Wireframes follow Flowbite design system conventions with Tailwind CSS component patterns.
+
+[cols="5%,22%,28%,10%,35%",options="header"]
+|===
+|# |Category |Screen |Priority |Key Flowbite Components
+
+|1 |Audit Lifecycle |<<wf-audit-dashboard, Audit Dashboard>> |High |Table, Badge, Card, Dropdown
+|2 |Audit Lifecycle |<<wf-audit-config, Audit Configuration>> |High |Form, Select, DatePicker, Slider
+|3 |Audit Lifecycle |<<wf-audit-progress, Audit Progress Monitor>> |Medium |Progress Bar, Timeline, Badge
+|4 |Document Processing |<<wf-doc-upload, Document Upload>> |High |Dropzone, Table, Badge, Progress
+|5 |Document Processing |<<wf-processing-status, Processing Status>> |Medium |Table, Progress Bar, Badge
+|6 |Document Processing |<<wf-extraction-review, Field Extraction Review>> |High |Split Pane, Table, Badge, Button
+|7 |Document Processing |<<wf-doc-viewer, Document Viewer>> |Medium |Viewer, Toolbar, Search
+|8 |Schema Mapping |<<wf-mapping-review, Mapping Review>> |High |Table, Badge, Dropdown, Button
+|9 |Schema Mapping |<<wf-synonym-dict, Synonym Dictionary>> |Low |Table, Form, Modal
+|10 |Findings |<<wf-findings-queue, Findings Review Queue>> |High |Table, Badge, Filter, Sort
+|11 |Findings |<<wf-finding-detail, Finding Detail>> |High |Card, Tabs, Form, Timeline
+|12 |Findings |<<wf-ai-narrative, AI Narrative Approval>> |High |Card, Alert, Button, Diff
+|13 |Findings |<<wf-escalation, Manager Escalation>> |Medium |Table, Form, Modal
+|14 |Remediation |<<wf-remediation, Remediation Tracking>> |Medium |Table, Badge, Progress
+|15 |Remediation |<<wf-aging, Aging Dashboard>> |Medium |Table, Alert, Badge
+|16 |Reporting |<<wf-report-gen, Report Generation>> |Medium |Form, Checkbox, Preview
+|17 |Reporting |<<wf-bundle-export, Exam-Ready Bundle Export>> |Medium |Checklist, Card, Button
+|18 |Reporting |<<wf-findings-register, Findings Register>> |Medium |Table, Export, Filter
+|19 |Dashboards |<<wf-exec-dashboard, Executive Dashboard>> |Medium |Card, Chart, KPI
+|20 |Dashboards |<<wf-mgr-dashboard, Manager Dashboard>> |Medium |Card, Table, Badge, Chart
+|21 |Dashboards |<<wf-drift-monitor, Drift Monitoring>> |Low |Chart, Alert, Table (Phase 2)
+|22 |Admin |<<wf-user-mgmt, User Management>> |Medium |Table, Form, Modal, Badge
+|23 |Admin |<<wf-pack-mgmt, Pack Management>> |Medium |Table, Badge, Modal
+|24 |Admin |<<wf-model-registry-admin, Model Registry Admin>> |Low |Table, Badge, Form, Timeline
+|25 |Admin |<<wf-system-settings, System Settings>> |Low |Form, Tabs, Toggle
+|26 |Admin |<<wf-audit-trail, Audit Trail Viewer>> |Medium |Table, Filter, Search, Badge
+|===
+
+*Phase 2+ screens:* AI Rule Generation Studio (wireframed below); Fairness Assessment Dashboard, BI/Analytics Dashboards, Pack Marketplace, On-Prem Deployment Console (not yet wireframed).
+
+'''

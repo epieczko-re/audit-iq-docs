@@ -1,0 +1,34 @@
+=== UI Development Strategy
+
+____
+*Dual-track development:* AuditIQ follows both UI-driven and API-driven development practices.
+The workflows below define the user journeys; the API contracts in <<sect-component-design>> define the backend interfaces.
+____
+
+*Design Principles (Flowbite / Tailwind CSS):*
+
+* *Sidebar navigation* — persistent left sidebar with grouped nav items; collapsible on mobile (Flowbite Sidebar component)
+* *Card-based layout* — each logical section wrapped in a bordered card with header (Flowbite Card component)
+* *Data tables* — sortable, filterable tables with pagination for all list views (Flowbite Table component)
+* *Badge components* — color-coded pills for confidence scores, severity levels, and status (Flowbite Badge component)
+* *Modal dialogs* — confirmation dialogs for destructive actions and approval workflows (Flowbite Modal component)
+* *Form inputs* — labeled inputs with validation feedback for all data entry (Flowbite Forms)
+* *Breadcrumb navigation* — contextual breadcrumbs in top bar for deep navigation (Flowbite Breadcrumb)
+* *Toast notifications* — non-blocking status messages for async operations (Flowbite Toast)
+* *Confidence is visible everywhere* — color-coded badges per <<sect-glossary, UI Confidence Badge Colors>>
+* *AI provenance is always one click away* — every AI-generated element links to its provenance record
+* *Effective challenge is enforced by design* — reviewer cannot approve without documenting their independent verification
+* *Audit trail is ambient* — every action generates an event; users see event count and last-event timestamp per artifact
+
+*Color Legend (workflow diagrams):*
+
+* *Blue* (#4A6FA5) = User actions (auditor/reviewer interactions)
+* *Purple* (#7B68EE) = System actions (deterministic processing)
+* *Teal* (#20B2AA) = AI actions (LLM or ML-assisted)
+* *Orange* (#FF7E2D) = Decision points (routing logic)
+* *Dark* (#2B3E50) = Data / configuration / annotation boxes
+* *Green* (#2E8B57) = Success / confirmed states
+* *Red* (#C0392B) = Error / manual entry / rejection states
+* *Maroon* (#8B0000) = Terminal completion
+
+'''

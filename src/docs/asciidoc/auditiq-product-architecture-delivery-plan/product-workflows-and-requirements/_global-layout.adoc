@@ -1,0 +1,59 @@
+[[wf-global-layout]]
+=== Global Layout: Shared Navigation Shell
+
+All screens share a consistent layout shell: left sidebar navigation, top bar with breadcrumbs and user menu, and a scrollable main content area.
+This follows the Flowbite Dashboard Layout pattern.
+
+*Flowbite components:* Sidebar, Navbar, Breadcrumb, Avatar, Dropdown.
+
+[plantuml]
+----
+@startsalt
+{+
+  {
+    {SI
+      <b>AuditIQ</b>
+      --
+      <&home> Dashboard
+      ..
+      <b>AUDIT</b>
+      <&spreadsheet> Audits
+      <&document> Documents
+      <&link-intact> Mappings
+      <&flag> Findings
+      <&pulse> Remediation
+      ..
+      <b>REPORTS</b>
+      <&file> Reports
+      <&box> Exam Bundle
+      ..
+      <b>ADMIN</b>
+      <&people> Users
+      <&puzzle-piece> Packs
+      <&cog> Settings
+      <&list> Audit Trail
+    }
+    |
+    {
+      { Home > Audits > AUD-2026-001 | . | . | . | . | [Jane Smith <&person>] }
+      ---
+      {+
+        .
+        <b>Main Content Area</b>
+        .
+        (Screen-specific content renders here.)
+        (Each wireframe below shows this area.)
+        .
+      }
+    }
+  }
+}
+@endsalt
+----
+
+*Layout specifications:*
+
+* Sidebar width: 256px (collapsible to 64px icon-only mode on mobile)
+* Top bar height: 64px with breadcrumb trail and user avatar dropdown
+* Main content area: fluid width, max-width 1440px, centered
+* Responsive breakpoints: mobile (<768px sidebar collapses), tablet (768–1024px), desktop (>1024px)
