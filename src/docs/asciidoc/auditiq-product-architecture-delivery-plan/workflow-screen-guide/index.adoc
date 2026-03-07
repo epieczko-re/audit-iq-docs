@@ -1,14 +1,445 @@
 [[sect-workflow-screen-guide]]
-== Workflow & Screen Guide by Lifecycle Stage
+== UI Workflows, Screens & User Journeys
 
 ____
-This section groups every MVP screen and workflow by audit lifecycle stage.
-For each stage, you will find: the screens involved, the FR IDs and acceptance criteria that apply, diagram references, and a Developer Context note previewing which services and components are involved.
-Detailed wireframes are embedded in their respective specification sections (Part IV and Part VI) for in-context reference; the Screen Inventory table and end-to-end workflow diagrams follow this guide in the next section.
+This section is the single reference for every MVP screen, user workflow, and lifecycle stage in AuditIQ.
+It merges the previous Workflow & Screen Guide and UI Workflows sections into one narrative that flows from audit creation through exam-ready export.
+
+*How to read this section:*
+
+* *Screen Inventory* — quick-reference table of all 26 MVP screens with priority and component notes.
+* *End-to-End Workflow Diagrams* — seven flowcharts showing the primary user journeys through the system.
+* *Lifecycle Stages 1–6* — per-stage detail: screens, wireframes, happy paths, edge cases, and developer context.
+* *Functional requirements* live in <<sect-product-requirements>>.
+Each screen entry here cites the applicable FR IDs and links back to Part IV for full acceptance criteria and contracts.
 
 *Read this section first when estimating sprint work.*
 Each lifecycle stage maps directly to one or more sprints in the Workflow Delivery Matrix (<<sect-workflow-delivery-matrix>>).
 ____
+
+=== UI Development Strategy
+
+____
+*Dual-track development:* AuditIQ follows both UI-driven and API-driven development practices.
+The workflows below define the user journeys; the API contracts in <<sect-component-design>> define the backend interfaces.
+____
+
+*Design Principles (Flowbite / Tailwind CSS):*
+
+* *Sidebar navigation* — persistent left sidebar with grouped nav items; collapsible on mobile (Flowbite Sidebar component)
+* *Card-based layout* — each logical section wrapped in a bordered card with header (Flowbite Card component)
+* *Data tables* — sortable, filterable tables with pagination for all list views (Flowbite Table component)
+* *Badge components* — color-coded pills for confidence scores, severity levels, and status (Flowbite Badge component)
+* *Modal dialogs* — confirmation dialogs for destructive actions and approval workflows (Flowbite Modal component)
+* *Form inputs* — labeled inputs with validation feedback for all data entry (Flowbite Forms)
+* *Breadcrumb navigation* — contextual breadcrumbs in top bar for deep navigation (Flowbite Breadcrumb)
+* *Toast notifications* — non-blocking status messages for async operations (Flowbite Toast)
+* *Confidence is visible everywhere* — color-coded badges per <<sect-glossary, UI Confidence Badge Colors>>
+* *AI provenance is always one click away* — every AI-generated element links to its provenance record
+* *Effective challenge is enforced by design* — reviewer cannot approve without documenting their independent verification
+* *Audit trail is ambient* — every action generates an event; users see event count and last-event timestamp per artifact
+
+*Color Legend (workflow diagrams):*
+
+* *Blue* (#4A6FA5) = User actions (auditor/reviewer interactions)
+* *Purple* (#7B68EE) = System actions (deterministic processing)
+* *Teal* (#20B2AA) = AI actions (LLM or ML-assisted)
+* *Orange* (#FF7E2D) = Decision points (routing logic)
+* *Dark* (#2B3E50) = Data / configuration / annotation boxes
+* *Green* (#2E8B57) = Success / confirmed states
+* *Red* (#C0392B) = Error / manual entry / rejection states
+* *Maroon* (#8B0000) = Terminal completion
+
+'''
+
+[[sect-screen-inventory]]
+=== Screen Inventory
+
+The following 26 MVP screens and 5 future screens compose the complete AuditIQ user interface.
+Wireframes follow Flowbite design system conventions with Tailwind CSS component patterns.
+
+[cols="5%,22%,28%,10%,35%",options="header"]
+|===
+|# |Category |Screen |Priority |Key Flowbite Components
+
+|1 |Audit Lifecycle |<<wf-audit-dashboard, Audit Dashboard>> |High |Table, Badge, Card, Dropdown
+|2 |Audit Lifecycle |<<wf-audit-config, Audit Configuration>> |High |Form, Select, DatePicker, Slider
+|3 |Audit Lifecycle |<<wf-audit-progress, Audit Progress Monitor>> |Medium |Progress Bar, Timeline, Badge
+|4 |Document Processing |<<wf-doc-upload, Document Upload>> |High |Dropzone, Table, Badge, Progress
+|5 |Document Processing |<<wf-processing-status, Processing Status>> |Medium |Table, Progress Bar, Badge
+|6 |Document Processing |<<wf-extraction-review, Field Extraction Review>> |High |Split Pane, Table, Badge, Button
+|7 |Document Processing |<<wf-doc-viewer, Document Viewer>> |Medium |Viewer, Toolbar, Search
+|8 |Schema Mapping |<<wf-mapping-review, Mapping Review>> |High |Table, Badge, Dropdown, Button
+|9 |Schema Mapping |<<wf-synonym-dict, Synonym Dictionary>> |Low |Table, Form, Modal
+|10 |Findings |<<wf-findings-queue, Findings Review Queue>> |High |Table, Badge, Filter, Sort
+|11 |Findings |<<wf-finding-detail, Finding Detail>> |High |Card, Tabs, Form, Timeline
+|12 |Findings |<<wf-ai-narrative, AI Narrative Approval>> |High |Card, Alert, Button, Diff
+|13 |Findings |<<wf-escalation, Manager Escalation>> |Medium |Table, Form, Modal
+|14 |Remediation |<<wf-remediation, Remediation Tracking>> |Medium |Table, Badge, Progress
+|15 |Remediation |<<wf-aging, Aging Dashboard>> |Medium |Table, Alert, Badge
+|16 |Reporting |<<wf-report-gen, Report Generation>> |Medium |Form, Checkbox, Preview
+|17 |Reporting |<<wf-bundle-export, Exam-Ready Bundle Export>> |Medium |Checklist, Card, Button
+|18 |Reporting |<<wf-findings-register, Findings Register>> |Medium |Table, Export, Filter
+|19 |Dashboards |<<wf-exec-dashboard, Executive Dashboard>> |Medium |Card, Chart, KPI
+|20 |Dashboards |<<wf-mgr-dashboard, Manager Dashboard>> |Medium |Card, Table, Badge, Chart
+|21 |Dashboards |<<wf-drift-monitor, Drift Monitoring>> |Low |Chart, Alert, Table (Phase 2)
+|22 |Admin |<<wf-user-mgmt, User Management>> |Medium |Table, Form, Modal, Badge
+|23 |Admin |<<wf-pack-mgmt, Pack Management>> |Medium |Table, Badge, Modal
+|24 |Admin |<<wf-model-registry-admin, Model Registry Admin>> |Low |Table, Badge, Form, Timeline
+|25 |Admin |<<wf-system-settings, System Settings>> |Low |Form, Tabs, Toggle
+|26 |Admin |<<wf-audit-trail, Audit Trail Viewer>> |Medium |Table, Filter, Search, Badge
+|===
+
+*Phase 2+ screens:* AI Rule Generation Studio (wireframed below); Fairness Assessment Dashboard, BI/Analytics Dashboards, Pack Marketplace, On-Prem Deployment Console (not yet wireframed).
+
+'''
+
+=== End-to-End Workflow Diagrams
+
+The seven diagrams below show the primary user journeys through AuditIQ.
+Each diagram is referenced from the per-stage detail that follows.
+
+==== Workflow 1: Audit Lifecycle (End-to-End)
+
+This is the primary happy-path workflow from login to exam-ready bundle export.
+It represents the complete user journey through a single audit.
+
+*Actors:* Auditor (primary), System, AI Engine *Trigger:* Auditor creates a new audit *End State:* Exam-ready bundle exported; all events immutable
+
+[mermaid]
+----
+flowchart TD
+    A([Auditor Logs In]) --> B[Create New Audit<br/>Select Pack Template]
+    B --> C[Configure Audit Parameters<br/>Loan Sample, Date Range]
+    C --> D[Upload Loan Documents<br/>CD, 1003, Appraisal, Title]
+    D --> E[Docling Extraction<br/>+ AFC Scoring]
+    E --> F[Schema Mapping<br/>AI Suggestions + Review]
+    F --> G[Rules Engine Scoring<br/>Pack Rules × Extracted Data]
+    G --> H[AI Generates<br/>Draft Findings]
+    H --> I[Reviewer: Effective Challenge<br/>Approve / Edit / Reject]
+    I --> J{All Findings<br/>Reviewed?}
+    J -->|No — next finding| I
+    J -->|Yes| K[Finalize Audit<br/>Lock + Sign Off]
+    K --> L[Export Exam-Ready<br/>Bundle — Section 21]
+    L --> M([Audit Complete])
+
+    %% Audit Trail annotation (right side)
+    N[Audit Trail:<br/>All Events Immutable<br/>RFC 8785 + Hash Chain]
+    E -.-> N
+    F -.-> N
+    G -.-> N
+    H -.-> N
+    I -.-> N
+    K -.-> N
+    L -.-> N
+
+    style A fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style E fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style F fill:#20B2AA,color:#fff,stroke:#178A83
+    style G fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style H fill:#20B2AA,color:#fff,stroke:#178A83
+    style I fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style J fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style K fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style L fill:#3B4F6B,color:#fff,stroke:#2B3E50
+    style M fill:#8B0000,color:#fff,stroke:#660000
+    style N fill:#FF7E2D,color:#fff,stroke:#CC5500
+----
+
+'''
+
+==== Workflow 2: Document Upload & Extraction (Docling + AFC)
+
+This workflow details the document processing pipeline from upload through field-level confidence routing.
+
+*Actors:* Auditor (upload), System (Docling, OCR, AFC), Reviewer (validation) *Trigger:* Auditor uploads one or more loan documents *End State:* All extracted fields confirmed (auto, reviewed, or manual) and ready for schema mapping
+
+*Design Reference:* <<sect-doc-processing>>, <<sect-decision-d1, Decision D1>>
+
+[mermaid]
+----
+flowchart TD
+    A([User Uploads Documents]) --> B[Document Classifier<br/>CD / 1003 / Appraisal / Other]
+    B --> C[Docling Conversion<br/>PDF → Structured JSON]
+    C --> D[OCR Layer<br/>docling-tesseract, Apache 2.0]
+    D --> E[AFC Score Computation<br/>5 Weighted Signals]
+
+    %% AFC signal weights annotation
+    E -.-> AFC[docling_page_grade 0.15<br/>ocr_segment_conf 0.25<br/>pattern_validity 0.25<br/>layout_anchor 0.20<br/>cross_doc_redundancy 0.15]
+
+    E --> F{AFC Score<br/>Routing?}
+    F -->|≥ 0.85| G([Auto-Confirm<br/>AFC ≥ 0.85])
+    F -->|0.50 – 0.85| H[Human Review Queue<br/>0.50 ≤ AFC < 0.85]
+    F -->|< 0.50| I[Manual Entry Required<br/>AFC < 0.50]
+
+    H --> J[Reviewer Validates<br/>Extracted Value]
+    I --> K[Reviewer Enters<br/>Correct Value]
+    J --> L{Accept<br/>or Override?}
+    L -->|Accept| M
+    L -->|Override| K
+    K --> M([Field Value Confirmed<br/>→ Schema Mapping])
+    G --> M
+
+    %% Cloud OCR fallback
+    C -->|Page-grade POOR/FAIR| N[Cloud OCR Fallback]
+    N --> E
+
+    style A fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style D fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style E fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style AFC fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style F fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style H fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style I fill:#C0392B,color:#fff,stroke:#922B21
+    style J fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style K fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style L fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style N fill:#4A6FA5,color:#fff,stroke:#2B4570
+----
+
+'''
+
+==== Workflow 3: Schema Mapping Review (Two-Layer Confidence)
+
+This workflow details how extracted fields are mapped to the HMDA/MISMO target schema with AI assistance and human oversight.
+
+*Actors:* System (matcher), AI (calibration), Reviewer (approval) *Trigger:* Extracted fields arrive from Document Processing Service *End State:* All fields mapped to target schema; approved mappings feed into rules engine
+
+*Design Reference:* <<sect-schema-mapping-service>>, <<sect-decision-d2, Decision D2>>
+
+[mermaid]
+----
+flowchart TD
+    A([Extracted Fields<br/>from Docling + AFC]) --> B[Hybrid Heuristic Matcher<br/>5 Weighted Signals]
+    B --> C[Layer 1: Raw Signals<br/>conf_extraction, conf_mapping, conf_rule]
+
+    %% Coverage note annotation
+    C -.-> COV[Coverage Note:<br/>CD-only = 10–20% at ≥ 0.85<br/>Full coverage requires<br/>1003 + Appraisal + Title]
+
+    C --> D[Layer 2: Calibrated Score<br/>Temperature Scaling /<br/>Isotonic Regression]
+    D --> E{Routing<br/>Decision?}
+    E -->|≥ 0.95| F([Auto-Accept<br/>calibrated ≥ 0.95])
+    E -->|0.70 – 0.95| G[Human Review<br/>0.70 ≤ score < 0.95]
+    E -->|< 0.70| H[Manual Entry<br/>score < 0.70]
+
+    G --> UI[UI Shows:<br/>Suggested mapping,<br/>Confidence badge,<br/>Matching pattern,<br/>Alternatives]
+    UI --> I{Reviewer<br/>Action?}
+    I -->|Accept| J([Accept Suggestion<br/>~10s per field])
+    I -->|Override| K[Override → Select<br/>Alternative ~45s]
+    I -->|Manual| L[Manual Entry<br/>Type Field Name]
+
+    K --> SYN{Update Synonym<br/>Dictionary?}
+    SYN -->|Yes| DICT[Synonym Dictionary<br/>Updated]
+    SYN -->|No| M
+    DICT --> M
+    J --> M
+    L --> M
+    H --> L
+    F --> M([Mapping Approved<br/>→ Rules Engine])
+
+    style A fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style COV fill:#2B3E50,color:#ccc,stroke:#555,stroke-dasharray:5 5
+    style D fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style E fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style F fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style G fill:#20B2AA,color:#fff,stroke:#178A83
+    style H fill:#C0392B,color:#fff,stroke:#922B21
+    style UI fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style I fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style K fill:#20B2AA,color:#fff,stroke:#178A83
+    style L fill:#C0392B,color:#fff,stroke:#922B21
+    style SYN fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style DICT fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+'''
+
+==== Workflow 4: Findings Review & Approval (AI Governance Controls)
+
+This workflow details the human oversight process for AI-generated findings, enforcing the AI governance red lines from <<sect-ai-governance>>.
+
+*Actors:* Rules Engine, AI (LLM), Reviewer (effective challenge) *Trigger:* Rules engine generates exceptions from scored data *End State:* Finding finalized with full provenance and effective challenge documentation
+
+*RED LINES (<<sect-ai-governance>>):*
+
+* No AI output enters the official audit record without explicit human approval
+* AI output must never be represented as definitive conclusions
+* Reviewer is responsible for accuracy of any approved finding
+
+*Required Disclaimers (<<sect-ai-governance>>):*
+
+* "This content was drafted by an AI assistant and requires human verification before use"
+* "AI-generated content may contain inaccuracies — reviewer is responsible for verifying accuracy"
+* "This finding has been reviewed and approved by [reviewer name] on [date]"
+
+*Design Reference:* Findings Management, Reporting Service, <<sect-ai-governance>>, <<sect-decision-d1, Decision D1>>–<<sect-decision-d3, D3>>
+
+[mermaid]
+----
+flowchart TD
+    A[Rules Engine<br/>Generates Exceptions] --> B[LLM Drafts Finding<br/>Narrative + Citations]
+
+    %% AI Provenance annotation
+    B -.-> PROV[AI Provenance Logged:<br/>model_id, prompt_version,<br/>input_hash, timestamp,<br/>retrieval_corpus]
+
+    B --> C[AI Label Applied:<br/>AI-Drafted — Requires<br/>Human Verification]
+    C --> D[Finding Enters<br/>Review Queue]
+    D --> E[Reviewer Opens Finding<br/>Sees AI label + evidence]
+    E --> F[Effective Challenge:<br/>Reviewer must independently<br/>verify against source docs]
+
+    %% RED LINES annotation
+    F -.-> RL[RED LINES Section 22.1.4:<br/>× No AI in official record<br/>without human approval<br/>× No representing AI output<br/>as definitive conclusions<br/>× Reviewer responsible<br/>for accuracy]
+
+    F --> G{Reviewer<br/>Disposition?}
+    G -->|Approve| H[Approve Finding<br/>Confirm AI draft is accurate]
+    G -->|Edit| I[Edit Finding<br/>Modify narrative/severity]
+    G -->|Reject| J[Reject Finding<br/>False positive / not applicable]
+
+    H --> K[Document Challenge:<br/>effective_challenge_notes,<br/>disposition rationale,<br/>output_diff if edited]
+    I --> K
+    J --> K
+    K --> L[Audit Event Created:<br/>human_approval event<br/>with full provenance]
+    L --> M([Finding Finalized<br/>→ Scorecard])
+
+    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style PROV fill:#2B3E50,color:#ccc,stroke:#555,stroke-dasharray:5 5
+    style C fill:#20B2AA,color:#fff,stroke:#178A83
+    style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style F fill:#20B2AA,color:#fff,stroke:#178A83
+    style RL fill:#C0392B,color:#fff,stroke:#922B21,stroke-dasharray:5 5
+    style G fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style I fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style J fill:#C0392B,color:#fff,stroke:#922B21
+    style K fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style L fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+'''
+
+==== Workflow 5: Audit Execution — Manual Mode
+
+Fully manual audit where the reviewer performs all field comparisons without automated extraction.
+
+*Actors:* Admin (setup), Reviewer (comparison + findings), Manager (approval + reporting)
+*Trigger:* Admin creates a new audit run in Manual execution mode
+*End State:* All records reviewed, findings generated, report exported
+
+*Design Reference:* <<sect-concept-of-operations>>, <<sect-product-requirements>>
+
+[mermaid]
+----
+sequenceDiagram
+  participant Admin
+  participant System
+  participant Reviewer
+  participant Manager
+
+  Admin->>System: Create audit run + select pack
+  Admin->>System: Upload target dataset (HMDA LAR)
+  System->>System: Validate schema (37 Key Data Fields)
+  System-->>Admin: Validation result (errors/warnings)
+  Admin->>System: Link source documents to LAR records
+  Reviewer->>System: Open record in side-by-side viewer
+  Reviewer->>System: Stage 1: Compare fields (confirm / discrepancy / unable)
+  Reviewer->>System: Create finding (value, root cause, severity, comment)
+  Reviewer->>System: Stage 2: Substantive review of flagged records
+  System->>System: Route findings to responsible parties
+  Reviewer->>System: Track remediation + evidence
+  System->>System: Second review (QA sampling)
+  Manager->>System: Review dashboards
+  Manager->>System: Generate audit summary report
+  System-->>Manager: Exam-ready bundle
+----
+
+'''
+
+==== Workflow 6: Audit Execution — OCR-Assisted Mode (Phase 1+)
+
+Docling extracts data from source documents and the comparison engine generates preliminary findings, with human review focused on uncertain cases.
+
+*Actors:* Admin (setup), System (Docling, Comparison Engine), Reviewer (validation + findings), Manager (approval + reporting)
+*Trigger:* Admin creates a new audit run in OCR-Assisted execution mode
+*End State:* All records reviewed (auto-confirmed + human-validated), findings generated, report exported
+
+*Design Reference:* <<sect-concept-of-operations>>, <<sect-product-requirements>>
+
+[mermaid]
+----
+sequenceDiagram
+  participant System
+  participant Docling
+  participant CompEngine as Comparison Engine
+  participant Reviewer
+  participant Manager
+
+  System->>Docling: Send source documents
+  Docling->>System: Extracted text, tables, key-value pairs + AFC scores
+  System->>CompEngine: Stage 1: Apply pack rules (target vs. extracted source)
+  CompEngine->>System: Preliminary findings + combined confidence scores
+  System->>Reviewer: Pre-populated comparison results (tiered by confidence)
+  Note over Reviewer: AFC >= 0.85: auto-confirmed (overridable)
+  Note over Reviewer: 0.50–0.84: flagged for human review
+  Note over Reviewer: < 0.50: manual review required
+  Reviewer->>System: Verify flagged items + override if needed
+  Reviewer->>System: Stage 2: Substantive review of flagged records
+  Reviewer->>System: Create/adjust findings
+  System->>Manager: Escalated findings for review
+  Manager->>System: Approve / request re-review
+  Manager->>System: Generate report + exam-ready bundle
+----
+
+'''
+
+==== Workflow 7: Audit Execution — Automated Pre-Scan ("Target-to-Source" / "Record-to-Record")
+
+For structured data audits (e.g., HMDA LAR against LOS database extract), the full Stage 1 comparison can be automated.
+
+*Actors:* Admin (setup + mapping approval), System (Comparison Engine), Reviewer (finding review), Manager (approval + reporting)
+*Trigger:* Admin creates a new audit run in Automated Pre-Scan execution mode with structured source data
+*End State:* All records compared automatically, human review completed for flagged findings, report exported
+
+*Design Reference:* <<sect-concept-of-operations>>, <<sect-product-requirements>>
+
+[mermaid]
+----
+sequenceDiagram
+  participant Admin
+  participant System
+  participant CompEngine as Comparison Engine
+  participant Reviewer
+  participant Manager
+
+  Admin->>System: Upload target dataset (CSV/API)
+  Admin->>System: Upload source dataset (CSV/API)
+  System->>System: Auto-suggest schema mapping + confidence scores
+  System-->>Admin: Present mapping suggestions (tiered by confidence)
+  Admin->>System: Approve, adjust, or manually map fields
+  System->>CompEngine: Run all pack rules automatically
+  CompEngine->>System: Full findings register + combined confidence scores
+  System->>Reviewer: Critical/High findings for review
+  System->>Reviewer: Below-threshold (< 0.85) findings for review
+  Reviewer->>System: Approve / override findings
+  System->>Manager: Escalated findings
+  Manager->>System: Final approval
+  Manager->>System: Generate report + exam-ready bundle
+----
+
+'''
 
 === Stage 1: Upload & Ingestion
 
@@ -19,26 +450,26 @@ The user creates an audit run, selects an audit pack, uploads the HMDA LAR targe
 
 [cols="8%,25%,32%,35%",options="header"]
 |===
-|WF # |Screen |FR IDs |Acceptance Criteria Summary
+|WF # |Screen |Requirements |Summary
 
 |WF-01
 |<<wf-audit-dashboard, Audit Dashboard>>
-|FR-10.1, FR-10.4
+|FR-10.1, FR-10.4 (<<sect-product-requirements>>)
 |Dashboard shows all audits with RBAC-filtered visibility; status badges, progress metrics, quick actions.
 
 |WF-02
 |<<wf-audit-config, Audit Configuration>>
-|FR-10.2, FR-10.5
+|FR-10.2, FR-10.5 (<<sect-product-requirements>>)
 |Create audit run with pack selection, sample size, confidence threshold, dataset upload; validates schema against pack.
 
 |WF-04
 |<<wf-doc-upload, Document Upload>>
-|FR-1.3, FR-1.4, FR-1.5
+|FR-1.3, FR-1.4, FR-1.5 (<<sect-product-requirements>>)
 |Drag-drop or batch upload of PDF/TIFF/ZIP; auto-classification with confidence; loan-record matching.
 
 |WF-03
 |<<wf-audit-progress, Audit Progress Monitor>>
-|FR-10.3, FR-10.4
+|FR-10.3, FR-10.4 (<<sect-product-requirements>>)
 |Real-time phase progress (upload, extraction, mapping, rules, review, finalization); AFC routing distribution.
 |===
 
@@ -75,31 +506,31 @@ The system extracts structured data from source documents and maps extracted fie
 
 [cols="8%,25%,32%,35%",options="header"]
 |===
-|WF # |Screen |FR IDs |Acceptance Criteria Summary
+|WF # |Screen |Requirements |Summary
 
 |WF-05
 |<<wf-processing-status, Processing Status>>
-|FR-2.1, FR-2.5
+|FR-2.1, FR-2.5 (<<sect-product-requirements>>)
 |Per-document extraction progress, page grades, fallback triggers, field counts.
 
 |WF-06
 |<<wf-extraction-review, Field Extraction Review>>
-|FR-2.1, FR-2.2, FR-2.3
+|FR-2.1, FR-2.2, FR-2.3 (<<sect-product-requirements>>)
 |Split-pane: document viewer (left) + extracted fields with AFC badges (right); accept/edit/enter actions.
 
 |WF-07
 |<<wf-doc-viewer, Document Viewer>>
-|FR-2.4
+|FR-2.4 (<<sect-product-requirements>>)
 |Full-page viewer with zoom, search, field bounding-box overlays; loads within 3s per page.
 
 |WF-08
 |<<wf-mapping-review, Mapping Review>>
-|FR-3.1, FR-3.2, FR-3.3
+|FR-3.1, FR-3.2, FR-3.3 (<<sect-product-requirements>>)
 |Two-layer confidence routing; auto-accept (>=0.95), human review (0.70-0.94), manual (<0.70); alternatives + override.
 
 |WF-09
 |<<wf-synonym-dict, Synonym Dictionary>>
-|FR-3.4
+|FR-3.4 (<<sect-product-requirements>>)
 |CRUD for curated synonym pairs; overrides from mapping review feed back here for approval.
 |===
 
@@ -138,31 +569,31 @@ The comparison engine applies pack rules against mapped data; the LLM drafts fin
 
 [cols="8%,25%,32%,35%",options="header"]
 |===
-|WF # |Screen |FR IDs |Acceptance Criteria Summary
+|WF # |Screen |Requirements |Summary
 
 |WF-10
 |<<wf-findings-queue, Findings Review Queue>>
-|FR-4.1, FR-4.4, FR-4.7
+|FR-4.1, FR-4.4, FR-4.7 (<<sect-product-requirements>>)
 |Sortable/filterable queue by severity + confidence; Stage 1 error rate threshold alert.
 
 |WF-11
 |<<wf-finding-detail, Finding Detail>>
-|FR-4.4, FR-4.6
+|FR-4.4, FR-4.6 (<<sect-product-requirements>>)
 |Full finding view: target/source values, rule, confidence, severity, regulatory citation, timeline.
 
 |WF-12
 |<<wf-ai-narrative, AI Narrative Approval>>
-|FR-4.4
+|FR-4.4 (<<sect-product-requirements>>)
 |AI-drafted narrative with mandatory "AI-Drafted — Requires Human Verification" label; approve/edit/reject with effective challenge notes.
 
 |WF-12b
 |<<wf-record-comparison, Record Comparison>>
-|FR-4.1, FR-4.2
+|FR-4.1, FR-4.2 (<<sect-product-requirements>>)
 |Side-by-side Stage 1 comparison: HMDA LAR fields vs. source document fields across 37 Key Data Fields.
 
 |WF-13
 |<<wf-escalation, Manager Escalation>>
-|FR-4.1
+|FR-4.1 (<<sect-product-requirements>>)
 |Manager review of escalated findings; approve closure, request re-review, or further escalate.
 |===
 
@@ -200,31 +631,31 @@ Findings flow from identification through closure with approval gates at each tr
 
 [cols="8%,25%,32%,35%",options="header"]
 |===
-|WF # |Screen |FR IDs |Acceptance Criteria Summary
+|WF # |Screen |Requirements |Summary
 
 |WF-14
 |<<wf-remediation, Remediation Tracking>>
-|FR-6.1, FR-6.2
+|FR-6.1, FR-6.2 (<<sect-product-requirements>>)
 |9-state remediation lifecycle; SLA-driven due dates (Critical: 1d, High: 3d, Medium: 7d, Low: 14d).
 
 |WF-15
 |<<wf-aging, Aging Dashboard>>
-|FR-6.3
+|FR-6.3 (<<sect-product-requirements>>)
 |SLA violation alerts; overdue findings sorted by age and severity.
 
 |WF-16
 |<<wf-report-gen, Report Generation>>
-|FR-8.1
+|FR-8.1 (<<sect-product-requirements>>)
 |Audit summary report template selection; HTML/PDF export; findings breakdown.
 
 |WF-17
 |<<wf-bundle-export, Exam-Ready Bundle Export>>
-|FR-8.4, FR-8.5, FR-8.6, FR-8.7
+|FR-8.4, FR-8.5, FR-8.6, FR-8.7 (<<sect-product-requirements>>)
 |14-artifact versioned ZIP bundle with approval manifests, coverage stats, change log, pipeline provenance.
 
 |WF-18
 |<<wf-findings-register, Findings Register>>
-|FR-8.1
+|FR-8.1 (<<sect-product-requirements>>)
 |Complete findings list with export, filtering, and status summary.
 |===
 
@@ -261,16 +692,16 @@ Dashboards provide read-only operational and executive views across all audits.
 
 [cols="8%,25%,32%,35%",options="header"]
 |===
-|WF # |Screen |FR IDs |Acceptance Criteria Summary
+|WF # |Screen |Requirements |Summary
 
 |WF-19
 |<<wf-exec-dashboard, Executive Dashboard>>
-|FR-8.1
+|FR-8.1 (<<sect-product-requirements>>)
 |KPIs (audit count, findings, compliance rate, avg resolution), compliance trend chart, severity breakdown.
 
 |WF-20
 |<<wf-mgr-dashboard, Manager Dashboard>>
-|FR-8.1
+|FR-8.1 (<<sect-product-requirements>>)
 |Active audits, critical findings, overdue remediations, team workload, pending approvals.
 
 |WF-21
@@ -278,6 +709,182 @@ Dashboards provide read-only operational and executive views across all audits.
 |Phase 2
 |Override rate, confidence accuracy, hallucination rate monitoring (Phase 2).
 |===
+
+==== Wireframes
+
+[[wf-exec-dashboard]]
+===== WF-19: Executive Dashboard
+
+*Purpose:* Read-only high-level view of audit program health.
+KPIs, compliance trends, and findings summary across all audits.
+
+*Roles:* Executive (read-only), Manager.
+
+*Flowbite components:* Card (KPI), Chart (trends), Table, Badge.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Executive Dashboard</b>
+  { Home > Dashboard }
+  ===
+  {
+    {+
+      <b>Audits</b>
+      ---
+      Total: <b>40</b>
+      Active: <b>12</b>
+      Finalized: <b>28</b>
+    }
+    |
+    {+
+      <b>Findings</b>
+      ---
+      Total: <b>347</b>
+      Open: <b>89</b>
+      Closed: <b>258</b>
+    }
+    |
+    {+
+      <b>Compliance Rate</b>
+      ---
+      .
+      <b><color:Green>94.2%</color></b>
+      Pass + Pass w/ Obs
+    }
+    |
+    {+
+      <b>Avg Resolution</b>
+      ---
+      Critical: <b>0.8d</b>
+      High: <b>2.1d</b>
+      Medium: <b>4.3d</b>
+    }
+  }
+  ---
+  {+
+    <b>Compliance Trend (Last 12 Months)</b>
+    ---
+    (Line chart: monthly compliance rate over time)
+    (X-axis: months, Y-axis: % pass rate)
+    (Annotations: regulatory change events, pack updates)
+  }
+  ---
+  {
+    {+
+      <b>Findings by Severity (This Quarter)</b>
+      ---
+      {#
+        <b>Severity</b> | <b>Count</b> | <b>% of Total</b>
+        Critical | 8 | 2.3%
+        High | 34 | 9.8%
+        Medium | 112 | 32.3%
+        Low | 98 | 28.2%
+        Informational | 95 | 27.4%
+      }
+    }
+    |
+    {+
+      <b>Recent Finalized Audits</b>
+      ---
+      {#
+        <b>Audit</b> | <b>Result</b> | <b>Date</b>
+        HMDA Q4 2025 | <color:Green>Pass</color> | 2026-02-28
+        CRA 2025 | <color:Orange>Observations</color> | 2026-02-15
+        TRID Q3 2025 | <color:Green>Pass</color> | 2026-01-30
+      }
+    }
+  }
+  ---
+  { [View All Audits] | [Download Quarterly Report] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *KPI cards* at top show real-time metrics; update on page load
+* *Compliance Trend* chart interactive: hover for monthly details, click to drill into that month's audits
+* *[View All Audits]* navigates to <<wf-audit-dashboard>> (filtered by Executive's tenant)
+* *[Download Quarterly Report]* generates executive summary PDF
+* All data scoped to user's tenant (multi-tenant isolation via PostgreSQL RLS)
+
+'''
+
+[[wf-mgr-dashboard]]
+===== WF-20: Manager Dashboard
+
+*Purpose:* Operational view for audit managers.
+Shows active audits, critical findings requiring attention, overdue remediations, and team workload.
+
+*Roles:* Manager, Audit Lead.
+
+*Flowbite components:* Card, Table, Badge, Alert, Chart, Button.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Manager Dashboard</b>
+  { Home > Dashboard (Manager) }
+  ===
+  <color:Red><b>! 2 Critical findings untriaged > SLA | 1 remediation overdue</b></color>
+  ===
+  {
+    {+
+      <b>My Active Audits</b>
+      {#
+        <b>Audit</b> | <b>Status</b> | <b>Progress</b> | <b>Findings</b> | <b>Action</b>
+        HMDA Q1 2026 | <color:RoyalBlue>In Progress</color> | 67% | 23 (2 Crit) | [View]
+        CRA 2026 | <color:RoyalBlue>In Progress</color> | 35% | 8 (0 Crit) | [View]
+        TRID Q1 2026 | <color:Orange>Review</color> | 100% | 15 (1 Crit) | [Finalize]
+      }
+    }
+    |
+    {+
+      <b>Team Workload</b>
+      {#
+        <b>Reviewer</b> | <b>Open Findings</b> | <b>Overdue</b>
+        Jane Smith | 14 | <color:Red>1</color>
+        Bob Johnson | 11 | 0
+        Alice Chen | 8 | 0
+      }
+    }
+  }
+  ---
+  {+
+    <b>Critical Findings Requiring Action</b>
+    {#
+      <b>Finding</b> | <b>Audit</b> | <b>Status</b> | <b>Age</b> | <b>Owner</b> | <b>Action</b>
+      F-002 | HMDA Q1 | <color:Red>Identified (3d)</color> | <color:Red>+2d over SLA</color> | Unassigned | [Triage Now]
+      F-011 | HMDA Q1 | <color:Red>Identified (3d)</color> | <color:Red>+2d over SLA</color> | Unassigned | [Triage Now]
+      F-042 | TRID Q1 | <color:Orange>Remediation</color> | 2d | Jane Smith | [Review]
+    }
+  }
+  ---
+  {+
+    <b>Pending Approvals</b>
+    {#
+      <b>Type</b> | <b>Item</b> | <b>Requested By</b> | <b>Action</b>
+      AI Narrative | F-001 narrative (HMDA Q1) | System | [Review & Approve]
+      Finding Closure | F-005 (HMDA Q1) | Jane Smith | [Approve Closure]
+      Report | HMDA Q1 Audit Report | Jane Smith | [Review Report]
+    }
+  }
+  ---
+  { [View Aging Dashboard] | [View All Findings] | [Generate Report] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Alert banner* shows immediate-action items (SLA violations, overdue remediations)
+* *Critical Findings* table shows only findings requiring manager attention; sorted by urgency
+* *Pending Approvals* consolidates all items requiring manager sign-off: AI narratives, finding closures, reports
+* *Team Workload* card helps balance assignments across reviewers
+* *[Triage Now]* navigates to <<wf-finding-detail>> with triage section pre-expanded
 
 ==== Developer Context
 
@@ -294,31 +901,31 @@ Admin screens cover user management, pack lifecycle, model registry, system conf
 
 [cols="8%,25%,32%,35%",options="header"]
 |===
-|WF # |Screen |FR IDs |Acceptance Criteria Summary
+|WF # |Screen |Requirements |Summary
 
 |WF-22
 |<<wf-user-mgmt, User Management>>
-|FR-7.1, FR-7.2
+|FR-7.1, FR-7.2 (<<sect-product-requirements>>)
 |Three-lines-of-defense RBAC; role assignment with cross-line isolation enforcement.
 
 |WF-23
 |<<wf-pack-mgmt, Pack Management>>
-|FR-5.1, FR-5.2, FR-5.3
+|FR-5.1, FR-5.2, FR-5.3 (<<sect-product-requirements>>)
 |Pack lifecycle (Draft → Testing → Published → Deprecated → Retired); version pinning for active audits.
 
 |WF-24
 |<<wf-model-registry-admin, Model Registry Admin>>
-|FR-7.3
+|FR-7.3 (<<sect-product-requirements>>)
 |Model lifecycle (Draft → Staging → Approved → Deprecated); call-time gating — fail closed if no approved model.
 
 |WF-25
 |<<wf-system-settings, System Settings>>
-|FR-7.4
+|FR-7.4 (<<sect-product-requirements>>)
 |Tenant configuration, threshold overrides, notification settings.
 
 |WF-26
 |<<wf-audit-trail, Audit Trail Viewer>>
-|FR-7.5
+|FR-7.5 (<<sect-product-requirements>>)
 |Immutable event log viewer; filterable by entity, actor, event type, date range.
 |===
 
@@ -328,3 +935,65 @@ Admin screens cover user management, pack lifecycle, model registry, system conf
 *RBAC enforcement:* Roles are `qc_reviewer`, `qc_manager`, `compliance_analyst`, `compliance_officer`, `auditor`, `audit_director`, `admin`.
 Cross-line isolation enforced at DB level (RLS) and API level (middleware).
 *Architecture detail:* <<sect-architecture-by-workflow>>.
+
+'''
+
+[[wf-global-layout]]
+=== Global Layout: Shared Navigation Shell
+
+All screens share a consistent layout shell: left sidebar navigation, top bar with breadcrumbs and user menu, and a scrollable main content area.
+This follows the Flowbite Dashboard Layout pattern.
+
+*Flowbite components:* Sidebar, Navbar, Breadcrumb, Avatar, Dropdown.
+
+[plantuml]
+----
+@startsalt
+{+
+  {
+    {SI
+      <b>AuditIQ</b>
+      --
+      <&home> Dashboard
+      ..
+      <b>AUDIT</b>
+      <&spreadsheet> Audits
+      <&document> Documents
+      <&link-intact> Mappings
+      <&flag> Findings
+      <&pulse> Remediation
+      ..
+      <b>REPORTS</b>
+      <&file> Reports
+      <&box> Exam Bundle
+      ..
+      <b>ADMIN</b>
+      <&people> Users
+      <&puzzle-piece> Packs
+      <&cog> Settings
+      <&list> Audit Trail
+    }
+    |
+    {
+      { Home > Audits > AUD-2026-001 | . | . | . | . | [Jane Smith <&person>] }
+      ---
+      {+
+        .
+        <b>Main Content Area</b>
+        .
+        (Screen-specific content renders here.)
+        (Each wireframe below shows this area.)
+        .
+      }
+    }
+  }
+}
+@endsalt
+----
+
+*Layout specifications:*
+
+* Sidebar width: 256px (collapsible to 64px icon-only mode on mobile)
+* Top bar height: 64px with breadcrumb trail and user avatar dropdown
+* Main content area: fluid width, max-width 1440px, centered
+* Responsive breakpoints: mobile (<768px sidebar collapses), tablet (768–1024px), desktop (>1024px)

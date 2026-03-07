@@ -95,7 +95,7 @@ stateDiagram-v2
 ----
 
 AuditIQ supports three execution modes — Manual, OCR-Assisted, and Automated Pre-Scan — each tailored to different source data types and audit scopes.
-For detailed step-by-step workflows and sequence diagrams for each mode, see <<sect-ui-workflows, UI Workflows and User Journeys>>.
+For detailed step-by-step workflows and sequence diagrams for each mode, see <<sect-workflow-screen-guide, UI Workflows, Screens & User Journeys>>.
 For functional requirements and wireframes supporting audit lifecycle management, see <<sect-product-requirements, Epic 10: Audit Lifecycle Management>>.
 
 [[sect-finding-remediation]]

@@ -363,7 +363,7 @@ For detailed component specifications including API contracts, input/output inte
 ==== Client Layer
 
 * *Web UI (React):* Single-page application for audit workflows, dashboards, and admin.
-See <<sect-ui-workflows, UI Workflows & User Journeys>>.
+See <<sect-workflow-screen-guide, UI Workflows, Screens & User Journeys>>.
 * *API Gateway (Azure APIM):* Authentication, rate limiting, request routing, TLS termination.
 See <<sect-api-gateway>>.
 
