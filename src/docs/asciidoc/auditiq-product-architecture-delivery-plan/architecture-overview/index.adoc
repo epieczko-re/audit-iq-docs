@@ -19,6 +19,102 @@ Pre-built by RiskExec. +
 Pre-built by RiskExec. +
 *Future:* Client-customizable packs, potentially a third-party pack marketplace.
 
+The following subsections describe the strategic importance of the pack model and the components that make up each pack.
+For the full specification — including the rule engine, expression language, and HMDA field coverage — see <<sect-audit-pack-spec>>.
+
+===== The Pack Is the Product
+
+An audit pack encapsulates everything needed to audit a specific regulatory domain: what fields to check, which documents to extract from, how to compare values, when to flag discrepancies, how to score severity, and what the final report looks like.
+The platform is the engine; the pack is the brain.
+
+This has three strategic implications:
+
+. *Extensibility without code changes.*
+Adding a new regulation (CRA, SBL 1071, fair lending) means creating a new pack — not modifying the platform.
+The platform's architecture is pack-agnostic by design.
+. *Regulatory defensibility.*
+Because packs are declarative, every rule is explicit, auditable, and traceable to a regulation citation.
+There is no hidden logic.
+Examiners can review the pack itself as part of the audit methodology.
+. *Competitive moat.*
+The accumulated depth and accuracy of RiskExec's pack library — hundreds of rules, field-level coverage matrices, tested against thousands of loan files — is IP that cannot be trivially replicated.
+
+===== Competitive Differentiation
+
+The audit technology market has no shortage of tools.
+What it lacks is a product that encodes regulatory logic as a versioned, testable, declarative artifact.
+AuditIQ's pack model is architecturally distinct from every major competitor.
+
+[cols="20%,25%,25%,30%",options="header"]
+|===
+|Competitor |Approach |Strengths |AuditIQ Differentiation
+
+|*CaseWare Working Papers*
+|Digital binder with trial balance integration and AI assistant (AiDA)
+|Mature product; strong roll-forward; AiDA for memo generation
+|CaseWare automates document assembly, not regulatory logic.
+Rules live in the auditor's head, not in the tool.
+AuditIQ encodes the rules declaratively.
+
+|*TeamMate+ (Wolters Kluwer)*
+|Audit lifecycle management with IBM Cognos reporting
+|End-to-end workflow; customizable content libraries
+|TeamMate manages audit workflow — it does not execute audit logic.
+AuditIQ packs drive automated comparison and scoring, not just task tracking.
+
+|*AuditBoard*
+|Cloud-native workflow automation with AI summaries
+|Modern UX; real-time collaboration; template-driven
+|AuditBoard orchestrates people and tasks.
+AuditIQ orchestrates rules and evidence.
+Pack-driven automation replaces manual workpaper assembly.
+
+|*Diligent One / HighBond*
+|GRC platform with ACL Robotics for automated monitoring
+|60% of Fortune 1000; strong analytics; ML for false positive reduction
+|HighBond analyzes transactions; AuditIQ audits compliance.
+Packs encode regulation-specific validation logic that HighBond's generic analytics cannot express.
+
+|*DataSnipper*
+|Excel-native evidence linking with AI document extraction
+|Fast adoption; $1.4B productivity savings; strong evidence-to-workpaper linking
+|DataSnipper links evidence to cells.
+AuditIQ defines what evidence to look for, what values to expect, and what constitutes a finding — the full regulatory logic chain.
+
+|*MindBridge AI*
+|Full-population transaction analysis with ensemble ML
+|100% coverage vs. sampling; unsupervised anomaly detection
+|MindBridge finds statistical anomalies.
+AuditIQ validates against regulatory requirements.
+Packs encode what "correct" means per regulation, not just what is "unusual."
+
+|*Fieldguide*
+|Document management with AI copilots for findings drafting
+|AI evidence review; completeness checking; auto-renaming
+|Fieldguide assists auditors in managing documents.
+AuditIQ replaces manual audit logic with pack-driven comparison and scoring.
+|===
+
+*The key insight:* No competitor has productized declarative regulatory logic as a versioned, testable, distributable artifact.
+Competitors automate the workflow around auditing (binder assembly, task management, evidence linking, memo drafting).
+AuditIQ automates the audit itself.
+
+===== Pack Components
+
+An audit pack is a versioned, declarative configuration artifact that encapsulates everything needed to audit a specific regulatory domain or business process.
+The platform interprets the pack — it does not execute code embedded in the pack.
+This ensures safety, reproducibility, and extensibility.
+
+*Pack components (7 core elements):*
+
+* *Manifest* — metadata, versioning, authorship, regulatory basis
+* *Target schema* — which fields are audit-reportable (e.g., HMDA LAR fields)
+* *Source schema(s)* — document types and expected layouts (e.g., Closing Disclosure, Loan Estimate)
+* *Comparison rules* — how to validate target vs. source values, including the expression language for complex logic
+* *Scoring rules* — severity definitions, confidence thresholds for auto-accept/review/reject
+* *Report templates* — how to format findings into reports (PDF/HTML/Markdown)
+* *Test cases* — reference data for validation harness, including golden datasets
+
 [[sect-target-source-schemas]]
 ==== Target vs. Source: Schema Definitions
 
@@ -91,11 +187,117 @@ Events are append-only and hash-chained for tamper evidence.
 The system differentiates between truly immutable artifacts (evidence, events) and correctible artifacts (findings, mappings) where corrections are modeled as new events that supersede prior state.
 See <<sect-immutability>> for the full immutability/correctability specification.
 
+[[sect-compliance-hierarchy-concept]]
+==== Compliance Hierarchy and Three-Artifact Design
+
+Regulations do not exist in isolation.
+A regulator creates a rule, then publishes guidance interpreting that rule.
+The institution subject to the regulation writes internal policies and procedures to comply with the rule and its guidance.
+An audit must verify compliance not merely against the raw regulation, but against the institution's own policies and procedures — because that is what examiners actually test against.
+
+For the full policy management specification, including the AI-driven policy ingestion pipeline and effective rule merge logic, see <<sect-regulatory-compliance>>.
+
+[[sect-regulatory-compliance-hierarchy]]
+===== The Compliance Hierarchy
+
+AuditIQ models regulatory compliance as a five-layer hierarchy, from the regulation itself down to the effective rule set used in the audit.
+
+.Regulatory Compliance Hierarchy — From Rule to Audit
+[mermaid]
+----
+graph TD
+  A["<b>Layer 1 — Regulation</b><br/>Federal rule with force of law<br/><i>e.g., 12 CFR 1003 (Reg C / HMDA)</i>"] --> B["<b>Layer 2 — Regulatory Guidance</b><br/>Interpretive guidance from the regulator<br/><i>e.g., CFPB Exam Procedures, FFIEC Guidelines</i>"]
+  B --> C["<b>Layer 3 — Institution Policy</b><br/>Board-approved compliance policy<br/><i>e.g., ABC Bank HMDA Data Integrity Policy</i>"]
+  C --> D["<b>Layer 4 — Institution Procedures</b><br/>Operational procedures implementing the policy<br/><i>e.g., ABC Bank HMDA Data Collection Procedures</i>"]
+  D --> E["<b>Layer 5 — Audit Rule Set</b><br/>Effective rules used to perform the audit<br/><i>Regulatory Pack + Institution Policy Profile = Effective Rules</i>"]
+
+  style A fill:#1B3A5C,color:#fff,stroke:#0F2440
+  style B fill:#2B5A8C,color:#fff,stroke:#1B3A5C
+  style C fill:#4A6FA5,color:#fff,stroke:#2B5A8C
+  style D fill:#6A8FBF,color:#fff,stroke:#4A6FA5
+  style E fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Layer 1 — Regulation:* A federal or state rule with the force of law.
+This is the regulatory floor — every institution subject to the regulation must comply.
+Example: 12 CFR 1003 (Regulation C) governs HMDA data collection and reporting.
+
+*Layer 2 — Regulatory Guidance:* Interpretive guidance published by the regulator to clarify how the rule should be implemented and examined.
+Guidance does not have the force of law, but examiners use it as their playbook.
+Example: CFPB HMDA Examination Procedures, FFIEC Interagency Guidelines.
+
+*Layer 3 — Institution Policy:* The institution's board-approved compliance policy that addresses how it will comply with the regulation and guidance.
+Policies are typically high-level statements of intent, risk appetite, and organizational responsibilities.
+Example: "ABC Bank HMDA Data Integrity Policy" stating that all HMDA data will be validated against source documents within 30 days of closing.
+
+*Layer 4 — Institution Procedures:* Operational procedures that implement the policy — the step-by-step instructions for staff.
+Procedures are where the institution's specific thresholds, tolerances, escalation paths, and documentation requirements live.
+Example: "ABC Bank HMDA Data Collection Procedures" specifying that loan amount discrepancies exceeding $25 require supervisor review (stricter than the regulatory standard).
+
+*Layer 5 — Audit Rule Set:* The effective rules used to perform the audit.
+This is the composition of the base Regulatory Pack (Layers 1-2) and the Institution Policy Profile (Layers 3-4).
+The pack provides the regulatory floor; the policy profile tightens, extends, and contextualizes it for the specific institution.
+
+===== Why Institution Policies Matter for Auditing
+
+Examiners do not audit solely against the regulation.
+They audit against the institution's own policies and procedures — and then assess whether those policies adequately implement the regulation.
+This creates two distinct audit dimensions:
+
+. *Regulatory compliance:* Does the institution's data and documentation meet the regulatory requirements?
+(Answered by the base Regulatory Pack.)
+. *Policy adherence:* Does the institution follow its own policies and procedures?
+(Answered by the Institution Policy Profile overlay.)
+
+An institution can be in regulatory compliance but in violation of its own policy.
+An examiner will cite both.
+AuditIQ must test both.
+
+===== Three-Artifact Design
+
+AuditIQ models the compliance hierarchy with three distinct artifacts that compose at runtime:
+
+.Three-Artifact Composition Model
+[mermaid]
+----
+graph LR
+  A["<b>Regulatory Pack</b><br/>Authored by RiskExec<br/>Regulatory floor (Layers 1–2)<br/>Immutable, versioned"] -->|Merge| C["<b>Effective Rule Set</b><br/>Computed at runtime<br/>What the audit runs against<br/>Deterministic composition"]
+  B["<b>Institution Policy Profile</b><br/>AI-generated, human-approved<br/>Institution-specific (Layers 3–4)<br/>Immutable, versioned"] -->|Overlay| C
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style C fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Artifact 1 — Regulatory Pack (existing):* The base pack as specified in <<sect-audit-pack-spec>>.
+Contains all rules derived from the regulation and regulatory guidance.
+Authored exclusively by RiskExec.
+This is the regulatory floor — it cannot be weakened by any overlay.
+
+*Artifact 2 — Institution Policy Profile (new):* A structured, versioned configuration artifact that captures the institution's specific policies and procedures for the regulation the pack covers.
+Created via the AI-driven pipeline (see <<sect-ai-policy-pipeline>>) and approved by human compliance experts.
+The profile can tighten, extend, and contextualize the base pack, but it cannot weaken the regulatory floor.
+
+*Artifact 3 — Effective Rule Set (computed):* The deterministic merge of the Regulatory Pack and the Institution Policy Profile.
+This is what the audit engine actually executes.
+The merge is computed at audit-instance creation time and is immutable for the duration of the audit run.
+See <<sect-effective-rule-merge>> for the merge logic specification.
+
 [[sect-exam-pack-concept]]
 ==== Exam Pack Output: Continuously Updated Dossier
 
-The exam pack output is not a one-time export — it is a *first-class product object* that the platform maintains continuously throughout the audit lifecycle.
-Buyers do not want a ZIP file generated at the end; they want a living dossier that is always examination-ready, reflecting the current state of coverage, findings, approvals, and remediation.
+The exam-ready bundle is a *first-class product object* — not a one-time export, but a continuously updated dossier that the platform maintains throughout the audit lifecycle.
+It represents the complete, examination-ready state of an audit at any point in time: coverage, findings, evidence, approvals, exceptions, and change history.
+
+*What buyers actually want:* A single artifact they can hand to an examiner that proves the audit was thorough, well-governed, and defensible — without the examiner needing to navigate the platform.
+The exam pack must answer these examiner questions on its own:
+
+* What was tested, and how comprehensively? (Coverage & sampling)
+* What was found, and how certain are we? (Findings & confidence)
+* What evidence supports each finding? (Evidence links & provenance)
+* Who reviewed and approved what? (Approval manifests & Three Lines Model certification)
+* What changed since the last version? (Change log)
+* Were there any overrides or exceptions? (Exceptions log)
 
 *What the exam pack contains:*
 

@@ -1,9 +1,9 @@
 [[sect-how-to-use]]
 == How to Use This Document
 
-This document is organized into eight parts.
+This document is organized into seven parts.
 Read Part II (Operational Model) and Part III (Product Workflows & Requirements) before estimating or sprinting.
-Those two parts define _what the system does_ and _how users interact with it_ — every requirement and every component in Part V traces back to a workflow and FR table in Part III.
+Those two parts define _what the system does_ and _how users interact with it_ — every requirement and every component in Part IV traces back to a workflow and FR table in Part III.
 
 === For the 4-Person Engineering Team
 
@@ -15,9 +15,9 @@ Each journey contains workflow diagrams, screen wireframes, functional requireme
 . *Use Part III's epic sections as the acceptance contract* — the FR tables are embedded inside each journey.
 When you pick up a story, find the FR ID in the relevant journey's Functional Requirements subsection for the authoritative acceptance criteria and the embedded wireframe.
 . *Reference Part IV for deep architecture detail* — the Architecture Overview and Component-Level Design sections provide cross-cutting architectural context beyond what is covered in each journey's Architecture subsection.
-. *Check Part VI before any AI-related work* — AI governance red lines, model registry requirements, and provenance logging are non-negotiable.
+. *Check Part V before any AI-related work* — AI governance red lines, model registry requirements, and provenance logging are non-negotiable.
 Read <<sect-ai-governance>> before writing any LLM integration code.
-. *Plan sprints with Part VII* — the Workflow Delivery Matrix (<<sect-workflow-delivery-matrix>>) maps screens to services to sprints to owners.
+. *Plan sprints with Part VI* — the Workflow Delivery Matrix (<<sect-workflow-delivery-matrix>>) maps screens to services to sprints to owners.
 The Quick Start (<<sect-quick-start-team>>) gives you the 10-screen MVP scope and a 6-sprint suggestion.
 
 === Document Structure Overview
@@ -28,17 +28,16 @@ Start here for business context, market positioning, and guidance on navigating 
 The conceptual foundation for everything that follows.
 * *Part III — Product Workflows & Requirements:* End-to-end workflow diagrams, all 26 MVP screen wireframes, functional requirements (epics with FR tables), and architecture context — all organized by user journey.
 This is the primary sprint-planning reference.
-* *Part IV — Architecture & Design:* Architecture Overview, Component-Level Design, Data Model, and Scoring Framework.
-* *Part V — Specifications:* Audit Pack Specification with rule engine, Regulatory Compliance & Policy Management, and the Canonical Glossary (single source of truth for all confidence metrics and thresholds).
-* *Part VI — AI & Governance:* AI Governance & Model Risk Controls, Model Registry, Model Deployment, Docling-Graph Integration, Immutability vs. Correctability.
-* *Part VII — Delivery & Business:* Pricing, Quick Start for the 4-person team, Delivery Plan with Workflow Delivery Matrix, Risks & Mitigations, Future Roadmap.
-* *Part VIII — Reference:* Appendices, Competitive Intelligence, Architectural Decisions (including MVP Decisions Locked), Exam-Ready Bundle Specification, Document Control.
+* *Part IV — Architecture & Design:* Architecture Overview (including Audit Pack concepts, Compliance Hierarchy, and Exam-Ready Bundle philosophy), Component-Level Design (including Audit Pack Technical Specification, Policy Management & Compliance Engine, and Exam Pack Lifecycle Manager with full bundle specs).
+* *Part V — AI & Governance:* AI Governance & Model Risk Controls, Model Registry, Model Deployment, Docling-Graph Integration, Immutability vs. Correctability.
+* *Part VI — Delivery & Business:* Pricing, Quick Start for the 4-person team, Delivery Plan with Workflow Delivery Matrix, Risks & Mitigations, Future Roadmap.
+* *Part VII — Reference:* Appendices (including Canonical Glossary and HMDA Field Coverage Matrix), Competitive Intelligence, Architectural Decisions (including MVP Decisions Locked), Document Control.
 
 === Audiences
 
 * *Engineering team:* Parts II, III, IV (sprint-plan against Part III's user journeys which contain workflows, screens, FR tables, and architecture context; use Part IV for cross-cutting architecture detail).
-* *Product / leadership:* Part I for context; Part VII for investment decisions and delivery timeline; Part VIII for Competitive Intelligence.
-* *Compliance / regulatory stakeholders:* Part VI (AI Governance, Immutability) and Part VIII (Exam-Ready Bundle, Canonical Glossary) for regulatory defensibility.
+* *Product / leadership:* Part I for context; Part VI for investment decisions and delivery timeline; Part VII for Competitive Intelligence.
+* *Compliance / regulatory stakeholders:* Part V (AI Governance, Immutability) and Part VII (Canonical Glossary) for regulatory defensibility.
 
 === Conventions
 
