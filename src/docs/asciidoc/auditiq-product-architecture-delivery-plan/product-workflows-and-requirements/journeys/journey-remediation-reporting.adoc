@@ -1,3 +1,4 @@
+[[journey-remediation-reporting]]
 === Journey: Remediation & Reporting
 
 This journey covers the 9-state finding remediation lifecycle, SLA tracking, report generation, and exam-ready bundle export.

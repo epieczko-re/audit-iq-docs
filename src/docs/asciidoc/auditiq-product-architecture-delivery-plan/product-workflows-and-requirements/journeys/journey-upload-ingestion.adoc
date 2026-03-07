@@ -1,3 +1,4 @@
+[[journey-upload-ingestion]]
 === Journey: Upload & Ingestion
 
 This journey covers audit creation, configuration, dataset upload, document upload, and initial validation.

@@ -1,3 +1,4 @@
+[[journey-dashboards]]
 === Journey: Dashboards & Analytics
 
 Dashboards provide read-only operational and executive views across all audits.

@@ -1,3 +1,4 @@
+[[journey-admin-registry]]
 === Journey: Admin & Registry
 
 Admin screens cover user management, pack lifecycle, model registry, system configuration, and audit trail viewing.
