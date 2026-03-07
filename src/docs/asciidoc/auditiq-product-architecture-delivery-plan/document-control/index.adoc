@@ -14,6 +14,8 @@ _Built: {build-timestamp}_
 [cols="9%,12%,32%,47%",options="header"]
 |===
 |Version |Date |Author(s) |Changes
+|0.29 |2026-03-07 |Erik Pieczkowski |Reorganized Section 6 around user journeys instead of lifecycle stages: introduced dedicated journey files for overview, execution modes, shared review/reporting paths, dashboards, and administration; embedded workflow diagrams directly in journey files with screen walkthroughs to close prior diagram/screen disconnects; moved Screen Inventory and UI Development Strategy to the end as reference material while preserving existing wf/section anchors for cross-reference stability.
+
 |0.1 |2026-02-27 |Erik Pieczkowski |Initial comprehensive spec with full strategic sections and detailed stubs for all remaining sections; MVP Cutline produced.
 
 |0.2 |2026-03-05 |Erik Pieczkowski |All sections brought to implementation-ready detail: complete component architecture, Audit Pack Specification with Rule Engine and HMDA field coverage, Regulatory Compliance Hierarchy with Institution Policy Profiles, Delivery Plan rescoped for 4-person team (Mar–Jun timeline), 26 UI wireframes contextualized into functional sections, and CI/CD tooling (linting, build timestamps, .editorconfig).

@@ -1,0 +1,62 @@
+=== Manual Mode Journey
+
+Manual Mode is used when reviewers perform direct source-vs-target comparison with minimal automation.
+
+==== Workflow Diagram
+
+==== Workflow 5: Audit Execution — Manual Mode
+
+Fully manual audit where the reviewer performs all field comparisons without automated extraction.
+
+*Actors:* Admin (setup), Reviewer (comparison + findings), Manager (approval + reporting)
+*Trigger:* Admin creates a new audit run in Manual execution mode
+*End State:* All records reviewed, findings generated, report exported
+
+[mermaid]
+----
+sequenceDiagram
+  participant Admin
+  participant System
+  participant Reviewer
+  participant Manager
+
+  Admin->>System: Create audit run + select pack
+  Admin->>System: Upload target dataset (HMDA LAR)
+  System->>System: Validate schema (37 Key Data Fields)
+  Admin->>System: Link source documents to LAR records
+  Reviewer->>System: Open record in side-by-side viewer
+  Reviewer->>System: Stage 1: Compare fields (confirm / discrepancy / unable)
+  Reviewer->>System: Create finding (value, root cause, severity, comment)
+  Reviewer->>System: Stage 2: Substantive review of flagged records
+  Manager->>System: Generate audit summary report
+----
+
+==== Step-by-Step Screen Walkthrough
+
+. Start from <<wf-audit-dashboard>> and configure Manual mode in <<wf-audit-config>>.
+. Upload and classify files in <<wf-doc-upload, WF-04 Document Upload>>.
+. Review target/source field values in <<wf-record-comparison, WF-12b Record Comparison>>.
+. Continue into shared finding review and reporting journeys.
+
+[[wf-doc-upload]]
+===== WF-04: Document Upload
+
+Upload source files and classify/match them to records.
+
+Record comparison is performed in <<wf-record-comparison, WF-12b Record Comparison>> (defined in the Finding Review & Approval journey).
+
+==== Happy Path
+
+* Manager creates audit and uploads target dataset.
+* Reviewer uploads and links documents.
+* Reviewer performs side-by-side comparison and creates findings.
+
+==== Key Edge Cases
+
+* Unmatched documents require manual record assignment.
+* Missing source evidence marks fields as unable-to-verify and escalates.
+
+==== Developer Context + Architecture
+
+*Primary services:* Ingestion, Document store, Comparison UI, Findings service.
+*Deterministic boundary:* Manual comparison and findings workflow remains auditable through immutable event logging.

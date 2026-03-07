@@ -1,0 +1,64 @@
+=== Automated Pre-Scan Journey
+
+This journey covers audits where both target and source are structured datasets and Stage 1 comparison can be run automatically before reviewer validation.
+
+==== Workflow Diagram
+
+==== Workflow 7: Audit Execution — Automated Pre-Scan ("Target-to-Source" / "Record-to-Record")
+
+For structured data audits (e.g., HMDA LAR against LOS database extract), the full Stage 1 comparison can be automated.
+
+*Actors:* Admin (setup + mapping approval), System (Comparison Engine), Reviewer (finding review), Manager (approval + reporting)
+*Trigger:* Admin creates a new audit run in Automated Pre-Scan execution mode with structured source data
+*End State:* All records compared automatically, human review completed for flagged findings, report exported
+
+*Design Reference:* <<sect-concept-of-operations>>
+
+[mermaid]
+----
+sequenceDiagram
+  participant Admin
+  participant System
+  participant CompEngine as Comparison Engine
+  participant Reviewer
+  participant Manager
+
+  Admin->>System: Upload target dataset (CSV/API)
+  Admin->>System: Upload source dataset (CSV/API)
+  System->>System: Auto-suggest schema mapping + confidence scores
+  System-->>Admin: Present mapping suggestions (tiered by confidence)
+  Admin->>System: Approve, adjust, or manually map fields
+  System->>CompEngine: Run all pack rules automatically
+  CompEngine->>System: Full findings register + combined confidence scores
+  System->>Reviewer: Critical/High findings for review
+  System->>Reviewer: Below-threshold (< 0.85) findings for review
+  Reviewer->>System: Approve / override findings
+  System->>Manager: Escalated findings
+  Manager->>System: Final approval
+  Manager->>System: Generate report + exam-ready bundle
+----
+
+==== Step-by-Step Screen Walkthrough
+
+[arabic]
+. Start from <<wf-audit-dashboard, WF-01 Audit Dashboard>> and create/configure the run in <<wf-audit-config, WF-02 Audit Configuration>> with *Automated Pre-Scan* selected.
+. Monitor job progress and quality distribution in <<wf-audit-progress, WF-03 Audit Progress Monitor>>.
+. Review schema mapping confidence and approve/override mappings in <<wf-mapping-review, WF-08 Schema Mapping Review>>.
+. Continue into shared finding review and reporting journeys: <<wf-findings-queue>>, <<wf-report-gen>>.
+
+==== Happy Path
+
+* Admin uploads both target and source structured datasets.
+* System proposes high-confidence mappings and auto-runs pack rules.
+* Reviewer validates only flagged findings; manager approves escalations.
+* Report and bundle are generated.
+
+==== Key Edge Cases
+
+* Source/target schema mismatch forces manual mapping for low-confidence fields.
+* Missing source records create unmatched-record findings that require reviewer disposition.
+
+==== Developer Context + Architecture
+
+*Services:* Audit Lifecycle Manager, Schema Mapping Service, Comparison Engine, Findings Management.
+*Routing:* `Automated Pre-Scan` execution mode bypasses document extraction and routes directly to mapping + rules execution.

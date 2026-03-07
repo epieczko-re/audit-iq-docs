@@ -1,17 +1,10 @@
-=== Stage 6: Admin & Registry
+=== Administration Journey
 
 Admin screens cover user management, pack lifecycle, model registry, system configuration, and audit trail viewing.
 
-==== User Journey
+==== Workflow Diagram
 
 The RBAC and tenancy workflow diagram (under Architecture below) shows the access control flow.
-
-.Diagram gap
-[NOTE]
-====
-Stage 6 has an RBAC sequence diagram but lacks a user workflow diagram showing the admin navigation flow — specifically how an IT Admin manages users, configures packs, monitors the model registry, and reviews the audit trail.
-A dedicated Stage 6 user-journey flowchart should be created covering: admin login → user management (CRUD + role assignment) → pack lifecycle (draft → test → publish) → model registry (approve/deprecate) → system settings → audit trail review.
-====
 
 ==== Screens
 

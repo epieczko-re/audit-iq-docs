@@ -1,17 +1,9 @@
-=== Stage 4: Remediation & Reporting
+=== Remediation & Reporting Journey
 
 This stage covers the 9-state finding remediation lifecycle, SLA tracking, report generation, and exam-ready bundle export.
 Findings flow from identification through closure with approval gates at each transition.
 
-==== User Journey
-
-.Diagram gap
-[NOTE]
-====
-Stage 4 currently lacks both a workflow diagram showing the remediation path (user decision flow from finding identification through closure) and a reporting sequence diagram.
-The finding lifecycle state machine (under Architecture below) documents the states but does not show the user journey through the remediation UI or the report generation and bundle export flow.
-A dedicated Stage 4 user-journey flowchart should be created covering: finding triage → remediation assignment → corrective action → retest → manager approval → closure → report generation → bundle export.
-====
+==== Workflow Diagram
 
 ==== Screens
 

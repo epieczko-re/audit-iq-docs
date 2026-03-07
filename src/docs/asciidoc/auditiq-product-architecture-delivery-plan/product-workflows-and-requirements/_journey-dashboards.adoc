@@ -1,15 +1,8 @@
-=== Stage 5: Dashboards
+=== Dashboards & Monitoring Journey
 
 Dashboards provide read-only operational and executive views across all audits.
 
-==== User Journey
-
-.Diagram gap
-[NOTE]
-====
-Stage 5 has wireframes for the Executive and Manager dashboards but lacks both a workflow diagram showing the dashboard navigation flow (how users move between dashboard views and drill into audit details) and a sequence diagram showing the data aggregation pipeline.
-A dedicated Stage 5 user-journey flowchart should be created covering: login → role-based dashboard routing → KPI drill-down → audit detail navigation → report download.
-====
+==== Workflow Diagram
 
 ==== Screens
 

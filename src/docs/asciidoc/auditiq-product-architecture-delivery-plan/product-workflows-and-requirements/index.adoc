@@ -5,38 +5,40 @@
 
 ____
 This section is the single reference for every MVP screen, workflow, functional requirement, and architecture detail in AuditIQ.
-It is organized by audit lifecycle stage so that each stage contains the user journey, screen wireframes, functional requirements (epics), and architecture in one place.
+It is organized by user journey so each execution path shows the workflow, screen walkthrough, requirements, and architecture context together.
 
 *How to read this section:*
 
-* *User Journey Overview* — seven end-to-end workflow diagrams showing the primary user journeys through the system.
-* *Screen Inventory* — quick-reference table of all 26 MVP screens with priority and component notes.
-* *Stages 1–6* — per-stage detail: user journey diagrams, screen wireframes with interactions, functional requirements organized by epic, and service architecture with sequence diagrams.
+* *Journey Overview* — audit lifecycle and execution-mode comparison.
+* *Mode-Specific Journeys* — Manual, OCR-Assisted, and Automated Pre-Scan flows with step-by-step screen walkthroughs.
+* *Shared Journeys* — finding review, remediation/reporting, dashboards, and administration.
 * *Non-Functional Requirements* — cross-cutting quality attributes and performance targets.
-* *Acceptance Criteria Summary* — summary of acceptance testing approach.
+* *Reference Material* — global layout, screen inventory, and UI development strategy.
 
 *Read this section first when estimating sprint work.*
-Each lifecycle stage maps directly to one or more sprints in the Workflow Delivery Matrix (<<sect-workflow-delivery-matrix>>).
+Each journey maps directly to one or more sprints in the Workflow Delivery Matrix (<<sect-workflow-delivery-matrix>>).
 ____
 
-include::_ui-dev-strategy.adoc[]
+include::_journey-overview.adoc[]
 
-include::_screen-inventory.adoc[]
+include::_journey-manual-mode.adoc[]
 
-include::_user-journey-overview.adoc[]
+include::_journey-ocr-assisted.adoc[]
 
-include::_stage-1-upload-ingestion.adoc[]
+include::_journey-automated-prescan.adoc[]
 
-include::_stage-2-extraction-mapping.adoc[]
+include::_journey-finding-review.adoc[]
 
-include::_stage-3-finding-review.adoc[]
+include::_journey-remediation-reporting.adoc[]
 
-include::_stage-4-remediation-reporting.adoc[]
+include::_journey-dashboards.adoc[]
 
-include::_stage-5-dashboards.adoc[]
-
-include::_stage-6-admin-registry.adoc[]
+include::_journey-admin.adoc[]
 
 include::_nfr-and-acceptance.adoc[]
 
 include::_global-layout.adoc[]
+
+include::_screen-inventory.adoc[]
+
+include::_ui-dev-strategy.adoc[]

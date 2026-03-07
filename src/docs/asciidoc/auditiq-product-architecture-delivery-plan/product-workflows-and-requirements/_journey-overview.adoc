@@ -1,0 +1,82 @@
+=== Audit Lifecycle Journey Overview
+
+This section is organized around user journeys.
+The overview journey introduces the common setup flow and compares execution modes.
+
+==== Workflow Diagram
+
+==== Workflow 1: Audit Lifecycle (End-to-End)
+
+This is the primary happy-path workflow from login to exam-ready bundle export.
+It represents the complete user journey through a single audit.
+
+*Actors:* Auditor (primary), System, AI Engine *Trigger:* Auditor creates a new audit *End State:* Exam-ready bundle exported; all events immutable
+
+[mermaid]
+----
+flowchart TD
+    A([Auditor Logs In]) --> B[Create New Audit<br/>Select Pack Template]
+    B --> C[Configure Audit Parameters<br/>Loan Sample, Date Range]
+    C --> D[Upload Loan Documents<br/>CD, 1003, Appraisal, Title]
+    D --> E[Docling Extraction<br/>+ AFC Scoring]
+    E --> F[Schema Mapping<br/>AI Suggestions + Review]
+    F --> G[Rules Engine Scoring<br/>Pack Rules × Extracted Data]
+    G --> H[AI Generates<br/>Draft Findings]
+    H --> I[Reviewer: Effective Challenge<br/>Approve / Edit / Reject]
+    I --> J{All Findings<br/>Reviewed?}
+    J -->|No — next finding| I
+    J -->|Yes| K[Finalize Audit<br/>Lock + Sign Off]
+    K --> L[Export Exam-Ready<br/>Bundle — Section 21]
+    L --> M([Audit Complete])
+----
+
+==== Mode Comparison
+
+[cols="20%,25%,25%,30%",options="header"]
+|===
+|Mode |Primary Automation |Best Fit |Key Screens
+|Manual
+|No extraction automation
+|Document-heavy reviews requiring direct side-by-side verification
+|<<wf-doc-upload>>, <<wf-record-comparison>>
+|OCR-Assisted
+|Docling extraction + AFC + mapping assist
+|Mixed-structure source docs with reviewer validation
+|<<wf-processing-status>>, <<wf-extraction-review>>, <<wf-mapping-review>>
+|Automated Pre-Scan
+|Target-to-source structured comparison
+|Structured source exports where Stage 1 can be auto-run
+|<<wf-audit-progress>>, <<wf-mapping-review>>
+|===
+
+==== Step-by-Step Screen Walkthrough
+
+[[wf-audit-dashboard]]
+===== WF-01: Audit Dashboard
+
+Common entry point for all journeys.
+See audit list, progress, and actions before branching into mode-specific workflows.
+
+[[wf-audit-config]]
+===== WF-02: Audit Configuration
+
+Create a new run, select pack, choose execution mode, and define thresholds/sampling.
+
+See <<wf-audit-progress, WF-03 Audit Progress Monitor>> in the OCR-Assisted journey for the detailed progress screen.
+
+==== Happy Path
+
+[arabic]
+. User logs in and opens <<wf-audit-dashboard>>.
+. User configures audit in <<wf-audit-config>> including execution mode.
+. System executes selected journey and reports progress in <<wf-audit-progress>>.
+
+==== Key Edge Cases
+
+* Unauthorized users cannot create runs and only see RBAC-allowed audits.
+* Invalid dataset configuration blocks run creation until corrected.
+
+==== Developer Context + Architecture
+
+*State orchestration:* Audit Lifecycle Manager owns transitions from `Created` through `Finalized`.
+*Execution routing:* Mode selection determines downstream orchestration path.
