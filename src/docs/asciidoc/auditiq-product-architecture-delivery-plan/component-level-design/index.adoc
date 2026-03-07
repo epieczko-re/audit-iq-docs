@@ -1453,7 +1453,37 @@ CREATE INDEX idx_packs_tenant ON audits.audit_packs(tenant_id) WHERE tenant_id I
 *Consuming screens (<<sect-workflow-screen-guide>>):* <<wf-pack-mgmt, WF-23 Pack Management>> (pack lifecycle from Draft through Testing, Published, Deprecated, and Retired; version pinning for active audits) | <<wf-audit-config, WF-02 Audit Configuration>> (pack selection and version binding when creating an audit run)
 ****
 
-This section consolidates the complete technical specification for AuditIQ audit packs, including the pack manifest schema, rule engine semantics, AI-pack boundary, versioning, testing, and interface contracts.
+==== What an Audit Pack Represents
+
+An audit pack is a versioned, declarative JSON configuration artifact that encapsulates everything needed to audit a specific regulatory domain.
+It contains comparison rules, scoring weights, field schemas, evidence requirements, sampling methodology, severity classifications, normalizations, and report templates — collectively, the "brain" that the platform's engine executes against.
+The platform itself is regulation-agnostic; all regulatory logic lives inside the pack.
+This means adding a new regulation (CRA, SBL 1071, fair lending) requires creating a new pack, not modifying platform code.
+
+==== Where Audit Packs Are Used
+
+Audit packs are consumed at three primary touchpoints in the platform:
+
+. *Audit Configuration (<<wf-audit-config, WF-02>>):* When a user creates a new audit run, they select a published pack and version.
+The Orchestration Service loads and pins that pack version for the duration of the run, ensuring mid-audit regulatory updates never alter in-flight results.
+. *Rule Execution:* During the audit, the Rule Engine reads the pack's `comparison_rules` and `scoring_rules` to drive field-level validation, discrepancy detection, severity scoring, and confidence computation.
+. *Report Generation:* The pack's `report_template` and `normalizations` sections govern how findings are formatted, aggregated, and presented in the final audit report and the <<sect-exam-pack-lifecycle-manager, Exam-Ready Bundle>>.
+
+Pack lifecycle management — authoring, testing, publishing, deprecating, and retiring — is handled through <<wf-pack-mgmt, WF-23 Pack Management>>.
+
+==== How Audit Packs Work
+
+Each pack is defined by a *pack manifest* — a JSON document conforming to a strict schema (see <<sect-pack-manifest-schema>> below).
+The manifest declares _what_ to check, _how_ to compare, and _how_ to score, but contains no executable code.
+The platform interprets the manifest at runtime through a deterministic rule engine that supports exact matches, tolerance bands, conditional chains, cross-field validations, multi-document corroboration, and a Common Expression Language (CEL) for complex derived checks.
+Where AI capabilities are used (document extraction, field classification), the pack defines explicit boundaries: AI outputs feed into deterministic rules, never the reverse, preserving full auditability.
+
+Packs are immutable once published.
+Any change — a new rule, an adjusted threshold, a corrected field mapping — requires a new semantic version.
+Active audits remain pinned to the version they started with and are never auto-upgraded.
+
+This section consolidates the complete technical specification, including the pack manifest schema, rule engine semantics, AI-pack boundary, versioning, testing, and interface contracts.
+See <<sect-key-concepts>> for the strategic rationale behind the pack model.
 
 [[sect-pack-manifest-schema]]
 ==== Pack Manifest JSON Schema

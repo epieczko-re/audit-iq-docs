@@ -28,6 +28,7 @@ Expanded Component-Level Design (Section 10) with nine improvements: added Schem
 Expanded Exam Pack Lifecycle Manager with contextual introduction explaining the audit pack vs. exam pack distinction — input configuration vs. output dossier — with comparison table, audience guidance, and cross-references to pack specification and architecture concepts.
 Reorganized Component-Level Design into nine logical tiers for improved readability: Conceptual Overview, Infrastructure & Platform Layer, Orchestration & Pack Definition, Data Processing Pipeline, Findings & Reporting, Intelligence & Policy Services, Governance & Auditability, Cross-Cutting Concerns, and Future Vision.
 Added contextual introduction to Audit Orchestration Service explaining its role as the central lifecycle coordinator, its relationship to downstream services, and a roadmap of the subsections that follow.
+Added contextual introduction to Audit Pack Technical Specification describing what an audit pack represents, where packs are consumed across the platform (audit configuration, rule execution, report generation), and how the declarative manifest-driven model works with the deterministic rule engine.
 
 |0.34 |2026-03-07 |Erik Pieczkowski |Removed Workflow Delivery Matrix from Delivery Plan and Product Workflows sections; sprint-level detail now lives exclusively in the Delivery Plan phase tables and Quick Start 6-sprint plan.
 
