@@ -13,7 +13,7 @@ Each journey is an end-to-end specification containing workflow diagrams, screen
 
 * *Journey-to-Screen Map* — connects each journey to execution mode, primary screens, and coverage.
 * *Journeys* — one document per user journey containing flow diagrams → screens → requirements → architecture → NFRs → acceptance criteria.
-* *Reference Material* — global layout, screen inventory, UI development strategy, and the Workflow Delivery Matrix (delivery/sprint mapping).
+* *Reference Material* — global layout, screen inventory, and UI development strategy.
 
 Read this section first when estimating sprint work.
 ____
@@ -99,9 +99,7 @@ include::journeys/journey-remediation-reporting.adoc[]
 include::journeys/journey-dashboards.adoc[]
 include::journeys/journey-admin-registry.adoc[]
 
-// Delivery matrix and reference material
-include::implementation/workflow-delivery-matrix.adoc[]
-
+// Reference material
 include::_global-layout.adoc[]
 include::_screen-inventory.adoc[]
 include::_ui-dev-strategy.adoc[]

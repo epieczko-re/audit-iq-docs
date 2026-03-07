@@ -14,7 +14,7 @@ It merges the previous Workflow & Screen Guide and UI Workflows sections into on
 Each screen entry here cites the applicable FR IDs and links back to Part IV for full acceptance criteria and contracts.
 
 *Read this section first when estimating sprint work.*
-Each lifecycle stage maps directly to one or more sprints in the Workflow Delivery Matrix (<<sect-workflow-delivery-matrix>>).
+Each lifecycle stage maps directly to one or more sprints in the Delivery Plan (<<sect-delivery-plan>>).
 ____
 
 === UI Development Strategy
