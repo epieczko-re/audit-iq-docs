@@ -32,7 +32,7 @@ ____
 * *Badge components* — color-coded pills for confidence scores, severity levels, and status (Flowbite Badge component)
 * *Modal dialogs* — confirmation dialogs for destructive actions and approval workflows (Flowbite Modal component)
 * *Form inputs* — labeled inputs with validation feedback for all data entry (Flowbite Forms)
-* *Breadcrumb navigation* — contextual breadcrumbs in top bar for deep navigation (Flowbite Breadcrumb)
+* *Breadcrumb navigation* — Workbench-scoped breadcrumbs in top bar starting at the current Workbench/Space level, not a global root (Flowbite Breadcrumb); see <<wf-workbench-navigation>>
 * *Toast notifications* — non-blocking status messages for async operations (Flowbite Toast)
 * *Confidence is visible everywhere* — color-coded badges per <<sect-glossary, UI Confidence Badge Colors>>
 * *AI provenance is always one click away* — every AI-generated element links to its provenance record
@@ -946,13 +946,31 @@ This follows the Flowbite Dashboard Layout pattern.
 
 *Flowbite components:* Sidebar, Navbar, Breadcrumb, Avatar, Dropdown.
 
+[[wf-workbench-navigation]]
+==== Workbench & Space Navigation Model
+
+A *Workbench* (also called a *Space*) is the top-level organizational container.
+Each user is authorized to access one or more Workbenches.
+Tool Catalogs, audit data, and sidebar navigation are scoped to the active Workbench — users only see catalogs and items they are authorized to access within that Workbench.
+
+*Workbench switcher:* The Workbench logo in the top-left corner of the header bar serves as the Workbench selector.
+When a user is authorized for multiple Workbenches, clicking the logo opens a dropdown to switch between them.
+Switching Workbenches reloads the sidebar navigation and breadcrumb context to reflect the selected Workbench's scoped content.
+
+*Breadcrumb hierarchy:* Breadcrumbs begin at the Workbench level, not at a global "Home" or "All Tools" root.
+The breadcrumb trail follows the pattern: `{Workbench Name} > {Section} > {Item}` (e.g., `HMDA Compliance > Audits > AUD-2026-001`).
+This anchors the user's context within their current Workbench at all times.
+
+NOTE: The Tool Catalog currently serves as a navigation mechanism for discovering available tools within a Workbench.
+This is an interim solution; long-term navigation will be driven entirely by the sidebar and Workbench-scoped views.
+
 [plantuml]
 ----
 @startsalt
 {+
   {
     {SI
-      <b>AuditIQ</b>
+      [<b>HMDA Compliance</b> <&chevron-bottom>]
       --
       <&home> Dashboard
       ..
@@ -975,7 +993,7 @@ This follows the Flowbite Dashboard Layout pattern.
     }
     |
     {
-      { Home > Audits > AUD-2026-001 | . | . | . | . | [Jane Smith <&person>] }
+      { HMDA Compliance > Audits > AUD-2026-001 | . | . | . | . | [Jane Smith <&person>] }
       ---
       {+
         .
@@ -994,6 +1012,7 @@ This follows the Flowbite Dashboard Layout pattern.
 *Layout specifications:*
 
 * Sidebar width: 256px (collapsible to 64px icon-only mode on mobile)
-* Top bar height: 64px with breadcrumb trail and user avatar dropdown
+* Sidebar header: Workbench logo and name with dropdown chevron for multi-Workbench switching
+* Top bar height: 64px with Workbench-scoped breadcrumb trail and user avatar dropdown
 * Main content area: fluid width, max-width 1440px, centered
 * Responsive breakpoints: mobile (<768px sidebar collapses), tablet (768–1024px), desktop (>1024px)
