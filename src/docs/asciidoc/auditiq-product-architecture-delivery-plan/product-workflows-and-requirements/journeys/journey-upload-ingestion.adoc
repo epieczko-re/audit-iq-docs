@@ -694,10 +694,22 @@ Invalid transitions (e.g., jumping from `Created` to `Finalized`) are rejected w
 
 ==== Developer Context
 
-*Services:* Ingestion Service, Azure Blob Storage (encryption + quarantine), Document Classifier, Audit Lifecycle Manager.
-*Data flow:* CSV → Ingestion Service (validation + SHA-256 checksums) → PostgreSQL staging tables.
+[cols="1h,3a", options="header"]
+|===
+| Aspect | Detail
+
+| Services
+| Ingestion Service, Azure Blob Storage (encryption + quarantine), Document Classifier, Audit Lifecycle Manager.
+
+| Data flow
+| CSV → Ingestion Service (validation + SHA-256 checksums) → PostgreSQL staging tables. +
 PDFs → Blob Storage → Document Classifier → link to LAR records.
-*API contracts:* `IngestionRequest`, `ValidationResult` interfaces (see Architecture above).
-*Architecture detail:* See the Architecture section above for component details, data flows, and API contracts.
+
+| API contracts
+| `IngestionRequest`, `ValidationResult` interfaces (see Architecture above).
+
+| Architecture detail
+| See the Architecture section above for component details, data flows, and API contracts.
+|===
 
 '''

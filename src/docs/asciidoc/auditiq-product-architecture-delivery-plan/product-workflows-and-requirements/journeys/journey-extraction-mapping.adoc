@@ -804,9 +804,21 @@ flowchart TD
 
 ==== Developer Context
 
-*Services:* Document Processing Service (Docling-Graph + AFC), Schema Mapping Service (hybrid heuristic matcher), Synonym Dictionary.
-*Data flow:* Blob Storage → Docling-Graph pipeline → Pydantic template extraction → AFC scoring → field routing → Schema Mapping Service → approved mappings → Rules Engine.
-*API contracts:* 3-tier fallback chain pseudocode, `FindingOutput` interface (see Finding Review & Approval journey Architecture).
-*Architecture detail:* See the Architecture section above for component details, data flows, and API contracts.
+[cols="1h,3a", options="header"]
+|===
+| Aspect | Detail
+
+| Services
+| Document Processing Service (Docling-Graph + AFC), Schema Mapping Service (hybrid heuristic matcher), Synonym Dictionary.
+
+| Data flow
+| Blob Storage → Docling-Graph pipeline → Pydantic template extraction → AFC scoring → field routing → Schema Mapping Service → approved mappings → Rules Engine.
+
+| API contracts
+| 3-tier fallback chain pseudocode, `FindingOutput` interface (see Finding Review & Approval journey Architecture).
+
+| Architecture detail
+| See the Architecture section above for component details, data flows, and API contracts.
+|===
 
 '''

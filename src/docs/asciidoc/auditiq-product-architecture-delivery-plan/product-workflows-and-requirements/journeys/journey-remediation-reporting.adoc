@@ -739,10 +739,22 @@ See <<sect-ai-governance>>.
 
 ==== Developer Context
 
-*Services:* Findings Management Service (state machine), Remediation Workflow Engine, Reporting Service, Exam Pack Lifecycle Manager, Evidence & Attachment Service.
-*Data flow:* Approved findings → remediation state machine → SLA tracking → report generation → bundle packaging.
-*State machine:* 9 states (Identified → Triaged → Remediation Assigned → Corrected → Retest Passed/Failed → Closed → Escalated → Reopened).
+[cols="1h,3a", options="header"]
+|===
+| Aspect | Detail
+
+| Services
+| Findings Management Service (state machine), Remediation Workflow Engine, Reporting Service, Exam Pack Lifecycle Manager, Evidence & Attachment Service.
+
+| Data flow
+| Approved findings → remediation state machine → SLA tracking → report generation → bundle packaging.
+
+| State machine
+| 9 states (Identified → Triaged → Remediation Assigned → Corrected → Retest Passed/Failed → Closed → Escalated → Reopened).
 See <<sect-finding-remediation>> for full state diagram.
-*Architecture detail:* See the Architecture section above for component details, data flows, and API contracts.
+
+| Architecture detail
+| See the Architecture section above for component details, data flows, and API contracts.
+|===
 
 '''

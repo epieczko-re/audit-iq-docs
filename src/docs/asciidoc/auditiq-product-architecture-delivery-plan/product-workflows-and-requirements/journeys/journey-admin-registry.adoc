@@ -933,9 +933,19 @@ Session management: 30-minute idle timeout, 8-hour absolute timeout.
 
 ==== Developer Context
 
-*Services:* Auth Service (JWT + RBAC), Pack Engine, Model Registry, Audit Trail Event Store, System Configuration Service.
-*RBAC enforcement:* Roles are `qc_reviewer`, `qc_manager`, `compliance_analyst`, `compliance_officer`, `auditor`, `audit_director`, `admin`.
+[cols="1h,3a", options="header"]
+|===
+| Aspect | Detail
+
+| Services
+| Auth Service (JWT + RBAC), Pack Engine, Model Registry, Audit Trail Event Store, System Configuration Service.
+
+| RBAC enforcement
+| Roles are `qc_reviewer`, `qc_manager`, `compliance_analyst`, `compliance_officer`, `auditor`, `audit_director`, `admin`.
 Cross-line isolation enforced at DB level (RLS) and API level (middleware).
-*Architecture detail:* See the Architecture section above for component details and data flows.
+
+| Architecture detail
+| See the Architecture section above for component details and data flows.
+|===
 
 '''
