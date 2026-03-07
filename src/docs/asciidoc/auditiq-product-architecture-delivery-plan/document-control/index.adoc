@@ -3,12 +3,6 @@
 
 _Built: {build-timestamp}_
 
-=== Version History Update Rules
-
-* *One entry per calendar day* — combine all changes into a single row; add a new row only when the date changes.
-* *High-level business impact only* — describe _what_ changed and _why_ it matters, not formatting fixes or implementation details.
-* *Keep it short* — one to three sentences per entry.
-
 === Version History
 
 [cols="9%,12%,32%,47%",options="header"]
