@@ -2,7 +2,8 @@
 :toc:
 
 == Overview
-This document contains the canonical Stage 1–6 definitions and the mapping to sprints / delivery increments. The "Stage X" files are canonical implementation artifacts and are included below for reference.
+This document contains the canonical Stage 1–6 definitions and the mapping to sprints / delivery increments.
+The "Stage X" files are canonical implementation artifacts and are included below for reference.
 
 == Stage 1 — Upload & Ingestion
 include::../_stage-1-upload-ingestion.adoc[]
