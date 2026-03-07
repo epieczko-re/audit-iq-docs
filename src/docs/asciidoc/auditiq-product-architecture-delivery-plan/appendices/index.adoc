@@ -1,20 +1,32 @@
 [[sect-appendices]]
 == Appendices
 
-=== Appendix A: Glossary (Expanded from v0.1)
+[[sect-glossary]]
+=== Appendix A: Canonical Glossary
+
+____
+*Purpose.* This glossary is the *single source of truth* for every term, confidence metric, routing threshold, and severity level used in AuditIQ.
+All other sections reference these definitions; if a value in another section conflicts with this glossary, this glossary governs.
+When thresholds are tuned, update *this file first*, then propagate.
+____
+
+==== General Terms
 
 *Audit (noun):* A review of lending compliance for one or more loan records against a pack of rules and policies.
 
-*Audit Event:* Immutable timestamped record of a change to audit state (e.g., “finding created”, “manager approval”, “report finalized”).
+*Audit Event:* Immutable timestamped record of a change to audit state (e.g., "finding created", "manager approval", "report finalized").
 See Appendix C.
 
 *Audit Pack (or Pack):* A declarative JSON specification defining rules, scoring weights, evidence requirements, and narratives for a compliance audit category (e.g., HMDA, CRA, ECOA).
 See <<sect-audit-pack-spec>>.
 
+*Audit Trail / Audit Log:* Complete record of all events (extractions, approvals, corrections) for an audit.
+Append-only; forms basis of regulatory compliance proof.
+
 *Calibration:* Process of tuning confidence score thresholds to match historical reviewer decisions.
 See <<sect-confidence-calibration>>.
 
-*Confidence Score:* Numeric value (0.0–1.0) representing the AI system’s certainty in a data extraction, schema mapping, or finding.
+*Confidence Score:* Numeric value (0.0–1.0) representing the AI system's certainty in a data extraction, schema mapping, or finding.
 Composed of mapping confidence + extraction confidence + rule confidence.
 
 *Docling:* Open-source document parsing library that extracts text, tables, images from PDFs.
@@ -64,8 +76,323 @@ See <<sect-target-source-schemas>>.
 
 *Tenant:* A customer organization in the multi-tenant AuditIQ system; data isolated by row-level security + encryption.
 
-*Audit Trail / Audit Log:* Complete record of all events (extractions, approvals, corrections) for an audit.
-Append-only; forms basis of regulatory compliance proof.
+==== Confidence Metrics
+
+[cols="18%,12%,40%,30%",options="header"]
+|===
+|Metric |Range |Definition |Canonical Source
+
+|*AFC* (AuditIQ Field Confidence)
+|0.0–1.0
+|Per-field composite score measuring extraction reliability. *AFC v2* (with Docling-Graph): computed from 6 weighted signals: `docling_page_grade` (0.12), `ocr_segment_confidence` (0.23), `pattern_validity` (0.20), `layout_anchor_consistency` (0.18), `cross_doc_redundancy` (0.12), `graph_corrob_score` (0.15). AFC v1 (5-signal, without `graph_corrob_score`) remains valid during Phase 0 POC.
+|<<sect-doc-processing>>
+
+|*extraction_confidence*
+|0.0–1.0
+|Alias for the AFC score when used as input to combined confidence. Represents how confident the system is in the extracted value from a source document.
+|<<sect-scoring-framework>> (Layer 2)
+
+|*mapping_confidence* (`conf_mapping`)
+|0.0–1.0
+|Measures how confident the system is that target field X corresponds to source field Y. Layer 1 raw score from the hybrid heuristic matcher: `name_similarity` (0.30), `synonym_match` (0.25), `type_compatibility` (0.20), `document_section` (0.15), `historical_acceptance` (0.10).
+|<<sect-schema-mapping-service>>, <<sect-scoring-framework>> (Layer 1)
+
+|*rule_confidence* (`conf_rule`)
+|0.0–1.0
+|Measures how confidently a validation rule applies to a specific data context. Base confidence from pack rule definition, reduced by 0.7× if precondition not satisfied, 0.5× if normalization failed.
+|<<sect-scoring-framework>> (Layer 3)
+
+|*combined_confidence*
+|0.0–1.0
+|`min(mapping_confidence, extraction_confidence, rule_confidence)`. The floor-based composite that drives finding-level routing. If extraction is not applicable, `extraction_confidence` defaults to 1.0.
+|<<sect-scoring-framework>>
+
+|*graph_corrob_score*
+|0.0–1.0
+|Cross-document graph corroboration signal introduced in AFC v2. Computed from the number and strength of corroborating edges in the Docling-Graph knowledge graph (e.g., loan_amount matching across Closing Disclosure and Loan Estimate nodes). Weighted at 0.15 in the AFC v2 formula. Absent (defaults to 0.0) when Docling-Graph is not enabled (AFC v1 mode).
+|<<sect-doc-processing>>, <<sect-docling-graph>>
+
+|*calibrated_score* (Layer 2 mapping)
+|0.0–1.0
+|Calibrated decision score combining `conf_mapping`, `conf_extraction`, and `conf_rule` via temperature scaling (Phase 1) or isotonic regression (Phase 2). Used for schema mapping routing only. ECE must be ≤ 0.05.
+|<<sect-schema-mapping-service>>
+
+|*alignment_confidence*
+|0.0–1.0
+|Composite score measuring how confidently a policy sentence maps to a regulatory concept during policy-to-regulation alignment. Computed from four weighted signals: `graph_anchor_strength` (0.35), `llm_reranker_confirmation` (0.25), `structural_distance` (0.20), `semantic_similarity` (0.20). Alignments scoring < 0.70 are flagged for mandatory human review.
+|<<sect-alignment-confidence>>
+
+|*graph_anchor_strength*
+|0.0–1.0
+|Cosine similarity between a policy sentence embedding (Layer 2) and an ontology node embedding (Layer 1) at anchoring time. Higher values indicate the sentence is semantically close to the formal compliance concept. Weighted at 0.35 in the alignment confidence formula.
+|<<sect-alignment-confidence>>
+|===
+
+==== Routing Thresholds
+
+NOTE: AuditIQ uses *three distinct routing contexts* with different threshold bands, each calibrated for its specific decision context.
+AFC routing (extraction) uses lower thresholds because extraction errors are caught downstream.
+Schema mapping routing uses higher thresholds because incorrect mappings propagate through the entire audit.
+Combined confidence routing reflects the floor of all three layers.
+
+===== AFC Routing (Document Extraction — <<sect-doc-processing>>)
+
+[cols="25%,25%,50%",options="header"]
+|===
+|Band |Threshold |Action
+
+|*High (Auto-confirm)*
+|AFC ≥ 0.85
+|No human review required. Field value accepted automatically.
+
+|*Medium (Human review)*
+|0.50 ≤ AFC < 0.85
+|Field highlighted in UI. Reviewer validates or overrides extracted value.
+
+|*Low (Manual entry)*
+|AFC < 0.50
+|Extraction failure. Routed to manual entry queue; reviewer must type value.
+|===
+
+===== Schema Mapping Routing (Calibrated Score — <<sect-schema-mapping-service>>)
+
+[cols="25%,25%,50%",options="header"]
+|===
+|Band |Threshold |Action
+
+|*Auto-accept*
+|calibrated ≥ 0.95
+|Mapping locked without review (~10s visual confirmation). NOTE: Conservative initial threshold per <<sect-decision-d2, Decision D2>>; may be lowered to ≥ 0.90 after calibration on ≥ 500 mappings.
+
+|*Human review*
+|0.70 ≤ calibrated < 0.95
+|Reviewer evaluates suggestion + alternatives (~45s per field).
+
+|*Manual mapping*
+|calibrated < 0.70
+|No suggestion shown. Reviewer selects from field list.
+|===
+
+===== Combined Confidence Routing (Findings — <<sect-scoring-framework>>)
+
+[cols="25%,25%,50%",options="header"]
+|===
+|Band |Threshold |Action
+
+|*High (Auto-confirm)*
+|combined_confidence ≥ 0.85
+|Does not require human review. Auto-confirm if desired.
+
+|*Medium (Human review)*
+|0.50 ≤ combined_confidence < 0.85
+|Recommend human verification; display in UI for secondary review.
+
+|*Low (Reject)*
+|combined_confidence < 0.50
+|Reject finding; flag for manual re-review if critical issue.
+|===
+
+===== Cloud OCR Fallback Trigger (<<sect-doc-processing>>)
+
+[cols="30%,70%",options="header"]
+|===
+|Condition |Action
+
+|Docling page grade = POOR or FAIR
+|Trigger cloud OCR fallback for that page.
+
+|> 30% of key fields have AFC < 0.50 (even on GOOD/EXCELLENT pages)
+|Trigger cloud OCR fallback for that page.
+|===
+
+==== Severity Definitions
+
+*Severity measures regulatory importance.
+It is orthogonal to confidence.*
+
+[cols="13%,17%,16%,27%,27%",options="header"]
+|===
+|Level |Definition |Examples |Action Required |Review Timeline
+
+|*Critical*
+|Regulatory violation with potential enforcement action; data misrepresentation; prohibited conduct
+|Action Taken code wrong, pricing discrimination pattern, missing disclosure
+|Immediate remediation, escalation to Compliance Officer
+|Within 1 day
+
+|*High*
+|Potentially reportable discrepancy; regulatory attention likely if unresolved
+|Loan Amount mismatch > 2%, co-applicant name inconsistent
+|Prompt investigation; remediation within 3 days
+|Within 3 days
+
+|*Medium*
+|Compliance or data quality issue; non-trivial to fix; not immediately reportable
+|Property address formatting inconsistent, fee description unclear
+|Standard remediation workflow
+|Within 7 days
+
+|*Low*
+|Minor data quality issue; cosmetic; no regulatory impact
+|Whitespace extra, trailing zeros
+|Log and monitor; no urgent action required
+|Within 14 days
+
+|*Informational*
+|Data point of interest; no action required
+|Historical note, data type conversion artifact
+|Log only; no action
+|Informational only
+|===
+
+Severity is assigned by: (1) pack rule definition (default), (2) optionally overridden by Reviewer with justification, (3) may be escalated by Manager if pattern detected.
+Severity is immutable once finding is triaged unless explicitly re-scored by Manager with audit trail event.
+
+==== Calibration & Go/Kill Criteria
+
+[cols="30%,35%,35%",options="header"]
+|===
+|Metric |Threshold |Context
+
+|*Calibration error alert*
+|> 5% of high-confidence findings where human disagreed
+|Triggers threshold adjustment (<<sect-confidence-calibration>>)
+
+|*Expected Calibration Error (ECE)*
+|≤ 0.05
+|Required for Phase 2 deployment (<<sect-schema-mapping-service>>)
+
+|*Phase 0 AFC distribution target*
+|≥ 60% of fields above 0.85 on 50-document sample
+|POC acceptance gate (<<sect-doc-processing>>)
+
+|*Phase 1a Go/Kill (AFC)*
+|Go: ≥ 85% precision on key HMDA fields at AFC ≥ 0.85. Kill: < 70% precision or fallback rate > 40%.
+|<<sect-doc-processing>>
+
+|*Phase 1b Go/Kill (Mapping)*
+|Go: ≥ 95% precision at conf_mapping ≥ 0.90 on CD-supported fields; override rate ≤ 25%. Kill: > 40% override rate or scores uncalibratable.
+|<<sect-decision-d2, Decision D2>>
+|===
+
+==== UI Confidence Badge Colors
+
+[cols="20%,20%,60%",options="header"]
+|===
+|Color |Threshold |Usage
+
+|*Green*
+|≥ 0.85
+|High confidence — auto-confirm eligible
+
+|*Orange*
+|0.50–0.84
+|Medium confidence — human review recommended
+
+|*Red*
+|< 0.50
+|Low confidence — manual entry / reject
+|===
+
+==== Regulatory Terminology
+
+[cols="25%,75%",options="header"]
+|===
+|Term |Definition
+
+|*HMDA (Home Mortgage Disclosure Act)*
+|Federal law requiring financial institutions to collect and report data about mortgage lending activity.
+Regulation C implements HMDA and defines ~110 reportable data fields per loan application.
+
+|*Regulation C*
+|The implementing regulation for HMDA, issued by the CFPB.
+Specifies data collection, reporting, and disclosure requirements for mortgage lenders.
+
+|*CRA (Community Reinvestment Act)*
+|Federal law requiring banks to meet the credit needs of the communities they serve, including low- and moderate-income neighborhoods.
+
+|*ECOA (Equal Credit Opportunity Act)*
+|Federal law prohibiting credit discrimination on the basis of race, color, religion, national origin, sex, marital status, age, or receipt of public assistance.
+Regulation B implements ECOA.
+
+|*TRID (TILA-RESPA Integrated Disclosure)*
+|Combined disclosure rules under the Truth in Lending Act (TILA) and Real Estate Settlement Procedures Act (RESPA).
+Requires Loan Estimate and Closing Disclosure forms for most residential mortgage loans.
+
+|*FCRA (Fair Credit Reporting Act)*
+|Federal law governing the collection, dissemination, and use of consumer credit information.
+
+|*MISMO (Mortgage Industry Standards Maintenance Organization)*
+|Industry body that maintains the standard data model for mortgage transactions.
+AuditIQ uses a flattened subset of the MISMO Reference Model v3.x as its canonical schema (<<sect-decision-d6>>).
+
+|*SR 11-7 / OCC 2011-12*
+|Interagency supervisory guidance on Model Risk Management.
+Requires model inventory, validation, effective challenge, governance, and documentation for any model used in a decision process.
+
+|*NIST AI RMF (AI Risk Management Framework)*
+|Voluntary framework from the National Institute of Standards and Technology for managing AI risk.
+Organized around four functions: Govern, Map, Measure, Manage.
+
+|*CFPB (Consumer Financial Protection Bureau)*
+|Federal agency responsible for consumer protection in the financial sector.
+Issues regulations (Regulation C, Regulation B, Regulation Z) and enforcement actions relevant to AuditIQ's audit domains.
+
+|*FFIEC (Federal Financial Institutions Examination Council)*
+|Interagency body that prescribes uniform principles, standards, and report forms for examining financial institutions.
+FFIEC IT Examination Handbook governs audit trail and information security controls.
+
+|*GLBA (Gramm-Leach-Bliley Act)*
+|Federal law requiring financial institutions to explain their information-sharing practices and safeguard sensitive data.
+Regulation P implements GLBA privacy requirements.
+
+|*SOC 2 (Service Organization Control 2)*
+|AICPA audit framework that certifies a service organization's controls for security, availability, processing integrity, confidentiality, and privacy.
+AuditIQ targets SOC 2 Type II readiness by June 30, 2026.
+|===
+
+==== AI & Embedding Terminology
+
+[cols="25%,75%",options="header"]
+|===
+|Term |Definition
+
+|*Sentence Transformer (SBERT)*
+|A variant of the BERT architecture optimized for producing semantically meaningful sentence-level embeddings.
+AuditIQ uses a single domain-fine-tuned SBERT model shared across the Regulatory Citation Engine and the Policy Alignment Pipeline, fine-tuned on financial regulatory language for negation sensitivity, numeric threshold context, and deontic language precision.
+See <<sect-embedding-domain-finetuning>>.
+
+|*OWL2Vec**
+|An ontology embedding method that generates vector representations of OWL ontology nodes by combining random walks over the graph structure with textual features from labels and descriptions.
+Used to produce Layer 1 (structural) embeddings for the unified compliance knowledge graph.
+See <<sect-two-layer-embeddings>>.
+
+|*on2vec*
+|An extension of ontology embedding that integrates graph neural network (GNN) structural features with sentence transformer text features into a single embedding.
+An alternative or complement to OWL2Vec* for generating ontology node embeddings.
+See <<sect-two-layer-embeddings>>.
+
+|*Graph Anchoring*
+|The process of linking an unstructured policy or regulation sentence to a precise concept node in the compliance knowledge graph via cross-space cosine similarity between sentence embeddings (Layer 2) and ontology node embeddings (Layer 1), confirmed by an LLM reranker.
+Produces `implements` edges in the graph.
+See <<sect-embedding-architecture>>.
+
+|*Cross-Space Cosine Similarity*
+|A similarity metric computed between vectors from two different embedding spaces — specifically, between a document sentence embedding (produced by the sentence transformer) and an ontology node embedding (produced by OWL2Vec* or on2vec).
+Used during graph anchoring to identify candidate concept nodes for a given policy sentence.
+
+|*`implements` Edge*
+|A graph edge of type `PolicySentence ──implements──→ OntologyNode` created during graph anchoring.
+Links an institution's policy or procedure sentence to the regulatory concept it addresses.
+Distinct from `corroborates` edges, which link extracted field values across loan documents.
+See <<sect-graph-edge-taxonomy>>.
+
+|*`corroborates` Edge*
+|A graph edge linking extracted field values across documents for the same loan (e.g., loan_amount matching across Closing Disclosure and Loan Estimate).
+Created by the Docling-Graph extraction pipeline.
+Drives `graph_corrob_score` in AFC v2.
+See <<sect-graph-edge-taxonomy>>.
+|===
 
 '''
 
@@ -332,7 +659,7 @@ Attachments:
 
 * Trend analysis (findings over time by category)
 * Drill-down reports (filter by severity, rule, business line)
-* Comparative audits (current vs. prior audit, same pack version)
+* Comparative audits (current vs. prior audit, same pack version)
 * Regulatory submission format (FDIC, OCC specific)
 
 '''
@@ -361,4 +688,3 @@ Attachments:
 . Internal Competitive Pricing Study — Proprietary pricing intelligence (~141 customers)
 
 '''
-
