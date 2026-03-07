@@ -39,16 +39,25 @@ And we are asking them to spend 80% of their time on mechanical data comparison 
 Every hour a compliance officer spends toggling between a PDF and a spreadsheet is an hour _not_ spent on risk analysis, trend identification, or exam preparation.
 The opportunity cost is staggering, and the regulatory risk of human fatigue and error is real.
 
-=== The Three-Lines-of-Defense Gap
+[[sect-three-lines-model-gap]]
+=== The Three Lines Model Gap
 
-The IIA's Three Lines Model is built on a non-negotiable principle: each line must maintain independent judgment.
-First-line QC owns the risk.
-Second-line compliance sets the standards and monitors adherence.
-Third-line internal audit provides independent assurance that the first two lines are working.
-Collapse those boundaries and the model fails — which is precisely why regulators scrutinize whether each line can demonstrate its independence.
+The IIA's https://www.theiia.org/en/content/position-papers/2020/the-iias-three-lines-model-an-update-of-the-three-lines-of-defense/[Three Lines Model] (2020) replaced the older "Three Lines of Defense" framework with a principles-based model that emphasizes _value creation and protection_ — not just defense.
+The model defines six principles governing how organizational roles work together to achieve objectives while managing risk:
+
+. *Governance* — appropriate structures and processes for effective oversight.
+. *Governing body roles* — the board ensures objectives are clear, risks are managed, and controls are effective.
+. *Management and first- and second-line roles* — management executes actions including risk management; first-line roles deliver products and services while owning risk day-to-day; second-line roles provide expertise, monitoring, and challenge on risk-related matters.
+. *Third-line roles* — internal audit provides independent and objective assurance and advice on the adequacy and effectiveness of governance and risk management.
+. *Third-line independence* — internal audit reports to the governing body, not to management, preserving objectivity.
+. *Creating and protecting value* — all roles align through cooperation and communication to serve stakeholders' interests.
+
+The "lines" denote _roles_, not organizational silos, and they operate concurrently rather than sequentially.
+In a financial institution's audit context, first-line roles (QC) own the risk at the transaction level, second-line roles (compliance) set standards and monitor adherence, and third-line roles (internal audit) provide independent assurance that the first two lines are functioning effectively.
+Collapse those role boundaries and the model fails — which is precisely why regulators scrutinize whether each line can demonstrate its independence.
 
 But independence of _judgment_ does not require independence of _data_.
-In fact, the 2020 IIA update to the Three Lines Model explicitly calls for "alignment, communication, coordination, and collaboration" — while preserving each line's autonomous authority.
+The IIA model explicitly calls for "alignment, communication, coordination, and collaboration" across all three lines — while preserving each line's autonomous authority (Principle 6).
 What regulators want to see is that all three lines are working from the _same evidence base_, applying their _independent_ assessments to a _common_ set of facts, and producing audit trails that tell a coherent story.
 
 The reality at most institutions is a painful distance from that expectation.
@@ -58,7 +67,7 @@ Each line applies its own taxonomy to the same findings.
 Each line maintains its own audit trail in its own format.
 The result: duplicated effort, contradictory findings, gaps in coverage, and an examiner who sees fragmentation where the institution intended rigor.
 
-When an examiner asks "show me how your three lines of defense each reached their independent conclusions," the honest answer at most institutions is a wince and three incompatible binders.
+When an examiner asks "show me how your three lines each reached their independent conclusions," the honest answer at most institutions is a wince and three incompatible binders.
 That is not a sustainable posture in a $4.6B penalty environment.
 
 === The Competitive Landscape Gap

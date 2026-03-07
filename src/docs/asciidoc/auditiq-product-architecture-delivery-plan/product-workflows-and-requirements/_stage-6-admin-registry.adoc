@@ -22,7 +22,7 @@ A dedicated Stage 6 user-journey flowchart should be created covering: admin log
 |WF-22
 |<<wf-user-mgmt, User Management>>
 |FR-9.1, FR-9.2
-|Three-lines-of-defense RBAC; role assignment with cross-line isolation enforcement.
+|Three Lines Model RBAC; role assignment with cross-line isolation enforcement.
 
 |WF-23
 |<<wf-pack-mgmt, Pack Management>>
@@ -244,8 +244,8 @@ Key interactions will include: event search, entity-scoped filtering (by audit, 
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
-|FR-9.1 |RBAC with roles aligned to the Three-Lines-of-Defense model (<<sect-concept-of-operations>>): *First Line (QC):* `qc_reviewer`, `qc_manager`; *Second Line (Compliance):* `compliance_analyst`, `compliance_officer`; *Third Line (Internal Audit):* `auditor`, `audit_director`; plus *Cross-Line:* `executive`, `it_admin`. Permission matrix defined in <<sect-rbac-permission-matrix>>. |Given a `qc_reviewer` user, when they attempt to modify a compliance finding created by the Second Line, then access is denied with "Cross-line access denied" message. Given a `compliance_analyst`, when they attempt to approve an audit report, then access is denied with "Insufficient permissions" message. |P0
-|FR-9.2 |Segregation of duties: reviewers cannot approve their own findings; each defense line maintains independent judgment — First Line roles cannot modify Second or Third Line findings, and vice versa. |Given a `qc_reviewer` who created a finding, when they attempt to close it, then system blocks with "Segregation of duties violation" message and logs the attempt. Given a `compliance_analyst`, when they attempt to edit a First Line QC finding, then system blocks with "Cross-line isolation violation" message. |P0
+|FR-9.1 |RBAC with roles aligned to the IIA Three Lines Model (<<sect-concept-of-operations>>): *First-Line Roles (QC):* `qc_reviewer`, `qc_manager`; *Second-Line Roles (Compliance):* `compliance_analyst`, `compliance_officer`; *Third-Line Roles (Internal Audit):* `auditor`, `audit_director`; plus *Cross-Line:* `executive`, `it_admin`. Permission matrix defined in <<sect-rbac-permission-matrix>>. |Given a `qc_reviewer` user, when they attempt to modify a compliance finding created by the second line, then access is denied with "Cross-line access denied" message. Given a `compliance_analyst`, when they attempt to approve an audit report, then access is denied with "Insufficient permissions" message. |P0
+|FR-9.2 |Segregation of duties: reviewers cannot approve their own findings; each line maintains independent judgment — first-line roles cannot modify second- or third-line findings, and vice versa. |Given a `qc_reviewer` who created a finding, when they attempt to close it, then system blocks with "Segregation of duties violation" message and logs the attempt. Given a `compliance_analyst`, when they attempt to edit a first-line QC finding, then system blocks with "Cross-line isolation violation" message. |P0
 |FR-9.3 |Multi-tenant isolation using row-level security (Phase 1). |Given Tenant A and Tenant B sharing the same database, when Tenant A queries findings, then only Tenant A's data is returned. Cross-tenant data access is impossible at the database level. |P0
 |FR-9.4 |SSO integration (SAML 2.0 / OIDC). |Given a client with SAML 2.0 IdP, when configured, then users authenticate via SSO with no AuditIQ-specific password. |P0
 |FR-9.5 |Audit log access for IT administrators: searchable, filterable, exportable. |Given an IT Admin, when they access the audit log, then they can filter by user, action type, date range, and entity, and export results as CSV. |P1
@@ -341,11 +341,11 @@ flowchart TD
 
 *Components:* Auth & RBAC Service, PostgreSQL Row-Level Security (<<sect-component-design>>)
 
-*Roles (Three-Lines-of-Defense aligned):*
+*Roles (IIA Three Lines Model aligned):*
 
-* *First Line (QC):* `qc_reviewer`, `qc_manager` — loan-level data integrity testing
-* *Second Line (Compliance):* `compliance_analyst`, `compliance_officer` — regulatory adherence review
-* *Third Line (Internal Audit):* `auditor`, `audit_director` — independent assessment of first and second lines
+* *First-Line Roles (QC):* `qc_reviewer`, `qc_manager` — loan-level data integrity testing
+* *Second-Line Roles (Compliance):* `compliance_analyst`, `compliance_officer` — regulatory adherence review
+* *Third-Line Roles (Internal Audit):* `auditor`, `audit_director` — independent assurance of first- and second-line effectiveness
 * *Cross-Line:* `executive` (read-only dashboards), `it_admin` (tenant administration)
 
 See <<sect-rbac-permission-matrix>> for the full permission matrix.
@@ -353,9 +353,9 @@ See <<sect-rbac-permission-matrix>> for the full permission matrix.
 *Multi-tenant isolation:* PostgreSQL Row-Level Security (RLS) ensures that every query is automatically filtered by the authenticated user's `tenant_id`.
 Cross-tenant data access is architecturally impossible at the database level.
 
-*Line-of-defense isolation:* Each finding carries a `defense_line` tag (1, 2, or 3).
-Roles within a defense line can only create, edit, and close findings tagged to their own line.
-Cross-line visibility is read-only: a `compliance_analyst` can view First Line QC findings for context but cannot modify them.
+*Line isolation:* Each finding carries a `defense_line` tag (1, 2, or 3).
+Roles within a line can only create, edit, and close findings tagged to their own line.
+Cross-line visibility is read-only: a `compliance_analyst` can view first-line QC findings for context but cannot modify them.
 
 *Audit trail integration:* Every access control decision — grants, denials, segregation-of-duty violations, and cross-line isolation violations — is recorded as an immutable audit event (<<sect-audit-trail-event-store>>).
 `it_admin` role provides searchable, filterable, exportable access to the complete audit log.

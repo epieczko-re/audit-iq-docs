@@ -1417,7 +1417,7 @@ interface ReportSection {
 * Maintain the exam pack as a continuously updated dossier throughout the audit lifecycle
 * Create new bundle versions on material events (finding changes, approvals, evidence updates)
 * Compute coverage and sampling statistics from audit data
-* Collect and structure approval manifests from all three lines of defense
+* Collect and structure approval manifests from all three lines per the IIA Three Lines Model
 * Track exceptions and overrides with justification
 * Generate pipeline provenance from model registry and service versions
 * Produce the exportable ZIP bundle with manifest and hash verification
@@ -3079,7 +3079,7 @@ The ten AI risk scenarios defined in <<sect-ai-governance>> require specific mon
 
 |*Compliance Officer*
 |Compliance Oversight
-|Cross-audit finding trends, policy gap alerts, three-lines-of-defense approval status, systemic pattern alerts, exam pack readiness indicator
+|Cross-audit finding trends, policy gap alerts, Three Lines Model approval status, systemic pattern alerts, exam pack readiness indicator
 
 |*Audit Director*
 |Executive Summary

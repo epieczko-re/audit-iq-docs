@@ -26,7 +26,7 @@
 |Scalability |Maximum audit dataset size |≥100,000 records per audit run |Load test with 100K records
 |Scalability |Maximum tenants (Phase 1) |≥20 |Database isolation test
 |Regulatory |FFIEC error threshold alerting |Alert displayed within 2 seconds when Stage 1 error rate reaches 80% of configured threshold (e.g., 4% of 5%) |Functional test with progressive discrepancy introduction
-|Regulatory |Three-Lines-of-Defense isolation |Zero cross-line finding modifications permitted by RBAC |Penetration test: attempt cross-line edits for all role combinations
+|Regulatory |Three Lines Model isolation |Zero cross-line finding modifications permitted by RBAC |Penetration test: attempt cross-line edits for all role combinations
 |===
 
 === Acceptance Criteria Summary

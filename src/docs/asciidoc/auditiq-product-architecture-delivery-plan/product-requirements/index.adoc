@@ -1621,7 +1621,7 @@ See <<sect-immutability>> for the full immutability/correctability specification
 |FR-8.4 |Exam pack dossier: continuously updated, versioned exam-ready bundle per <<sect-exam-ready-bundle>> specification.
 Bundle is created at audit start, updated on every material event, and exportable at any point. |Given an active audit, when a finding is created or closed, then a new bundle version is auto-generated within 60 seconds with updated coverage statistics and change log.
 Given a finalized audit, when exam bundle is exported, then the ZIP contains all 14 files specified in <<sect-exam-ready-bundle>> with valid manifest, hash verification, and version chain. |P0
-|FR-8.5 |Three-lines-of-defense approval manifest: structured sign-off records from QC Manager, Compliance Officer, and Audit Director before bundle export. |Given a bundle in review status, when all three lines record approvals, then the approval manifest is populated with role, scope, findings count, sign-off statement, and digital signature hash.
+|FR-8.5 |Three Lines Model approval manifest: structured sign-off records from QC Manager (first line), Compliance Officer (second line), and Audit Director (third line) before bundle export. |Given a bundle in review status, when all three lines record approvals, then the approval manifest is populated with role, scope, findings count, sign-off statement, and digital signature hash.
 Bundle export is blocked until all required approvals are recorded. |P0
 |FR-8.6 |Coverage and sampling statistics: machine-readable coverage matrix, confidence distributions, and error metrics included in every bundle version. |Given a completed pre-scan, when coverage statistics are requested, then the response includes rule coverage (rules tested / total rules), confidence tier distribution, error rate, and sampling representativeness check. |P0
 |FR-8.7 |Exceptions and overrides log: every human override of system confidence, severity, or rule application tracked with justification and evidence reference. |Given a reviewer overrides a confidence score, when the override is saved, then an exception record is created with original value, new value, justification, and evidence reference; the exception appears in the next bundle version. |P0
@@ -1688,7 +1688,7 @@ Attachments:
   - Sampling methodology documentation
 ....
 
-*Exam pack dossier:* Continuously updated, versioned exam-ready bundle containing all reports, evidence files, audit trail, coverage statistics, approval manifests, exceptions log, change log, pipeline provenance, and three-lines-of-defense certification — with SHA-256 hash verification on every artifact.
+*Exam pack dossier:* Continuously updated, versioned exam-ready bundle containing all reports, evidence files, audit trail, coverage statistics, approval manifests, exceptions log, change log, pipeline provenance, and Three Lines Model certification — with SHA-256 hash verification on every artifact.
 The bundle is created at audit start and auto-versioned on every material event (finding created/closed, approval recorded, evidence superseded).
 See <<sect-exam-ready-bundle>> for the complete specification.
 
@@ -1911,8 +1911,8 @@ Full-featured data table with all finding fields, export capabilities, and audit
 [cols="10%,27%,43%,20%",options="header"]
 |===
 |ID |Requirement |Acceptance Criteria |Priority
-|FR-9.1 |RBAC with roles aligned to the Three-Lines-of-Defense model (<<sect-concept-of-operations>>): *First Line (QC):* `qc_reviewer`, `qc_manager`; *Second Line (Compliance):* `compliance_analyst`, `compliance_officer`; *Third Line (Internal Audit):* `auditor`, `audit_director`; plus *Cross-Line:* `executive`, `it_admin`. Permission matrix defined in <<sect-rbac-permission-matrix>>. |Given a `qc_reviewer` user, when they attempt to modify a compliance finding created by the Second Line, then access is denied with "Cross-line access denied" message. Given a `compliance_analyst`, when they attempt to approve an audit report, then access is denied with "Insufficient permissions" message. |P0
-|FR-9.2 |Segregation of duties: reviewers cannot approve their own findings; each defense line maintains independent judgment — First Line roles cannot modify Second or Third Line findings, and vice versa. |Given a `qc_reviewer` who created a finding, when they attempt to close it, then system blocks with "Segregation of duties violation" message and logs the attempt. Given a `compliance_analyst`, when they attempt to edit a First Line QC finding, then system blocks with "Cross-line isolation violation" message. |P0
+|FR-9.1 |RBAC with roles aligned to the IIA Three Lines Model (<<sect-concept-of-operations>>): *First-Line Roles (QC):* `qc_reviewer`, `qc_manager`; *Second-Line Roles (Compliance):* `compliance_analyst`, `compliance_officer`; *Third-Line Roles (Internal Audit):* `auditor`, `audit_director`; plus *Cross-Line:* `executive`, `it_admin`. Permission matrix defined in <<sect-rbac-permission-matrix>>. |Given a `qc_reviewer` user, when they attempt to modify a compliance finding created by the second line, then access is denied with "Cross-line access denied" message. Given a `compliance_analyst`, when they attempt to approve an audit report, then access is denied with "Insufficient permissions" message. |P0
+|FR-9.2 |Segregation of duties: reviewers cannot approve their own findings; each line maintains independent judgment — first-line roles cannot modify second- or third-line findings, and vice versa. |Given a `qc_reviewer` who created a finding, when they attempt to close it, then system blocks with "Segregation of duties violation" message and logs the attempt. Given a `compliance_analyst`, when they attempt to edit a First Line QC finding, then system blocks with "Cross-line isolation violation" message. |P0
 |FR-9.3 |Multi-tenant isolation using row-level security (Phase 1). |Given Tenant A and Tenant B sharing the same database, when Tenant A queries findings, then only Tenant A's data is returned. Cross-tenant data access is impossible at the database level. |P0
 |FR-9.4 |SSO integration (SAML 2.0 / OIDC). |Given a client with SAML 2.0 IdP, when configured, then users authenticate via SSO with no AuditIQ-specific password. |P0
 |FR-9.5 |Audit log access for IT administrators: searchable, filterable, exportable. |Given an IT Admin, when they access the audit log, then they can filter by user, action type, date range, and entity, and export results as CSV. |P1
@@ -1968,11 +1968,11 @@ flowchart TD
 
 *Components:* Auth & RBAC Service, PostgreSQL Row-Level Security (<<sect-component-design>>)
 
-*Roles (Three-Lines-of-Defense aligned):*
+*Roles (IIA Three Lines Model aligned):*
 
-* *First Line (QC):* `qc_reviewer`, `qc_manager` — loan-level data integrity testing
-* *Second Line (Compliance):* `compliance_analyst`, `compliance_officer` — regulatory adherence review
-* *Third Line (Internal Audit):* `auditor`, `audit_director` — independent assessment of first and second lines
+* *First-Line Roles (QC):* `qc_reviewer`, `qc_manager` — loan-level data integrity testing
+* *Second-Line Roles (Compliance):* `compliance_analyst`, `compliance_officer` — regulatory adherence review
+* *Third-Line Roles (Internal Audit):* `auditor`, `audit_director` — independent assurance of first- and second-line effectiveness
 * *Cross-Line:* `executive` (read-only dashboards), `it_admin` (tenant administration)
 
 See <<sect-rbac-permission-matrix>> for the full permission matrix.
@@ -1980,9 +1980,9 @@ See <<sect-rbac-permission-matrix>> for the full permission matrix.
 *Multi-tenant isolation:* PostgreSQL Row-Level Security (RLS) ensures that every query is automatically filtered by the authenticated user's `tenant_id`.
 Cross-tenant data access is architecturally impossible at the database level.
 
-*Line-of-defense isolation:* Each finding carries a `defense_line` tag (1, 2, or 3).
-Roles within a defense line can only create, edit, and close findings tagged to their own line.
-Cross-line visibility is read-only: a `compliance_analyst` can view First Line QC findings for context but cannot modify them.
+*Line isolation:* Each finding carries a `defense_line` tag (1, 2, or 3).
+Roles within a line can only create, edit, and close findings tagged to their own line.
+Cross-line visibility is read-only: a `compliance_analyst` can view first-line QC findings for context but cannot modify them.
 
 *Audit trail integration:* Every access control decision — grants, denials, segregation-of-duty violations, and cross-line isolation violations — is recorded as an immutable audit event (<<sect-audit-trail-event-store>>).
 `it_admin` role provides searchable, filterable, exportable access to the complete audit log.
@@ -2124,7 +2124,7 @@ RBAC configuration with role-based permissions per the AuditIQ access control mo
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-10.1
-|System shall provide an audit dashboard showing all audit runs the authenticated user has access to, with RBAC-filtered visibility per the Three-Lines-of-Defense model.
+|System shall provide an audit dashboard showing all audit runs the authenticated user has access to, with RBAC-filtered visibility per the IIA Three Lines Model.
 a|*Acceptance Criteria (FR-10.1 — Audit Dashboard):*
 
 * Given a `qc_reviewer` user, when they access the audit dashboard, then only audits assigned to them are visible.
@@ -2421,7 +2421,7 @@ Reviewers see progress for their assigned records; Managers see aggregate progre
 |Scalability |Maximum audit dataset size |≥100,000 records per audit run |Load test with 100K records
 |Scalability |Maximum tenants (Phase 1) |≥20 |Database isolation test
 |Regulatory |FFIEC error threshold alerting |Alert displayed within 2 seconds when Stage 1 error rate reaches 80% of configured threshold (e.g., 4% of 5%) |Functional test with progressive discrepancy introduction
-|Regulatory |Three-Lines-of-Defense isolation |Zero cross-line finding modifications permitted by RBAC |Penetration test: attempt cross-line edits for all role combinations
+|Regulatory |Three Lines Model isolation |Zero cross-line finding modifications permitted by RBAC |Penetration test: attempt cross-line edits for all role combinations
 |===
 
 === Acceptance Criteria Summary

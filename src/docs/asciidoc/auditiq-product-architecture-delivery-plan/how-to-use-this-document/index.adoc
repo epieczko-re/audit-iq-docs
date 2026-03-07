@@ -8,7 +8,7 @@ Those two parts define _what the system does_ and _how users interact with it_ �
 === For the 4-Person Engineering Team
 
 [arabic]
-. *Start with Part II* — understand the audit run state machine, the finding remediation lifecycle, and the three-lines-of-defense RBAC model.
+. *Start with Part II* — understand the audit run state machine, the finding remediation lifecycle, and the Three Lines Model RBAC framework.
 These are the conceptual primitives that every service and screen is built around.
 . *Read Part III cover to cover* — the lifecycle-stage groupings (Upload & Ingestion, Extraction & Mapping, Finding Review, Remediation & Reporting, Dashboards, Admin & Registry) define the sprint-planning units.
 Each stage contains user journey diagrams, screen wireframes, functional requirements (epics), and architecture context in one place.

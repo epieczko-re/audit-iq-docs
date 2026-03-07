@@ -6,7 +6,7 @@ Every day, thousands of compliance officers sit in front of dual monitors, toggl
 
 *This is unacceptable.* And it is exactly the problem AuditIQ was built to kill.
 
-AuditIQ is a new module for the RiskExec platform that replaces the "stare-and-compare" audit workflow — the drudgery of spreadsheets, email chains, and shared-drive archaeology — with a structured, confidence-scored, evidence-managed platform that serves all three lines of defense (QC, compliance, and audit) in a single system.
+AuditIQ is a new module for the RiskExec platform that replaces the "stare-and-compare" audit workflow — the drudgery of spreadsheets, email chains, and shared-drive archaeology — with a structured, confidence-scored, evidence-managed platform that serves all three lines per the IIA Three Lines Model (QC, compliance, and internal audit) in a single system.
 It does not merely digitize the existing process; it fundamentally re-architects how compliance teams produce, manage, and defend their audit work.
 
 *Why now — and why this cannot wait:*
@@ -23,8 +23,8 @@ The window to take market share is open _right now_, and it will not stay open f
 * *Audit pack architecture* makes the platform extensible by regulation — each regulatory domain gets a modular "pack" rather than hard-coded logic, enabling rapid expansion without re-engineering.
 * *Governance-first AI:* every AI output is advisory, explainable, human-approved, and immutably logged.
 This is not AI for AI's sake — this is AI that a regulator can examine and a compliance officer can defend.
-* *Three-lines-of-defense support* in one system, vs. the primary competitor's QC-only tunnel vision.
-QC, compliance, and audit teams each maintain independent judgment while working from a single evidence repository, a unified audit trail, and a common language of confidence — for the first time.
+* *IIA Three Lines Model support* in one system, vs. the primary competitor's QC-only tunnel vision.
+First-line (QC), second-line (compliance), and third-line (internal audit) roles each maintain independent judgment while working from a single evidence repository, a unified audit trail, and a common language of confidence — for the first time.
 
 *Phase 1 MVP scope:* HMDA origination audit.
 Manual and OCR-assisted review modes.

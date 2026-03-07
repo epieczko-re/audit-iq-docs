@@ -62,7 +62,7 @@ Phase 1c: Hardening & Launch Prep (May 26 – Jun 27, 5 weeks)
 ├─ Performance tuning (extraction latency <2s/page)
 ├─ vLLM self-hosted deployment (if Phase 0 POC approved)
 ├─ Reporting: audit summary, findings, evidence index
-├─ Exam pack dossier: versioned bundle with coverage stats, approval manifests, exceptions log, change log, pipeline provenance, and three-lines-of-defense certification
+├─ Exam pack dossier: versioned bundle with coverage stats, approval manifests, exceptions log, change log, pipeline provenance, and Three Lines Model certification
 ├─ Security audit + penetration testing (external partner)
 ├─ End-to-end integration testing + UAT
 ├─ Beta customer onboarding (3–5 customers)
@@ -677,7 +677,7 @@ Use this matrix alongside the Workflow & Screen Guide (<<sect-workflow-screen-gu
 |FR-8.1, FR-8.4, FR-8.5, FR-8.6, FR-8.7
 |5
 |Senior Dev 2
-|Audit summary (HTML/PDF); 14-artifact bundle; coverage stats; three-lines certification.
+|Audit summary (HTML/PDF); 14-artifact bundle; coverage stats; Three Lines Model certification.
 |Remediation + audit trail.
 
 |Performance

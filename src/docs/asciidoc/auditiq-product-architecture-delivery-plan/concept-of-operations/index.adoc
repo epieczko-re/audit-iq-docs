@@ -5,17 +5,18 @@ AuditIQ supports three distinct audit modes — manual, OCR-assisted, and fully 
 A reviewer manually comparing a Closing Disclosure against a HMDA LAR record needs a different workflow than a system automatically validating 5,000 structured records against a LOS extract.
 The platform adapts; the reviewer stays in control.
 
-=== Three-Lines-of-Defense Operating Model
+=== Three Lines Model Operating Framework
 
-AuditIQ serves all three lines of defense from a single platform — but it does not merge them.
-Each line maintains independent judgment, independent conclusions, and an independent audit trail, consistent with the IIA Three Lines Model (see <<sect-problem-statement>>).
+AuditIQ serves all three lines from a single platform — but it does not merge their roles.
+Each line maintains independent judgment, independent conclusions, and an independent audit trail, consistent with the IIA Three Lines Model (see <<sect-three-lines-model-gap>>).
+The platform preserves each line's autonomous authority while enabling the "alignment, communication, coordination, and collaboration" that the IIA model demands.
 What the platform shares is the _evidence base_: source documents, extracted data, confidence scores, and the immutable event log.
 
-The following table shows how each line interacts with the platform differently:
+The following table shows how each line's roles interact with the platform differently:
 
 [cols="18%,27%,27%,28%",options="header"]
 |===
-|Dimension |First Line (QC) |Second Line (Compliance) |Third Line (Internal Audit)
+|Dimension |First-Line Roles (QC) |Second-Line Roles (Compliance) |Third-Line Roles (Internal Audit)
 
 |*Primary question*
 |"Does this loan file match its source documents?"
@@ -49,7 +50,7 @@ The following table shows how each line interacts with the platform differently:
 |===
 
 This separation is enforced at the RBAC level: a user with `qc_reviewer` permissions cannot create or modify compliance-layer findings, and vice versa.
-The exam pack dossier (<<sect-exam-ready-bundle>>) includes all three layers — with a structured three-lines-of-defense certification artifact — allowing examiners to see how each line independently evaluated the same evidence.
+The exam pack dossier (<<sect-exam-ready-bundle>>) includes all three layers — with a structured Three Lines Model certification artifact — allowing examiners to see how each line's roles independently evaluated the same evidence.
 
 === Two-Stage Testing Model (HMDA)
 
@@ -180,7 +181,7 @@ Approval manifest shows first-line sign-off with scope, findings reviewed, and d
 . *Compliance review (major bump):* Compliance Officer reviews all findings, adds compliance-layer observations.
 Second-line approval recorded with independent assessment.
 . *Audit Director review (major bump):* Third-line independent assurance sample reviewed.
-Three-lines-of-defense certification becomes complete.
+Three Lines Model certification becomes complete.
 `all_lines_approved` flag set to true.
 . *Export to examiner:* Bundle exported as ZIP with all 14 artifacts.
 Export event recorded with hash and recipient.

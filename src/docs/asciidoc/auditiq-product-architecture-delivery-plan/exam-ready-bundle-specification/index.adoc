@@ -12,7 +12,7 @@ The exam pack must answer these examiner questions on its own:
 * What was tested, and how comprehensively? (Coverage & sampling)
 * What was found, and how certain are we? (Findings & confidence)
 * What evidence supports each finding? (Evidence links & provenance)
-* Who reviewed and approved what? (Approval manifests & three-lines-of-defense)
+* Who reviewed and approved what? (Approval manifests & Three Lines Model certification)
 * What changed since the last version? (Change log)
 * Were there any overrides or exceptions? (Exceptions log)
 
@@ -120,7 +120,7 @@ Each update produces a new bundle version linked to its predecessor, forming an 
       "file_type": "approvals",
       "file_size_bytes": 12567,
       "sha256": "sha256_hash_of_file",
-      "description": "Structured sign-off records from all three lines of defense"
+      "description": "Structured sign-off records from all three lines per IIA Three Lines Model"
     },
     {
       "file_name": "exceptions_log.json",
@@ -169,7 +169,7 @@ Each update produces a new bundle version linked to its predecessor, forming an 
       "file_type": "certification",
       "file_size_bytes": 7654,
       "sha256": "sha256_hash_of_file",
-      "description": "Proof that all three lines of defense independently evaluated the evidence"
+      "description": "Proof that all three lines independently evaluated the evidence per IIA Three Lines Model"
     }
   ],
   "bundle_hash": "sha256_of_entire_bundle",
@@ -211,7 +211,7 @@ Each update produces a new bundle version linked to its predecessor, forming an 
 - Rule coverage matrix (which rules applied, which passed)
 
 [Approval History]
-- Three-lines-of-defense sign-off summary
+- Three Lines Model sign-off summary
 - Key events (creation, approvals, re-reviews)
 - Timestamp, actor, action
 
@@ -353,7 +353,7 @@ finding_001,"Implement missing disclosure language per Reg Z",mgmt_team_lead,202
 [[sect-approval-manifest]]
 ==== E. Approval Manifest (JSON)
 
-*Structured sign-off records from all three lines of defense:*
+*Structured sign-off records from all three lines per the IIA Three Lines Model:*
 
 [source,json]
 ----
@@ -713,7 +713,7 @@ finding_001,"Implement missing disclosure language per Reg Z",mgmt_team_lead,202
 ----
 
 [[sect-defense-lines-certification]]
-==== L. Three-Lines-of-Defense Certification (JSON)
+==== L. Three Lines Model Certification (JSON)
 
 *Proof that each line independently evaluated the evidence:*
 
