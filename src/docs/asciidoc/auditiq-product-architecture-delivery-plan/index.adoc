@@ -41,24 +41,14 @@ include::concept-of-operations/index.adoc[]
 include::product-workflows-and-requirements/index.adoc[]
 
 // ============================================================
-// Part IV: Specifications
+// Part IV: Architecture & Design
 // ============================================================
 
-= Part IV: Specifications
-
-include::audit-pack-specification/index.adoc[]
-
-include::regulatory-compliance-and-policy-management/index.adoc[]
-
-include::exam-ready-bundle-specification/index.adoc[]
-
-// ============================================================
-// Part V: Architecture & Design
-// ============================================================
-
-= Part V: Architecture & Design
+= Part IV: Architecture & Design
 
 include::architecture-overview/index.adoc[]
+
+include::scoring-framework/index.adoc[]
 
 include::architecture-by-workflow/index.adoc[]
 
@@ -66,7 +56,17 @@ include::component-level-design/index.adoc[]
 
 include::data-model/index.adoc[]
 
-include::scoring-framework/index.adoc[]
+// ============================================================
+// Part V: Specifications
+// ============================================================
+
+= Part V: Specifications
+
+include::audit-pack-specification/index.adoc[]
+
+include::regulatory-compliance-and-policy-management/index.adoc[]
+
+include::exam-ready-bundle-specification/index.adoc[]
 
 // ============================================================
 // Part VI: AI & Governance
