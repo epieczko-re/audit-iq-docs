@@ -5,13 +5,16 @@ Findings flow from identification through closure with approval gates at each tr
 
 ==== User Journey
 
-.Diagram gap
-[NOTE]
-====
-Stage 4 currently lacks both a workflow diagram showing the remediation path (user decision flow from finding identification through closure) and a reporting sequence diagram.
-The finding lifecycle state machine (under Architecture below) documents the states but does not show the user journey through the remediation UI or the report generation and bundle export flow.
-A dedicated Stage 4 user-journey flowchart should be created covering: finding triage → remediation assignment → corrective action → retest → manager approval → closure → report generation → bundle export.
-====
+*Primary workflows:* <<user-journey-overview, Workflow 1>> (end-to-end closure/reporting) and execution-mode workflows (5-7).
+*Execution modes:* Manual, OCR-Assisted, Automated Pre-Scan.
+
+*Screen progression in this stage:*
+
+. <<wf-remediation, WF-14 Remediation Tracking>> — assign owners, execute corrective action, and request retest.
+. <<wf-aging, WF-15 Aging Dashboard>> — monitor SLA deadlines and overdue findings.
+. <<wf-findings-register, WF-18 Findings Register>> — review full status inventory before final outputs.
+. <<wf-report-gen, WF-16 Report Generation>> — generate regulator-ready reports.
+. <<wf-bundle-export, WF-17 Exam-Ready Bundle Export>> — assemble and export the immutable artifact set.
 
 ==== Screens
 
