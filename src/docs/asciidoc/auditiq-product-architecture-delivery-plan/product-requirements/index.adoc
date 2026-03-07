@@ -265,7 +265,7 @@ See <<sect-decision-d1, Decision D1>>.
 ===== Document Extraction Workflow
 
 This workflow covers the complete document processing pipeline from upload through field-level confidence routing.
-See also <<sect-ui-workflows, Workflow 2>> for the detailed UI flowchart.
+See also <<sect-workflow-screen-guide, Workflow 2>> for the detailed UI flowchart.
 
 *Actors:* Auditor (upload), System (Docling, OCR, AFC), Reviewer (validation)
 
@@ -540,7 +540,7 @@ See <<sect-decision-d1, Decision D1>>.
 ===== Schema Mapping Workflow
 
 This workflow details how extracted fields are mapped to the HMDA/MISMO target schema with AI assistance and human oversight.
-See also <<sect-ui-workflows, Workflow 3>> for the detailed UI flowchart.
+See also <<sect-workflow-screen-guide, Workflow 3>> for the detailed UI flowchart.
 
 *Actors:* System (matcher), AI (calibration), Reviewer (approval)
 
@@ -963,7 +963,7 @@ See <<sect-pack-manifest-schema>> for the full Pack Manifest JSON Schema and <<s
 ===== Findings Review Workflow
 
 This workflow details the human oversight process for AI-generated findings, enforcing the AI governance red lines from <<sect-ai-governance>>.
-See also <<sect-ui-workflows, Workflow 4>> for the detailed UI flowchart.
+See also <<sect-workflow-screen-guide, Workflow 4>> for the detailed UI flowchart.
 
 *Actors:* Rules Engine, AI (LLM), Reviewer (effective challenge), Manager
 

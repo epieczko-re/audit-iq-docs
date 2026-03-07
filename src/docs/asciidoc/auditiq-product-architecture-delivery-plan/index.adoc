@@ -40,8 +40,6 @@ include::concept-of-operations/index.adoc[]
 
 include::workflow-screen-guide/index.adoc[]
 
-include::ui-workflows-and-user-journeys/index.adoc[]
-
 // ============================================================
 // Part IV: Requirements & Specifications
 // ============================================================
