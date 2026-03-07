@@ -102,8 +102,6 @@ include::future-roadmap/index.adoc[]
 
 = Part VIII: Reference
 
-include::appendices/index.adoc[]
-
 include::glossary/index.adoc[]
 
 include::competitive-intelligence/index.adoc[]
@@ -111,3 +109,5 @@ include::competitive-intelligence/index.adoc[]
 include::decisions-and-open-questions/index.adoc[]
 
 include::document-control/index.adoc[]
+
+include::appendices/index.adoc[]
