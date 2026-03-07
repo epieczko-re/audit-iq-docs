@@ -17,8 +17,8 @@ When you pick up a story, find the FR ID in the relevant journey's Functional Re
 . *Reference Part IV for deep architecture detail* — the Architecture Overview and Component-Level Design sections provide cross-cutting architectural context beyond what is covered in each journey's Architecture subsection.
 . *Check Part V before any AI-related work* — AI governance red lines, model registry requirements, and provenance logging are non-negotiable.
 Read <<sect-ai-governance>> before writing any LLM integration code.
-. *Plan sprints with Part VI* — the Workflow Delivery Matrix (<<sect-workflow-delivery-matrix>>) maps screens to services to sprints to owners.
-The Quick Start (<<sect-quick-start-team>>) gives you the 10-screen MVP scope and a 6-sprint suggestion.
+. *Plan sprints with Part VI* — the Quick Start (<<sect-quick-start-team>>) gives you the 10-screen MVP scope and a 6-sprint suggestion.
+The Delivery Plan (<<sect-delivery-plan>>) details the full phase timeline.
 
 === Document Structure Overview
 
@@ -30,7 +30,7 @@ The conceptual foundation for everything that follows.
 This is the primary sprint-planning reference.
 * *Part IV — Architecture & Design:* Architecture Overview (including Audit Pack concepts, Compliance Hierarchy, and Exam-Ready Bundle philosophy), Component-Level Design (including Audit Pack Technical Specification, Policy Management & Compliance Engine, and Exam Pack Lifecycle Manager with full bundle specs).
 * *Part V — AI & Governance:* AI Governance & Model Risk Controls, Model Registry, Model Deployment, Docling-Graph Integration, Immutability vs. Correctability.
-* *Part VI — Delivery & Business:* Pricing, Quick Start for the 4-person team, Delivery Plan with Workflow Delivery Matrix, Risks & Mitigations, Future Roadmap.
+* *Part VI — Delivery & Business:* Pricing, Quick Start for the 4-person team, Delivery Plan, Risks & Mitigations, Future Roadmap.
 * *Part VII — Reference:* Appendices (including Canonical Glossary and HMDA Field Coverage Matrix), Competitive Intelligence, Architectural Decisions (including MVP Decisions Locked), Document Control.
 
 === Audiences

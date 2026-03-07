@@ -5,7 +5,6 @@ ____
 This one-page guide maps the immediate MVP scope for the 4-person team (Mar-Jun 2026).
 Read this before your first sprint planning session.
 For the full delivery plan, see <<sect-delivery-plan>>.
-For the Workflow Delivery Matrix, see <<sect-workflow-delivery-matrix>>.
 ____
 
 === Immediate MVP Scope: Top 10 Screens
