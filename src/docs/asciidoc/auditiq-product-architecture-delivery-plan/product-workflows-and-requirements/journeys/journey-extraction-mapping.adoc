@@ -1,3 +1,4 @@
+[[journey-extraction-mapping]]
 === Journey: Extraction & Mapping
 
 This journey covers document processing through Docling-Graph, AFC scoring, field extraction review, schema mapping, and synonym dictionary management.

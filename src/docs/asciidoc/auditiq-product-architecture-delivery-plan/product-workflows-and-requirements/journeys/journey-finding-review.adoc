@@ -1,3 +1,4 @@
+[[journey-finding-review]]
 === Journey: Finding Review & Approval
 
 This journey covers rules engine execution, finding generation, AI narrative creation, effective challenge review, and manager escalation.
