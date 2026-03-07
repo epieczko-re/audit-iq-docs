@@ -5,8 +5,15 @@ The system extracts structured data from source documents and maps extracted fie
 
 ==== User Journey
 
-The document upload and extraction flow is shown in <<user-journey-overview, Workflow 2>>.
-The schema mapping review flow is shown in <<user-journey-overview, Workflow 3>>.
+*Primary workflows:* <<user-journey-overview, Workflow 2>> (upload/extraction) and <<user-journey-overview, Workflow 3>> (schema mapping).
+*Execution modes:* OCR-Assisted, Automated Pre-Scan.
+
+*Screen progression in this stage:*
+
+. <<wf-audit-progress, WF-03 Audit Progress Monitor>> — track extraction and mapping phase status.
+. <<wf-extraction-review, WF-06 Field Extraction Review>> with <<wf-doc-viewer, WF-07 Document Viewer>> — validate/override extracted values.
+. <<wf-mapping-review, WF-08 Mapping Review>> — accept, override, or manually map target fields.
+. <<wf-synonym-dict, WF-09 Synonym Dictionary>> — maintain reusable mapping synonyms.
 
 ==== Screens
 

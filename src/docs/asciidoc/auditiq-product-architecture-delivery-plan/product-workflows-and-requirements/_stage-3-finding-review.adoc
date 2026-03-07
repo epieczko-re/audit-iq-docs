@@ -5,14 +5,16 @@ The comparison engine applies pack rules against mapped data; the LLM drafts fin
 
 ==== User Journey
 
-The findings review and approval flow is shown in <<user-journey-overview, Workflow 4>>.
+*Primary workflow:* <<user-journey-overview, Workflow 4>> (findings review and approval).
+*Execution modes:* Manual, OCR-Assisted, Automated Pre-Scan.
 
-.Diagram gap
-[NOTE]
-====
-Stage 3 has a workflow diagram for findings review (Workflow 4) but lacks a proper sequence diagram showing the findings service flow — specifically the interaction between Comparison Engine, LLM Integration, Findings Management Service, and the review/escalation cycle.
-The finding lifecycle event sequence diagram (under Architecture below) partially covers this but does not show the full service orchestration including the LLM narrative generation step.
-====
+*Screen progression in this stage:*
+
+. <<wf-findings-queue, WF-10 Findings Review Queue>> — triage by severity, confidence, and status.
+. <<wf-finding-detail, WF-11 Finding Detail>> — inspect evidence, rule logic, citations, and timeline.
+. <<wf-ai-narrative, WF-12 AI Narrative Approval>> — perform effective challenge (approve/edit/reject).
+. <<wf-record-comparison, WF-12b Record Comparison>> — compare target vs source fields side-by-side.
+. <<wf-escalation, WF-13 Manager Escalation>> — route contested/high-risk findings for manager disposition.
 
 ==== Screens
 

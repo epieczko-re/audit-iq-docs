@@ -5,16 +5,15 @@ The user creates an audit run, selects an audit pack, uploads the HMDA LAR targe
 
 ==== User Journey
 
-The end-to-end audit lifecycle is shown in <<user-journey-overview, Workflow 1>>.
-Document upload and extraction flow is shown in <<user-journey-overview, Workflow 2>>.
+*Primary workflows:* <<user-journey-overview, Workflow 1>> (end-to-end) and <<user-journey-overview, Workflow 2>> (upload/extraction).
+*Execution modes:* Manual, OCR-Assisted, Automated Pre-Scan.
 
-.Diagram gap
-[NOTE]
-====
-Stage 1 currently lacks a consolidated workflow diagram showing the upload-through-validation flow as a single Mermaid flowchart.
-The ingestion sequence diagram (under Architecture below) covers the service interactions but not the user decision points.
-A dedicated Stage 1 user-journey flowchart should be created covering: audit creation → pack selection → dataset upload → schema validation → document upload → classification → matching → extraction trigger.
-====
+*Screen progression in this stage:*
+
+. <<wf-audit-dashboard, WF-01 Audit Dashboard>> — launch or resume audit work.
+. <<wf-audit-config, WF-02 Audit Configuration>> — choose pack, sample, thresholds, and execution mode.
+. <<wf-doc-upload, WF-04 Document Upload>> — upload target/source files and confirm classification/matching.
+. <<wf-processing-status, WF-05 Processing Status>> — monitor ingestion and extraction routing outcomes.
 
 ==== Screens
 

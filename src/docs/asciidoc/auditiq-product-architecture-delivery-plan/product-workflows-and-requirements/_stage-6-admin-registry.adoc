@@ -4,14 +4,16 @@ Admin screens cover user management, pack lifecycle, model registry, system conf
 
 ==== User Journey
 
-The RBAC and tenancy workflow diagram (under Architecture below) shows the access control flow.
+*Primary workflow alignment:* administrative governance that enables all execution workflows (1-7), including RBAC and pack/model lifecycle controls.
+*Execution modes:* Platform administration across all modes.
 
-.Diagram gap
-[NOTE]
-====
-Stage 6 has an RBAC sequence diagram but lacks a user workflow diagram showing the admin navigation flow — specifically how an IT Admin manages users, configures packs, monitors the model registry, and reviews the audit trail.
-A dedicated Stage 6 user-journey flowchart should be created covering: admin login → user management (CRUD + role assignment) → pack lifecycle (draft → test → publish) → model registry (approve/deprecate) → system settings → audit trail review.
-====
+*Screen progression in this stage:*
+
+. <<wf-user-mgmt, WF-22 User Management>> — maintain users, roles, and line-of-defense isolation.
+. <<wf-pack-mgmt, WF-23 Pack Management>> — draft, test, publish, and retire audit packs.
+. <<wf-model-registry-admin, WF-24 Model Registry Admin>> — approve/deprecate models with fail-closed gating.
+. <<wf-system-settings, WF-25 System Settings>> — configure tenant-level policy and thresholds.
+. <<wf-audit-trail, WF-26 Audit Trail Viewer>> — review immutable events and administrative activity.
 
 ==== Screens
 

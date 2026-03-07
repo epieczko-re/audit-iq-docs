@@ -3,6 +3,50 @@
 The seven diagrams below show the primary user journeys through AuditIQ.
 Each diagram is referenced from the per-stage detail that follows.
 
+==== Journey-to-Screen Map
+
+This map connects each journey to execution mode, stage coverage, and the primary screens users see while completing the journey.
+
+[cols="11%,18%,21%,50%",options="header"]
+|===
+|Workflow |Execution Mode |Primary Stage Coverage |Primary Screens
+
+|Workflow 1: Audit Lifecycle (End-to-End)
+|All modes
+|Stages 1-4
+|WF-01 Audit Dashboard, WF-02 Audit Configuration, WF-04 Document Upload, WF-03 Audit Progress Monitor, WF-10 Findings Review Queue, WF-14 Remediation Tracking, WF-16 Report Generation, WF-17 Exam-Ready Bundle Export
+
+|Workflow 2: Document Upload & Extraction
+|OCR-Assisted, Automated Pre-Scan
+|Stages 1-2
+|WF-04 Document Upload, WF-05 Processing Status, WF-06 Field Extraction Review, WF-07 Document Viewer
+
+|Workflow 3: Schema Mapping Review
+|OCR-Assisted, Automated Pre-Scan
+|Stage 2
+|WF-08 Mapping Review, WF-09 Synonym Dictionary
+
+|Workflow 4: Findings Review & Approval
+|All modes
+|Stage 3
+|WF-10 Findings Review Queue, WF-11 Finding Detail, WF-12 AI Narrative Approval, WF-12b Record Comparison, WF-13 Manager Escalation
+
+|Workflow 5: Audit Execution - Manual Mode
+|Manual
+|Stages 1, 3, 4
+|WF-02 Audit Configuration (Manual mode), WF-12b Record Comparison, WF-10 Findings Review Queue, WF-14 Remediation Tracking, WF-16 Report Generation
+
+|Workflow 6: Audit Execution - OCR-Assisted Mode
+|OCR-Assisted
+|Stages 1-4
+|WF-04 Document Upload, WF-06 Field Extraction Review, WF-08 Mapping Review, WF-12b Record Comparison, WF-12 AI Narrative Approval, WF-14 Remediation Tracking, WF-17 Exam-Ready Bundle Export
+
+|Workflow 7: Audit Execution - Automated Pre-Scan Mode
+|Automated Pre-Scan
+|Stages 1-4
+|WF-02 Audit Configuration (Auto mode), WF-03 Audit Progress Monitor, WF-10 Findings Review Queue, WF-11 Finding Detail, WF-12 AI Narrative Approval, WF-16 Report Generation, WF-17 Exam-Ready Bundle Export
+|===
+
 ==== Workflow 1: Audit Lifecycle (End-to-End)
 
 This is the primary happy-path workflow from login to exam-ready bundle export.
