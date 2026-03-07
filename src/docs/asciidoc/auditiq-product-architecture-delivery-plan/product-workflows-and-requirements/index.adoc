@@ -6,13 +6,15 @@
 ____
 This section is the single reference for every MVP screen, workflow, functional requirement, and architecture detail in AuditIQ.
 
-**Organization:** This section is organized around **user journeys**. Each journey is an end-to-end specification containing flow diagrams, personas, step-by-step flows (mapped to implementation stages where helpful), screens and wireframes, functional requirements (by epic), data & service crosswalks, NFRs, and acceptance criteria.
+**Organization:** This section is organized around **user journeys**.
+Each journey is an end-to-end specification containing flow diagrams, personas, step-by-step flows (mapped to implementation stages where helpful), screens and wireframes, functional requirements (by epic), data & service crosswalks, NFRs, and acceptance criteria.
 
 *How to read this section:*
 
 * *User Journey Overview* — end-to-end workflow diagrams across execution modes (Manual, OCR-Assisted, Automated Pre-Scan).
 * *Journeys* — one document per user journey containing flow → screens → requirements → NFRs → acceptance criteria.
-* *Implementation* — stage-level canonical definitions and the Workflow Delivery Matrix (delivery/sprint mapping). Stage 1–6 are maintained as implementation artifacts and are referenced from journeys.
+* *Implementation* — stage-level canonical definitions and the Workflow Delivery Matrix (delivery/sprint mapping).
+Stage 1–6 are maintained as implementation artifacts and are referenced from journeys.
 * *Reference Material* — global layout, screen inventory, and UI development strategy.
 
 Read this section first when estimating sprint work.
