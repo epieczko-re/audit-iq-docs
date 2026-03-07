@@ -1,9 +1,9 @@
 = AuditIQ: Product + Architecture + Delivery Plan
-:subtitle: RiskExec — Comprehensive Specification v0.25
+:subtitle: RiskExec — Comprehensive Specification v0.26
 :doctype: book
 :author: Erik Pieczkowski
-:revnumber: 0.25
-:revdate: 2026-03-06
+:revnumber: 0.26
+:revdate: 2026-03-07
 :build-timestamp: local build
 :toc:
 :toclevels: 3
