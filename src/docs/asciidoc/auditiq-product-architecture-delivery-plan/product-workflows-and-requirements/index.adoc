@@ -18,43 +18,75 @@ Each journey is an end-to-end specification containing workflow diagrams, screen
 Read this section first when estimating sprint work.
 ____
 
+[[sect-journey-screen-map]]
 === Journey-to-Screen Map
 
-This map connects each journey to execution mode and the primary screens users see while completing the journey.
+This map connects each journey to its execution mode, functional coverage, and primary screens.
+Screen names link to their wireframe and specification.
 
-[cols="11%,18%,21%,50%",options="header"]
+[cols="2,2,3,5",options="header"]
 |===
-|Journey |Execution Mode |Coverage |Primary Screens
+|Journey
+|Execution Mode
+|Coverage
+|Primary Screens
 
-|Upload & Ingestion
+|<<journey-upload-ingestion, Upload & Ingestion>>
 |All modes
-|Audit creation through document upload
-|WF-01 Audit Dashboard, WF-02 Audit Configuration, WF-04 Document Upload, WF-03 Audit Progress Monitor
+|Audit creation, configuration, dataset and document upload, ingestion monitoring
+a|
+* <<wf-audit-dashboard, WF-01 Audit Dashboard>>
+* <<wf-audit-config, WF-02 Audit Configuration>>
+* <<wf-doc-upload, WF-04 Document Upload>>
+* <<wf-processing-status, WF-05 Processing Status>>
 
-|Extraction & Mapping
+|<<journey-extraction-mapping, Extraction & Mapping>>
 |OCR-Assisted, Automated Pre-Scan
-|Document processing through field mapping
-|WF-06 Field Extraction Review, WF-07 Document Viewer, WF-08 Mapping Review, WF-09 Synonym Dictionary
+|Document processing, AFC scoring, field extraction review, schema mapping
+a|
+* <<wf-audit-progress, WF-03 Audit Progress Monitor>>
+* <<wf-extraction-review, WF-06 Field Extraction Review>>
+* <<wf-doc-viewer, WF-07 Document Viewer>>
+* <<wf-mapping-review, WF-08 Mapping Review>>
+* <<wf-synonym-dict, WF-09 Synonym Dictionary>>
 
-|Finding Review & Approval
+|<<journey-finding-review, Finding Review & Approval>>
 |All modes
-|Rule execution through finding approval
-|WF-10 Findings Review Queue, WF-11 Finding Detail, WF-12 AI Narrative Approval, WF-12b Record Comparison, WF-13 Manager Escalation
+|Rule execution, AI narrative generation, effective challenge, manager escalation
+a|
+* <<wf-findings-queue, WF-10 Findings Review Queue>>
+* <<wf-finding-detail, WF-11 Finding Detail>>
+* <<wf-ai-narrative, WF-12 AI Narrative Approval>>
+* <<wf-record-comparison, WF-12b Record Comparison>>
+* <<wf-escalation, WF-13 Manager Escalation>>
 
-|Remediation & Reporting
+|<<journey-remediation-reporting, Remediation & Reporting>>
 |All modes
-|Corrective action through exam-ready bundle
-|WF-14 Remediation Tracking, WF-15 Aging Dashboard, WF-16 Report Generation, WF-17 Exam-Ready Bundle Export, WF-18 Findings Register
+|9-state remediation lifecycle, SLA tracking, report generation, exam-ready bundle export
+a|
+* <<wf-remediation, WF-14 Remediation Tracking>>
+* <<wf-aging, WF-15 Aging Dashboard>>
+* <<wf-report-gen, WF-16 Report Generation>>
+* <<wf-bundle-export, WF-17 Exam-Ready Bundle Export>>
+* <<wf-findings-register, WF-18 Findings Register>>
 
-|Dashboards & Analytics
+|<<journey-dashboards, Dashboards & Analytics>>
 |All modes (read-only)
-|Portfolio health and operational monitoring
-|WF-19 Executive Dashboard, WF-20 Manager Dashboard, WF-21 Drift Monitoring
+|Portfolio health, operational monitoring, drift detection
+a|
+* <<wf-exec-dashboard, WF-19 Executive Dashboard>>
+* <<wf-mgr-dashboard, WF-20 Manager Dashboard>>
+* <<wf-drift-monitor, WF-21 Drift Monitoring>> _(Phase 2)_
 
-|Admin & Registry
+|<<journey-admin-registry, Admin & Registry>>
 |Platform administration
-|User management, packs, models, settings
-|WF-22 User Management, WF-23 Pack Management, WF-24 Model Registry Admin, WF-25 System Settings, WF-26 Audit Trail Viewer
+|User management, pack lifecycle, model registry, system settings, audit trail
+a|
+* <<wf-user-mgmt, WF-22 User Management>>
+* <<wf-pack-mgmt, WF-23 Pack Management>>
+* <<wf-model-registry-admin, WF-24 Model Registry Admin>>
+* <<wf-system-settings, WF-25 System Settings>>
+* <<wf-audit-trail, WF-26 Audit Trail Viewer>>
 |===
 
 '''
