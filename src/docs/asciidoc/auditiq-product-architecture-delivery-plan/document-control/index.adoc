@@ -30,6 +30,9 @@ Expanded Architecture Overview (Section 9) with six new subsections: observabili
 Elevated Exam-Ready Bundle from one-time export to first-class product object: rewrote Exam-Ready Bundle Specification with 14-artifact continuously versioned dossier including coverage and sampling statistics, approval manifests with three-lines-of-defense certification, exceptions and overrides log, bundle change log with version chain, and pipeline provenance linking to model registry; added Exam Pack Lifecycle Manager component to Component-Level Design with event-driven versioning, API contracts, and error handling; added three new data model tables (exam_bundles, bundle_approvals, bundle_exceptions); added six new product requirements (FR-8.4 through FR-8.9) for bundle versioning, approval manifests, coverage stats, exceptions tracking, version diffs, and pipeline provenance; added Exam Pack Dossier lifecycle section to Concept of Operations with continuous update model and sequence diagram; updated Delivery Plan Phase 1c scope; updated Architecture Overview data flow and component diagrams.
 Expanded Component-Level Design (Section 10) with nine improvements: added Schema Mapping bootstrap calibration procedure with go/kill criteria, pre-launch seed data plan, and continuous recalibration cadence; expanded Normalization Engine with Unicode NFC policy, type coercion error handling table, decimal precision rules by field type, and complex transformation examples; added SLA enforcement matrix and breach handling for Findings Management with cross-finding pattern detection; added comprehensive Service Resilience subsection with per-service timeout/retry/circuit-breaker tables, partial batch failure handling with resume-from-failure, rollback semantics for multi-step transitions, and dead-letter queue management; added End-to-End Performance Model with three reference audit profiles, composite latency estimates, P50/P95/P99 targets, and scaling levers; expanded API Gateway rate limiting with burst semantics, sliding-window quota, multi-tenant fairness guarantees, and IETF-standard rate-limit headers; expanded Regulatory Citation Engine with re-ranker specification, chunk size justification, six search quality metrics with monitoring cadence, and citation verification protocol; added Multi-Tenancy and Tenant Isolation subsection with seven-layer isolation matrix, per-tier resource quotas, and cross-tenant leakage prevention testing; added Monitoring Alerting and Observability subsection with per-component metrics, four-tier alert severity, AI risk monitoring signals, and role-based dashboard definitions.
 
+|0.29 |2026-03-07 |Erik Pieczkowski |Updated Document Control ownership and approvals to reflect current leadership roles: CEO (Erik Pieczkowski), VP of Engineering (Brett Lewis), Solutions Architect (John Murphy), and Director of Engineering, AI (Chris Cox).
+Removed the trailing subsection in Document Control to retire Section 28.5 and keep Section 28 focused on versioning, ownership, and approvals.
+
 |0.28 |2026-03-07 |Erik Pieczkowski |Aligned all Three Lines references with the IIA Three Lines Model (2020): added six principles and value-creation framing to Problem Statement; renamed section headers and terminology from "Three Lines of Defense" to "Three Lines Model" across 15+ files; updated role labels to "first-line roles," "second-line roles," and "third-line roles" consistent with the IIA's role-based (not structure-based) terminology; added formal IIA Three Lines Model definition to the Canonical Glossary.
 Swapped Parts IV and V so Architecture & Design precedes Specifications; promoted Scoring Framework to second position within Architecture & Design so confidence thresholds are established before the specification sections that reference them.
 
@@ -55,10 +58,11 @@ Moved Canonical Glossary to Part IV (Requirements & Specifications) as single so
 [cols="31%,21%,48%",options="header"]
 |===
 |Role |Name |Responsibility
-|Product Lead |Arielle Sutherland |Product vision, requirements, prioritization
-|Principal Solutions Architect |Erik Pieczkowski |Architecture, scoring framework, tech decisions
-|Program Manager |TBD |Delivery planning, WBS, risk management
-|Engineering Lead |TBD |Component design, sprint execution
+|CEO |Erik Pieczkowski |Executive sponsorship, strategic direction, and final accountability
+|VP of Engineering |Brett Lewis |Engineering leadership, delivery execution, and platform reliability
+|Solutions Architect |John Murphy |Architecture design, technical standards, and solution integrity
+|Director of Engineering, AI |Chris Cox |AI engineering strategy, model operations, and AI delivery oversight
+|Product Lead |Arielle Sutherland |Product vision, requirements, and prioritization
 |===
 
 === Approvals
@@ -66,13 +70,9 @@ Moved Canonical Glossary to Part IV (Requirements & Specifications) as single so
 [cols="1,1,1,1",options="header"]
 |===
 |Approver |Role |Date |Signature
-|_________________ |CEO / GM | |
-|_________________ |VP Engineering | |
-|Arielle Sutherland |Product Lead | |
-|Erik Pieczkowski |Solutions Architect | |
+|Erik Pieczkowski |CEO | |
+|Brett Lewis |VP of Engineering | |
+|John Murphy |Solutions Architect | |
+|Chris Cox |Director of Engineering, AI | |
 |===
 
-=== How to Use This Document
-
-See <<sect-how-to-use>> in Part I for the full reading guide, audience map, and conventions.
-That section instructs the engineering team: "Read Part II and Part III before estimating/sprinting."
