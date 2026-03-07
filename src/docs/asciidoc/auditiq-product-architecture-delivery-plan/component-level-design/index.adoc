@@ -2412,6 +2412,823 @@ CREATE INDEX idx_bundle_exceptions_audit ON audits.bundle_exceptions(audit_id);
 CREATE INDEX idx_bundle_exceptions_type ON audits.bundle_exceptions(exception_type);
 ----
 
+==== Bundle Manifest & Contents
+
+The following specifies the complete structure and contents of the exam-ready bundle artifact, including the manifest schema, individual file specifications, export formats, and evidence referencing protocol.
+
+*Manifest file (bundle_manifest.json):*
+
+[source,json]
+----
+{
+  "bundle_version": "2.3",
+  "bundle_id": "bundle_20260215_loanXYZ_hmda_v2p3",
+  "parent_bundle_id": "bundle_20260215_loanXYZ_hmda_v2p2",
+  "audit_id": "audit_20260215_loanXYZ",
+  "pack_id": "hmda-compliance-v2.1",
+  "pack_version": "2.1",
+  "organization_name": "Example Bank",
+  "audit_period": "2025-01-01 to 2025-12-31",
+  "bundle_status": "approved",
+  "created_at": "2026-02-15T14:30:00Z",
+  "created_by_user": "user_manager_001",
+  "version_trigger": "finding_closed",
+  "version_summary": "Finding F-023 closed after corrective action verified; 2 findings remain open",
+  "defense_line_approvals": {
+    "first_line": {
+      "approved_by": "user_qc_mgr_001",
+      "approved_at": "2026-02-14T16:00:00Z",
+      "findings_reviewed": 47
+    },
+    "second_line": {
+      "approved_by": "user_compliance_officer_001",
+      "approved_at": "2026-02-15T10:00:00Z",
+      "findings_reviewed": 47
+    },
+    "third_line": {
+      "approved_by": "user_audit_director_001",
+      "approved_at": "2026-02-15T14:00:00Z",
+      "findings_reviewed": 12
+    }
+  },
+  "contents": [
+    {
+      "file_name": "audit_summary_report.pdf",
+      "file_type": "audit_summary",
+      "file_size_bytes": 245678,
+      "sha256": "sha256_hash_of_file",
+      "description": "Executive summary of audit findings and compliance assessment"
+    },
+    {
+      "file_name": "findings_register.csv",
+      "file_type": "findings_data",
+      "file_size_bytes": 45321,
+      "sha256": "sha256_hash_of_file",
+      "description": "Detailed findings table with confidence scores and evidence links"
+    },
+    {
+      "file_name": "findings_register.pdf",
+      "file_type": "findings_data",
+      "file_size_bytes": 156789,
+      "sha256": "sha256_hash_of_file",
+      "description": "Findings register in PDF format (print-friendly)"
+    },
+    {
+      "file_name": "corrective_action_log.csv",
+      "file_type": "corrective_action",
+      "file_size_bytes": 23456,
+      "sha256": "sha256_hash_of_file",
+      "description": "Corrective actions with evidence references and SLA tracking"
+    },
+    {
+      "file_name": "coverage_and_sampling.json",
+      "file_type": "coverage_statistics",
+      "file_size_bytes": 18234,
+      "sha256": "sha256_hash_of_file",
+      "description": "Machine-readable coverage matrix, sampling statistics, and confidence distributions"
+    },
+    {
+      "file_name": "approval_manifest.json",
+      "file_type": "approvals",
+      "file_size_bytes": 12567,
+      "sha256": "sha256_hash_of_file",
+      "description": "Structured sign-off records from all three lines per IIA Three Lines Model"
+    },
+    {
+      "file_name": "exceptions_log.json",
+      "file_type": "exceptions",
+      "file_size_bytes": 8901,
+      "sha256": "sha256_hash_of_file",
+      "description": "Human overrides of confidence, severity, or rule application with justification"
+    },
+    {
+      "file_name": "bundle_changelog.json",
+      "file_type": "change_log",
+      "file_size_bytes": 15678,
+      "sha256": "sha256_hash_of_file",
+      "description": "Version-to-version delta: findings added, closed, reopened; evidence changes; approval updates"
+    },
+    {
+      "file_name": "audit_trail_excerpt.json",
+      "file_type": "audit_events",
+      "file_size_bytes": 567890,
+      "sha256": "sha256_hash_of_file",
+      "description": "Filtered audit trail (events only; PII redacted)"
+    },
+    {
+      "file_name": "source_document_index.json",
+      "file_type": "evidence_index",
+      "file_size_bytes": 34567,
+      "sha256": "sha256_hash_of_file",
+      "description": "Index of source documents with extraction metadata and evidence approval status"
+    },
+    {
+      "file_name": "pack_configuration.json",
+      "file_type": "pack_config",
+      "file_size_bytes": 123456,
+      "sha256": "sha256_hash_of_file",
+      "description": "Pack manifest and rule definitions used for audit"
+    },
+    {
+      "file_name": "pipeline_provenance.json",
+      "file_type": "provenance",
+      "file_size_bytes": 9876,
+      "sha256": "sha256_hash_of_file",
+      "description": "Model versions, extraction pipeline versions, and configuration hashes for reproducibility"
+    },
+    {
+      "file_name": "defense_lines_certification.json",
+      "file_type": "certification",
+      "file_size_bytes": 7654,
+      "sha256": "sha256_hash_of_file",
+      "description": "Proof that all three lines independently evaluated the evidence per IIA Three Lines Model"
+    }
+  ],
+  "bundle_hash": "sha256_of_entire_bundle",
+  "encryption": {
+    "encrypted": false,
+    "encryption_method": null
+  }
+}
+----
+
+==== Detailed File Specifications
+
+===== A. Audit Summary Report (PDF)
+
+*Template structure:*
+
+....
+[Cover Page]
+- Organization name, audit period, pack name, date
+- Auditor name & signature block
+- Bundle version and generation timestamp
+
+[Executive Summary]
+- Scope (record count, sampling methodology)
+- Overall compliance assessment (Pass / Fail / Pass w/ Observations)
+- Key findings summary by severity
+  * Critical: N findings
+  * Major: N findings
+  * Minor: N findings
+- Coverage summary (% of population tested, confidence distribution)
+- Recommended corrective actions (summary)
+
+[Detailed Findings]
+- Table: Finding ID | Rule | Severity | Confidence | Evidence Link | Narrative | Approver
+
+[Coverage & Sampling Summary]
+- Population tested, sample design, stratification
+- Confidence distribution histogram
+- Rule coverage matrix (which rules applied, which passed)
+
+[Approval History]
+- Three Lines Model sign-off summary
+- Key events (creation, approvals, re-reviews)
+- Timestamp, actor, action
+
+[Attestation]
+- "This audit was performed using AuditIQ Audit Pack [version]."
+- "Audit trail, evidence, and scoring methodology documented in bundle."
+- Digital signature or manager approval stamp
+....
+
+===== B. Findings Register (CSV + PDF)
+
+*CSV columns:*
+
+....
+finding_id,rule_id,rule_name,target_record_id,severity,confidence_extraction,confidence_mapping,confidence_rule,combined_confidence,evidence_ids,narrative,approver_id,approval_date,status,defense_line,override_applied,override_reason
+....
+
+*PDF:* Same data, formatted as professional table with severity color-coding and confidence tier indicators.
+
+===== C. Corrective Action Log (CSV)
+
+*Columns:*
+
+....
+finding_id,corrective_action_description,responsible_party,target_completion_date,actual_completion_date,evidence_reference_id,status,sla_met,retest_result,retested_by,retested_at
+....
+
+*Example:*
+
+....
+finding_001,"Implement missing disclosure language per Reg Z",mgmt_team_lead,2026-03-31,2026-03-28,evidence_reg_z_template,closed,true,passed,reviewer_002,2026-03-29T10:00:00Z
+....
+
+[[sect-coverage-and-sampling]]
+===== D. Coverage & Sampling Statistics (JSON)
+
+*Machine-readable coverage and sampling data — replacing the previous narrative-only sampling methodology:*
+
+[source,json]
+----
+{
+  "audit_id": "audit_20260215_loanXYZ",
+  "bundle_version": "2.3",
+  "generated_at": "2026-02-15T14:30:00Z",
+
+  "population": {
+    "total_records": 10000,
+    "record_type": "HMDA LAR records",
+    "audit_period": "2025-01-01 to 2025-12-31"
+  },
+
+  "sampling": {
+    "method": "stratified_random",
+    "confidence_level": 0.95,
+    "margin_of_error": 0.05,
+    "sample_size": 50,
+    "sample_rate": 0.005,
+    "strata": [
+      {
+        "stratum_name": "Term Loans",
+        "population_count": 6000,
+        "population_pct": 0.60,
+        "sample_count": 30,
+        "sample_pct": 0.60
+      },
+      {
+        "stratum_name": "Revolving",
+        "population_count": 3000,
+        "population_pct": 0.30,
+        "sample_count": 15,
+        "sample_pct": 0.30
+      },
+      {
+        "stratum_name": "HELOC",
+        "population_count": 1000,
+        "population_pct": 0.10,
+        "sample_count": 5,
+        "sample_pct": 0.10
+      }
+    ],
+    "representativeness_check": "PASS"
+  },
+
+  "rule_coverage": {
+    "total_rules_in_pack": 37,
+    "rules_executed": 37,
+    "rules_with_findings": 12,
+    "rules_passed_all": 25,
+    "coverage_by_rule": [
+      {
+        "rule_id": "hmda_field_completeness",
+        "rule_name": "Required HMDA Fields Present",
+        "records_tested": 50,
+        "findings_count": 3,
+        "pass_rate": 0.94,
+        "avg_confidence": 0.91
+      }
+    ]
+  },
+
+  "confidence_distribution": {
+    "overall_avg_combined_confidence": 0.87,
+    "tier_distribution": {
+      "high_confidence_gte_085": {
+        "count": 38,
+        "pct": 0.76
+      },
+      "medium_confidence_050_084": {
+        "count": 10,
+        "pct": 0.20
+      },
+      "low_confidence_lt_050": {
+        "count": 2,
+        "pct": 0.04
+      }
+    },
+    "by_confidence_layer": {
+      "extraction_avg": 0.91,
+      "mapping_avg": 0.89,
+      "rule_avg": 0.93
+    }
+  },
+
+  "error_metrics": {
+    "total_findings": 47,
+    "error_rate": 0.04,
+    "findings_by_severity": {
+      "critical": 2,
+      "high": 5,
+      "medium": 15,
+      "low": 20,
+      "informational": 5
+    },
+    "materiality_assessment": "Below materiality threshold per pack definition"
+  }
+}
+----
+
+[[sect-approval-manifest]]
+===== E. Approval Manifest (JSON)
+
+*Structured sign-off records from all three lines per the IIA Three Lines Model:*
+
+[source,json]
+----
+{
+  "audit_id": "audit_20260215_loanXYZ",
+  "bundle_version": "2.3",
+
+  "approval_summary": {
+    "all_lines_approved": true,
+    "critical_findings_approved": true,
+    "ai_narratives_approved": true
+  },
+
+  "line_approvals": [
+    {
+      "defense_line": "first_line",
+      "role": "qc_manager",
+      "approver_id": "user_qc_mgr_001",
+      "approver_name": "Jane Smith",
+      "approved_at": "2026-02-14T16:00:00Z",
+      "scope": "all_qc_findings",
+      "findings_reviewed": 47,
+      "findings_approved": 45,
+      "findings_escalated": 2,
+      "sign_off_statement": "All QC findings reviewed and dispositioned per audit procedures.",
+      "digital_signature_hash": "sha256_signature_first_line"
+    },
+    {
+      "defense_line": "second_line",
+      "role": "compliance_officer",
+      "approver_id": "user_compliance_officer_001",
+      "approver_name": "Robert Chen",
+      "approved_at": "2026-02-15T10:00:00Z",
+      "scope": "compliance_layer_review",
+      "findings_reviewed": 47,
+      "findings_with_compliance_overlay": 8,
+      "sign_off_statement": "Compliance review complete. No systemic compliance gaps identified.",
+      "digital_signature_hash": "sha256_signature_second_line"
+    },
+    {
+      "defense_line": "third_line",
+      "role": "audit_director",
+      "approver_id": "user_audit_director_001",
+      "approver_name": "Patricia Williams",
+      "approved_at": "2026-02-15T14:00:00Z",
+      "scope": "independent_assurance_sample",
+      "findings_reviewed": 12,
+      "sample_methodology": "Risk-based: all Critical + random 20% of High findings",
+      "sign_off_statement": "Independent assurance review confirms first and second line controls are operating effectively.",
+      "digital_signature_hash": "sha256_signature_third_line"
+    }
+  ],
+
+  "individual_finding_approvals": [
+    {
+      "finding_id": "finding_001",
+      "severity": "critical",
+      "approvals": [
+        {
+          "role": "qc_manager",
+          "approver_id": "user_qc_mgr_001",
+          "action": "approved_closure",
+          "approved_at": "2026-02-14T15:30:00Z"
+        },
+        {
+          "role": "audit_director",
+          "approver_id": "user_audit_director_001",
+          "action": "confirmed_closure",
+          "approved_at": "2026-02-15T13:45:00Z"
+        }
+      ]
+    }
+  ]
+}
+----
+
+[[sect-exceptions-log]]
+===== F. Exceptions & Overrides Log (JSON)
+
+*Every instance where human judgment diverged from system defaults:*
+
+[source,json]
+----
+{
+  "audit_id": "audit_20260215_loanXYZ",
+  "bundle_version": "2.3",
+  "total_exceptions": 5,
+
+  "exceptions": [
+    {
+      "exception_id": "exc_001",
+      "exception_type": "confidence_override",
+      "finding_id": "finding_012",
+      "timestamp": "2026-02-10T11:30:00Z",
+      "actor_id": "user_reviewer_003",
+      "actor_role": "qc_reviewer",
+      "original_value": {
+        "field": "combined_confidence",
+        "value": 0.72,
+        "tier": "medium"
+      },
+      "overridden_to": {
+        "field": "combined_confidence",
+        "value": 0.92,
+        "tier": "high"
+      },
+      "justification": "OCR misread handwritten dollar amount; reviewer manually verified correct value from original scan at 4× zoom.",
+      "evidence_reference": "evidence_045"
+    },
+    {
+      "exception_id": "exc_002",
+      "exception_type": "severity_override",
+      "finding_id": "finding_023",
+      "timestamp": "2026-02-11T09:15:00Z",
+      "actor_id": "user_qc_mgr_001",
+      "actor_role": "qc_manager",
+      "original_value": {
+        "field": "severity",
+        "value": "high"
+      },
+      "overridden_to": {
+        "field": "severity",
+        "value": "medium"
+      },
+      "justification": "Discrepancy is within institution's approved rounding tolerance ($1 threshold); downgraded per policy overlay.",
+      "evidence_reference": "policy_doc_rounding_tolerance_v2"
+    },
+    {
+      "exception_id": "exc_003",
+      "exception_type": "rule_suppression",
+      "finding_id": null,
+      "timestamp": "2026-02-09T14:00:00Z",
+      "actor_id": "user_compliance_officer_001",
+      "actor_role": "compliance_officer",
+      "original_value": {
+        "field": "rule_id",
+        "value": "hmda_r037_supplemental"
+      },
+      "overridden_to": {
+        "field": "rule_status",
+        "value": "suppressed"
+      },
+      "justification": "Supplemental rule hmda_r037 not applicable for this audit period per regulatory guidance dated 2025-11-15.",
+      "evidence_reference": "regulatory_guidance_2025_11_15"
+    }
+  ]
+}
+----
+
+[[sect-bundle-changelog]]
+===== G. Bundle Change Log (JSON)
+
+*Version-to-version delta showing what changed and why:*
+
+[source,json]
+----
+{
+  "audit_id": "audit_20260215_loanXYZ",
+  "current_version": "2.3",
+  "version_history": [
+    {
+      "version": "1.0",
+      "created_at": "2026-02-08T09:00:00Z",
+      "trigger": "audit_started",
+      "summary": "Initial bundle created at audit start"
+    },
+    {
+      "version": "2.0",
+      "created_at": "2026-02-10T17:00:00Z",
+      "trigger": "pre_scan_complete",
+      "summary": "Automated pre-scan completed: 47 findings generated across 37 rules",
+      "delta": {
+        "findings_added": 47,
+        "findings_closed": 0,
+        "findings_reopened": 0,
+        "evidence_added": 156,
+        "approvals_added": 0
+      }
+    },
+    {
+      "version": "2.1",
+      "created_at": "2026-02-12T16:00:00Z",
+      "trigger": "findings_triaged",
+      "summary": "QC review complete: 45 findings triaged, 2 escalated to compliance",
+      "delta": {
+        "findings_added": 0,
+        "findings_closed": 12,
+        "findings_escalated": 2,
+        "evidence_added": 8,
+        "approvals_added": 1,
+        "exceptions_added": 3
+      }
+    },
+    {
+      "version": "2.2",
+      "created_at": "2026-02-14T16:00:00Z",
+      "trigger": "first_line_approved",
+      "summary": "First-line QC Manager approval recorded; all QC findings dispositioned",
+      "delta": {
+        "findings_closed": 10,
+        "approvals_added": 1
+      }
+    },
+    {
+      "version": "2.3",
+      "created_at": "2026-02-15T14:30:00Z",
+      "trigger": "finding_closed",
+      "summary": "Finding F-023 closed after corrective action verified; all three lines approved",
+      "delta": {
+        "findings_closed": 1,
+        "approvals_added": 2,
+        "corrective_actions_completed": 1
+      }
+    }
+  ]
+}
+----
+
+===== H. Audit Trail Excerpt (JSON)
+
+*Filtered and anonymized events; sensitive data redacted:*
+
+[source,json]
+----
+{
+  "audit_id": "audit_20260215_loanXYZ",
+  "events_included": 47,
+  "events": [
+    {
+      "event_id": "evt_001",
+      "event_type": "evidence_extracted",
+      "timestamp": "2026-02-15T10:00:00Z",
+      "actor_role": "System",
+      "event_details": {
+        "document_id": "doc_loan_estimate",
+        "extracted_fields": 12,
+        "extraction_success_rate": 0.95
+      }
+    }
+  ]
+}
+----
+
+===== I. Source Document Index (JSON)
+
+*Reference metadata for all source documents with evidence approval status:*
+
+[source,json]
+----
+{
+  "documents": [
+    {
+      "document_id": "doc_loan_estimate_v1",
+      "document_name": "Loan Estimate - 2025-12-01",
+      "document_type": "loan_estimate",
+      "upload_timestamp": "2026-02-15T09:30:00Z",
+      "file_size_bytes": 2456789,
+      "file_hash_sha256": "sha256_xyz",
+      "extraction_method": "docling_graph",
+      "extraction_model_version": "docling-graph-v1.2.0",
+      "extraction_confidence": 0.94,
+      "page_count": 3,
+      "extracted_fields": ["loan_amount", "interest_rate", "disclosure_date"],
+      "evidence_linked": ["evidence_001", "evidence_003"],
+      "evidence_approved_by": "user_reviewer_001",
+      "evidence_approved_at": "2026-02-15T11:00:00Z",
+      "storage_url": "https://auditiq.blob.core.windows.net/tenant-abc/audit_20260215/doc_loan_estimate_v1",
+      "superseded_by": null
+    }
+  ]
+}
+----
+
+===== J. Pack Configuration Snapshot (JSON)
+
+*Full pack manifest + rule definitions (reference <<sect-audit-pack-spec>>):*
+
+[source,json]
+----
+{
+  "pack_id": "hmda-compliance-v2.1",
+  "pack_version": "2.1",
+  "rules": [
+    {
+      "rule_id": "hmda_field_completeness",
+      "rule_name": "Required HMDA Fields Present",
+      "testing_stage": "stage_1",
+      "key_data_field": true
+    }
+  ],
+  "schema_fields": [],
+  "scoring_weights": {}
+}
+----
+
+[[sect-pipeline-provenance]]
+===== K. Pipeline Provenance (JSON)
+
+*Model versions, extraction pipeline versions, and configuration hashes for full reproducibility:*
+
+[source,json]
+----
+{
+  "audit_id": "audit_20260215_loanXYZ",
+  "bundle_version": "2.3",
+  "generated_at": "2026-02-15T14:30:00Z",
+
+  "platform_version": "1.0.0-rc2",
+
+  "extraction_pipeline": {
+    "docling_version": "docling-graph-v1.2.0",
+    "ocr_fallback_version": "azure-cognitive-services-v4.0",
+    "extraction_config_hash": "sha256_extraction_config"
+  },
+
+  "mapping_service": {
+    "version": "1.0.0",
+    "synonym_dictionary_version": "2026-02-01",
+    "mapping_config_hash": "sha256_mapping_config"
+  },
+
+  "rules_engine": {
+    "version": "1.0.0",
+    "pack_version": "hmda-compliance-v2.1",
+    "pack_config_hash": "sha256_pack_config"
+  },
+
+  "scoring_service": {
+    "version": "1.0.0",
+    "scoring_weights_hash": "sha256_scoring_weights"
+  },
+
+  "ai_models": [
+    {
+      "model_id": "narrative-generator",
+      "model_version": "gpt-4o-2024-08-06",
+      "prompt_template_version": "v1.3",
+      "prompt_hash": "sha256_prompt_template",
+      "registry_entry": "See model registry entry MR-003"
+    },
+    {
+      "model_id": "sentence-transformer",
+      "model_version": "auditiq-sbert-v1.0",
+      "registry_entry": "See model registry entry MR-005"
+    }
+  ],
+
+  "input_hashes": {
+    "target_dataset_hash": "sha256_target_dataset",
+    "source_documents_manifest_hash": "sha256_source_docs_manifest"
+  },
+
+  "reproducibility_claim": "This audit can be reproduced by re-running the same pack version on the same input documents with the same pipeline versions.",
+  "attestation_date": "2026-02-15T14:30:00Z",
+  "attestation_by": "user_manager_001"
+}
+----
+
+[[sect-defense-lines-certification]]
+===== L. Three Lines Model Certification (JSON)
+
+*Proof that each line independently evaluated the evidence:*
+
+[source,json]
+----
+{
+  "audit_id": "audit_20260215_loanXYZ",
+  "bundle_version": "2.3",
+  "certification_status": "complete",
+
+  "lines": [
+    {
+      "line": 1,
+      "name": "Quality Control",
+      "roles_involved": ["qc_reviewer", "qc_manager"],
+      "activities": {
+        "records_reviewed": 50,
+        "findings_created": 47,
+        "findings_dispositioned": 47,
+        "second_review_sample_pct": 0.15,
+        "second_review_concordance": 0.96
+      },
+      "independence_verification": {
+        "no_cross_line_edits": true,
+        "all_findings_created_by_first_line_roles": true,
+        "approval_by_qc_manager": true
+      },
+      "completed_at": "2026-02-14T16:00:00Z"
+    },
+    {
+      "line": 2,
+      "name": "Compliance",
+      "roles_involved": ["compliance_analyst", "compliance_officer"],
+      "activities": {
+        "findings_reviewed": 47,
+        "compliance_overlay_findings": 8,
+        "policy_gap_assessments": 3,
+        "systemic_issues_identified": 0
+      },
+      "independence_verification": {
+        "no_first_line_finding_modifications": true,
+        "independent_compliance_findings_created": true,
+        "approval_by_compliance_officer": true
+      },
+      "completed_at": "2026-02-15T10:00:00Z"
+    },
+    {
+      "line": 3,
+      "name": "Internal Audit",
+      "roles_involved": ["auditor", "audit_director"],
+      "activities": {
+        "sample_reviewed": 12,
+        "sample_methodology": "Risk-based: all Critical + random 20% of High",
+        "control_effectiveness_assessment": "effective",
+        "recommendations": 1
+      },
+      "independence_verification": {
+        "no_first_or_second_line_finding_modifications": true,
+        "independent_sample_selection": true,
+        "approval_by_audit_director": true
+      },
+      "completed_at": "2026-02-15T14:00:00Z"
+    }
+  ],
+
+  "segregation_of_duties_verified": true,
+  "cross_line_edit_violations": 0
+}
+----
+
+==== Export Formats
+
+*ZIP Bundle Structure:*
+
+....
+bundle_20260215_loanXYZ_hmda_v2p3.zip
+├── bundle_manifest.json
+├── audit_summary_report.pdf
+├── findings_register.csv
+├── findings_register.pdf
+├── corrective_action_log.csv
+├── coverage_and_sampling.json
+├── approval_manifest.json
+├── exceptions_log.json
+├── bundle_changelog.json
+├── audit_trail_excerpt.json
+├── source_document_index.json
+├── pack_configuration.json
+├── pipeline_provenance.json
+├── defense_lines_certification.json
+└── source_documents/
+    ├── doc_loan_estimate_v1.pdf
+    └── ... (all linked source documents)
+....
+
+*Optional: Merged PDF* — Single PDF combining audit summary + findings + attestation + approval manifest.
+Use case: Email-friendly; print-friendly.
+Metadata embedded in PDF (searchable).
+
+*Encryption (future):*
+
+* AES-256 encryption of ZIP contents (Phase 2)
+* Customer-managed or platform-managed keys (TBD)
+
+==== Evidence Referencing Protocol
+
+*Standard format for evidence references throughout bundle:*
+
+[source,json]
+----
+{
+  "evidence_reference": {
+    "evidence_id": "evidence_001",
+    "evidence_type": "document_extract",
+    "source_document_id": "doc_loan_estimate",
+    "source_page": 1,
+    "extracted_value": "loan_amount: $250,000",
+    "confidence": 0.94,
+    "timestamp_extracted": "2026-02-15T10:00:00Z",
+    "extraction_model_version": "docling-graph-v1.2.0",
+    "storage_url": "https://auditiq.blob.core.windows.net/tenant-abc/audit_20260215/evidence_001.json",
+    "content_hash_sha256": "sha256_evidence_content",
+    "linked_to_finding_ids": ["finding_001", "finding_003"],
+    "approved_by": "user_reviewer_001",
+    "approved_at": "2026-02-15T11:00:00Z",
+    "superseded_by": null
+  }
+}
+----
+
+==== Bundle API Endpoints
+
+The Exam Pack Lifecycle Manager exposes the following API surface for bundle access:
+
+* `GET /api/v1/audits/{audit_id}/bundle` -- Returns the current (latest) bundle metadata
+* `GET /api/v1/audits/{audit_id}/bundle/versions` -- Returns the version chain
+* `GET /api/v1/audits/{audit_id}/bundle/versions/{version}` -- Returns a specific version
+* `GET /api/v1/audits/{audit_id}/bundle/diff?from={v1}&to={v2}` -- Returns the delta between two versions
+* `POST /api/v1/audits/{audit_id}/bundle/approve` -- Records a line-of-defense approval
+* `POST /api/v1/audits/{audit_id}/bundle/export` -- Generates and returns the ZIP bundle for a specific version
+* `GET /api/v1/audits/{audit_id}/bundle/coverage` -- Returns current coverage and sampling statistics
+* `GET /api/v1/audits/{audit_id}/bundle/exceptions` -- Returns current exceptions log
+
 [[sect-rbac-permission-matrix]]
 === RBAC & Permission Matrix
 
@@ -4260,3 +5077,1924 @@ This addresses a key pain point: pack authors currently write rules manually, wh
 * LLM-based rule synthesis (regulation text → structured rule definition) using the same model infrastructure as the AI Reporting Assistant.
 * Rule quality validated against historical audit data (precision/recall on known findings).
 * Human-in-loop approval workflow identical to the AI Governance framework (<<sect-ai-governance>>).
+
+[[sect-audit-pack-technical-spec]]
+=== Audit Pack Technical Specification
+
+This section consolidates the complete technical specification for AuditIQ audit packs, including the pack manifest schema, rule engine semantics, AI-pack boundary, versioning, testing, and interface contracts.
+
+[[sect-pack-manifest-schema]]
+==== Pack Manifest JSON Schema
+
+[source,json]
+----
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AuditIQ Pack Manifest v1.1",
+  "type": "object",
+  "required": [
+    "pack_id",
+    "pack_name",
+    "pack_version",
+    "regulation",
+    "author",
+    "created_date",
+    "target_schema",
+    "comparison_rules",
+    "scoring_rules",
+    "report_template"
+  ],
+  "properties": {
+    "pack_id": {
+      "type": "string",
+      "description": "Immutable pack identifier, format: {regulation}-{version}, e.g. 'hmda-origination-v1'",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "pack_name": {
+      "type": "string",
+      "description": "Human-readable pack name",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "pack_version": {
+      "type": "string",
+      "description": "Semantic versioning: MAJOR.MINOR.PATCH",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "regulation": {
+      "type": "string",
+      "enum": [
+        "hmda-origination",
+        "hmda-servicing",
+        "cra",
+        "sbl-1071",
+        "fair-lending",
+        "trid",
+        "custom"
+      ]
+    },
+    "author": {
+      "type": "object",
+      "required": ["name", "email"],
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "organization": { "type": "string" }
+      }
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1024
+    },
+    "scope": {
+      "type": "string",
+      "enum": ["origination", "servicing", "servicing-post-close", "portfolio"],
+      "description": "Audit scope this pack applies to"
+    },
+    "applicable_jurisdictions": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "e.g., ['US Federal', 'State-CA', 'State-NY']"
+    },
+    "regulatory_effective_date": {
+      "type": "string",
+      "format": "date",
+      "description": "The regulatory effective date this pack version targets (e.g., '2025-01-01' for 2025 HMDA filing season)"
+    },
+    "regulatory_change_tracking": {
+      "type": "object",
+      "description": "Metadata linking this pack version to specific regulatory changes",
+      "properties": {
+        "federal_register_citations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "e.g., ['88 FR 12345', '89 FR 67890']"
+        },
+        "cfpb_guidance_references": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "change_summary": {
+          "type": "string",
+          "description": "Human-readable summary of what regulatory changes this version addresses"
+        }
+      }
+    },
+    "deprecation": {
+      "type": "object",
+      "properties": {
+        "is_deprecated": { "type": "boolean" },
+        "deprecation_date": { "type": "string", "format": "date-time" },
+        "replacement_pack_id": { "type": "string" },
+        "reason": { "type": "string" }
+      }
+    },
+    "target_schema": {
+      "type": "object",
+      "description": "Target data schema (e.g., HMDA LAR)",
+      "required": ["schema_id", "fields"],
+      "properties": {
+        "schema_id": {
+          "type": "string",
+          "description": "e.g., 'hmda-lar-2025'"
+        },
+        "source_document": {
+          "type": "string",
+          "description": "Reference URI or citation"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["field_id", "field_name", "data_type"],
+            "properties": {
+              "field_id": { "type": "string" },
+              "field_name": { "type": "string" },
+              "mismo_field_name": {
+                "type": "string",
+                "description": "MISMO Reference Model v3.x canonical name"
+              },
+              "data_type": {
+                "enum": ["string", "integer", "decimal", "date", "boolean", "enum"]
+              },
+              "required": { "type": "boolean" },
+              "auditable": {
+                "type": "boolean",
+                "description": "Whether this field is part of the audit scope"
+              },
+              "description": { "type": "string" },
+              "enum_values": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "source_schema": {
+      "type": "array",
+      "description": "Source document schemas (e.g., Closing Disclosure, Loan Estimate)",
+      "items": {
+        "type": "object",
+        "required": ["doc_type", "fields"],
+        "properties": {
+          "doc_type": {
+            "type": "string",
+            "description": "e.g., 'closing-disclosure', 'loan-estimate'"
+          },
+          "regulation_citation": { "type": "string" },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "field_id": { "type": "string" },
+                "field_name": { "type": "string" },
+                "data_type": {
+                  "enum": ["string", "integer", "decimal", "date", "boolean", "table"]
+                },
+                "location_hints": {
+                  "type": "array",
+                  "items": { "type": "string" },
+                  "description": "e.g., ['Page 1, Section A', 'Box 4a']"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "comparison_rules": {
+      "type": "array",
+      "description": "Pack-defined comparison rules — see Rule Engine Specification for full semantics",
+      "items": {
+        "$ref": "#/definitions/comparison_rule"
+      }
+    },
+    "scoring_rules": {
+      "type": "object",
+      "description": "Severity and confidence thresholds",
+      "properties": {
+        "severity_definitions": {
+          "type": "object",
+          "properties": {
+            "critical": {
+              "type": "object",
+              "properties": {
+                "description": { "type": "string" },
+                "examples": { "type": "array", "items": { "type": "string" } },
+                "requires_immediate_action": { "type": "boolean" }
+              }
+            },
+            "high": {},
+            "medium": {},
+            "low": {},
+            "informational": {}
+          }
+        },
+        "confidence_thresholds": {
+          "type": "object",
+          "properties": {
+            "auto_accept": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "≥ this value: no human review needed"
+            },
+            "review_required": {
+              "type": "number",
+              "description": "Below auto_accept: human review required"
+            },
+            "reject": {
+              "type": "number",
+              "description": "Below this: finding rejected as too uncertain"
+            }
+          }
+        },
+        "human_in_loop_triggers": {
+          "type": "array",
+          "description": "Conditions that require mandatory human approval",
+          "items": {
+            "type": "object",
+            "properties": {
+              "trigger_id": { "type": "string" },
+              "condition": { "type": "string" },
+              "required_role": { "enum": ["qc_reviewer", "qc_manager", "compliance_analyst", "compliance_officer", "auditor", "audit_director"] }
+            }
+          }
+        }
+      }
+    },
+    "report_template": {
+      "type": "object",
+      "description": "Report generation configuration",
+      "required": ["template_id", "format"],
+      "properties": {
+        "template_id": { "type": "string" },
+        "format": {
+          "enum": ["pdf", "html", "markdown"]
+        },
+        "sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "section_id": { "type": "string" },
+              "title": { "type": "string" },
+              "content_template": { "type": "string" },
+              "data_source": { "type": "string" },
+              "required": { "type": "boolean" }
+            }
+          }
+        },
+        "ai_narrative_sections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "section_id": { "type": "string" },
+              "ai_prompt_template": { "type": "string" },
+              "requires_approval": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "sampling_methodology": {
+      "type": "object",
+      "description": "FFIEC-aligned sampling configuration for this pack",
+      "properties": {
+        "default_sample_size": {
+          "type": "integer",
+          "description": "Default number of records in the initial sample (e.g., 50 for HMDA per FFIEC guidelines)"
+        },
+        "stratification_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fields used for stratified sampling (e.g., ['loan_type', 'action_taken', 'property_type'])"
+        },
+        "error_thresholds": {
+          "type": "object",
+          "description": "Stage 1 error rate thresholds that drive sample expansion decisions",
+          "properties": {
+            "initial_sample_threshold": {
+              "type": "number",
+              "description": "Error rate (0.0–1.0) that triggers expanded sample (e.g., 0.05 = 5% per FFIEC)"
+            },
+            "proximity_alert_pct": {
+              "type": "number",
+              "description": "Percentage of threshold at which proximity alert fires (e.g., 0.80 = alert at 80% of threshold)"
+            },
+            "expanded_sample_size": {
+              "type": "integer",
+              "description": "Number of records in the expanded sample when threshold is breached"
+            }
+          }
+        },
+        "key_data_field_count": {
+          "type": "integer",
+          "description": "Number of Key Data Fields used for error rate computation (37 for HMDA)"
+        }
+      }
+    },
+    "test_cases": {
+      "type": "array",
+      "description": "Reference test data for pack validation harness",
+      "items": {
+        "type": "object",
+        "required": ["test_id", "description", "target_record", "expected_findings"],
+        "properties": {
+          "test_id": { "type": "string" },
+          "description": { "type": "string" },
+          "testing_stage": {
+            "enum": ["stage_1", "stage_2"],
+            "description": "Whether this test validates Stage 1 (data integrity) or Stage 2 (substantive) rules"
+          },
+          "target_record": {
+            "type": "object",
+            "description": "Complete HMDA LAR record with all fields populated"
+          },
+          "source_documents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "doc_type": { "type": "string" },
+                "fields": { "type": "object" }
+              }
+            },
+            "description": "Source document field extractions keyed by document type"
+          },
+          "expected_findings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["rule_id", "expected_result"],
+              "properties": {
+                "rule_id": { "type": "string" },
+                "expected_result": { "enum": ["match", "mismatch", "unable_to_determine"] },
+                "expected_severity": { "enum": ["critical", "high", "medium", "low", "informational"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "comparison_rule": {
+      "type": "object",
+      "required": ["rule_id", "target_field", "comparison_type"],
+      "properties": {
+        "rule_id": { "type": "string" },
+        "rule_name": { "type": "string" },
+        "target_field": { "type": "string" },
+        "source_field": { "type": "string" },
+        "source_doc_types": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Document types to check — enables multi-document corroboration"
+        },
+        "comparison_type": {
+          "enum": [
+            "exact_match",
+            "tolerance_absolute",
+            "tolerance_percentage",
+            "conditional",
+            "lookup",
+            "cross_field",
+            "multi_doc_corroboration",
+            "temporal",
+            "expression"
+          ]
+        },
+        "tolerance": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number" },
+            "unit": { "enum": ["absolute", "percentage", "days"] }
+          }
+        },
+        "expression": {
+          "type": "string",
+          "description": "CEL expression for complex conditional logic — see Expression Language section"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Rule IDs that must execute before this rule (conditional rule chains)"
+        },
+        "condition": {
+          "type": "string",
+          "description": "If comparison_type is 'conditional', e.g., 'if property_type = 1-4 family'"
+        },
+        "severity": {
+          "enum": ["critical", "high", "medium", "low", "informational"]
+        },
+        "base_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Base rule confidence — reduced by precondition/normalization failures per scoring framework"
+        },
+        "regulation_citation": { "type": "string" },
+        "policy_citation": {
+          "type": "object",
+          "description": "Institution policy reference — populated by the Effective Rule Set merge when an Institution Policy Profile overlay is applied (see <<sect-effective-rule-merge>>)",
+          "properties": {
+            "document_id": { "type": "string" },
+            "section": { "type": "string" },
+            "page": { "type": "string" },
+            "quote": { "type": "string", "description": "Verbatim quote from the institution's policy document" }
+          }
+        },
+        "rule_origin": {
+          "type": "string",
+          "enum": ["regulatory", "policy_tightened", "policy_supplemental", "procedural_checkpoint"],
+          "default": "regulatory",
+          "description": "Origin tag set by the Effective Rule Set merge — indicates whether this rule comes from the base regulatory pack or the institution policy profile"
+        },
+        "testing_stage": {
+          "type": "string",
+          "enum": ["stage_1", "stage_2"],
+          "default": "stage_1",
+          "description": "Stage 1 = data integrity (field-level comparison against source documents). Stage 2 = substantive/transactional testing (professional judgment required). Stage 1 discrepancies count toward the FFIEC error rate threshold."
+        },
+        "defense_line_scope": {
+          "type": "string",
+          "enum": ["first_line_qc", "second_line_compliance", "third_line_audit", "all_lines"],
+          "default": "all_lines",
+          "description": "Which defense line executes this rule. First Line (QC) runs Stage 1 data integrity rules; Second Line (Compliance) runs Stage 2 substantive rules; Third Line (Audit) reviews both. Default 'all_lines' means the rule is available to all defense lines."
+        },
+        "key_data_field": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, discrepancies on this rule's target field count toward the FFIEC Stage 1 error rate threshold (37 Key Data Fields for HMDA)"
+        },
+        "enabled": { "type": "boolean", "default": true }
+      }
+    }
+  }
+}
+----
+
+[[sect-pack-rule-engine]]
+==== Rule Engine Specification
+
+The rule engine interprets comparison rules defined in the pack manifest and produces findings.
+This section specifies the full semantics of each comparison type, including complex scenarios required for real-world regulatory audits.
+
+===== Comparison Types
+
+====== Basic Types
+
+*exact_match:* Target value must exactly equal source value after normalization.
+Used for enum fields (Action Taken codes), identifiers (loan numbers), and boolean flags.
+
+*tolerance_absolute:* Target value must be within plus-or-minus N of source value.
+Tolerance specified in the rule's `tolerance` object.
+Used for currency amounts (e.g., loan amount within plus-or-minus $50 of CD amount).
+
+*tolerance_percentage:* Target value must be within plus-or-minus N% of source value.
+Used for rates and ratios (e.g., interest rate within plus-or-minus 0.125% of CD rate).
+
+*lookup:* Target value must be present in a reference lookup table defined in the pack.
+Used for enum validation (e.g., Action Taken code must be one of 1-8 per HMDA spec).
+
+*cross_field:* Target field value is validated against a computed relationship between two or more other fields.
+Used for derived values (e.g., LTV ratio = loan_amount / appraised_value).
+
+===== Advanced Types
+
+[[sect-multi-doc-corroboration]]
+====== Multi-Document Corroboration
+
+A single target field is validated by cross-referencing values from two or more source documents.
+This is the core audit pattern for HMDA compliance -- the same field (e.g., loan amount) appears on the Closing Disclosure, the Loan Estimate, the URLA, and the LOS record, and all must agree.
+
+*Rule structure:*
+
+[source,json]
+----
+{
+  "rule_id": "hmda-loan-amount-corroboration",
+  "rule_name": "Loan Amount Multi-Document Corroboration",
+  "target_field": "loan_amount",
+  "comparison_type": "multi_doc_corroboration",
+  "source_doc_types": ["closing-disclosure", "loan-estimate", "urla-1003"],
+  "tolerance": { "value": 0.50, "unit": "absolute" },
+  "corroboration_policy": {
+    "minimum_sources": 2,
+    "conflict_resolution": "flag_for_review",
+    "agreement_threshold": 0.95
+  },
+  "severity": "high",
+  "regulation_citation": "12 CFR 1003.4(a)(7)"
+}
+----
+
+*Execution semantics:*
+
+. Extract the target field value from each specified source document type.
+. For each pair of extracted values, apply the specified tolerance to determine agreement.
+. If fewer than `minimum_sources` documents are available, flag as `unable_to_determine` with reduced rule confidence (x0.7).
+. If all available sources agree within tolerance, produce a `match` finding with confidence boosted by the number of corroborating sources.
+. If sources disagree, apply `conflict_resolution` policy: `flag_for_review` routes to human reviewer; `majority_wins` accepts the majority value; `highest_confidence_wins` accepts the value from the source with the highest extraction confidence (AFC).
+
+*Confidence aggregation for multi-doc rules:*
+
+....
+corroboration_confidence = min(afc_per_source) * (1 + 0.05 * (num_agreeing_sources - 1))
+rule_confidence = min(base_confidence, corroboration_confidence)
+....
+
+The more independent sources that agree, the higher the corroboration signal -- capped at 1.0.
+
+[[sect-conditional-rule-chains]]
+====== Conditional Rule Chains
+
+Rules can depend on the outcome of other rules.
+This enables branching audit logic: if the loan is FHA, apply additional FHA-specific validation rules that do not apply to conventional loans.
+
+*Rule structure:*
+
+[source,json]
+----
+{
+  "rule_id": "fha-pmi-validation",
+  "rule_name": "FHA PMI/MIP Validation",
+  "target_field": "mortgage_insurance_premium",
+  "comparison_type": "expression",
+  "depends_on": ["hmda-loan-type-check"],
+  "expression": "results['hmda-loan-type-check'].value == 'FHA' && target.mortgage_insurance_premium > 0",
+  "severity": "high",
+  "regulation_citation": "24 CFR 203.259a"
+}
+----
+
+*Execution semantics:*
+
+. Rules are topologically sorted by `depends_on` references before execution.
+Circular dependencies are rejected at pack validation time.
+. A rule with `depends_on` executes only if all prerequisite rules have completed.
+. The `expression` field can reference `results['rule_id']` to access the outcome of prerequisite rules.
+. If a prerequisite rule produced `unable_to_determine`, the dependent rule's confidence is reduced (x0.5) because its precondition is uncertain.
+
+*Maximum chain depth:* 5 levels.
+Packs with deeper chains are rejected at validation time.
+This prevents runaway complexity while supporting real-world audit logic.
+
+[[sect-stage-2-rules]]
+====== Stage 2 Substantive Testing Rules
+
+Stage 2 rules evaluate whether reported data reflects the underlying transaction correctly -- beyond field-level comparison.
+These rules require professional judgment and are typically executed by Second Line (Compliance) reviewers.
+Stage 2 rules are tagged with `testing_stage: "stage_2"` and `defense_line_scope: "second_line_compliance"`.
+
+*Rule structure -- Action Taken Code Validation:*
+
+[source,json]
+----
+{
+  "rule_id": "hmda-action-taken-substantive",
+  "rule_name": "Action Taken Code Substantive Validation",
+  "target_field": "action_taken",
+  "comparison_type": "expression",
+  "expression": "target.action_taken == '1' && source.application_status != 'originated'",
+  "testing_stage": "stage_2",
+  "defense_line_scope": "second_line_compliance",
+  "severity": "critical",
+  "base_confidence": 0.85,
+  "regulation_citation": "12 CFR 1003.4(a)(8)",
+  "key_data_field": true
+}
+----
+
+*Execution semantics:*
+
+. Stage 2 rules execute after Stage 1 comparison is complete for the record.
+. The rule evaluates whether the action-taken code is consistent with the application's full disposition history -- not just whether the code matches a source document.
+. If the action-taken code is "1" (originated) but underwriting notes or application status indicate the application was withdrawn or denied, the rule flags a substantive finding.
+. Stage 2 findings always require human review regardless of confidence score, because they involve professional judgment.
+
+*Rule structure -- Denial Reason Cross-Check:*
+
+[source,json]
+----
+{
+  "rule_id": "hmda-denial-reason-crosscheck",
+  "rule_name": "Denial Reason Consistency with Underwriting Notes",
+  "target_field": "denial_reason_1",
+  "comparison_type": "expression",
+  "depends_on": ["hmda-action-taken-check"],
+  "expression": "results['hmda-action-taken-check'].value == '3' && (target.denial_reason_1 == '' || target.denial_reason_1 == null)",
+  "testing_stage": "stage_2",
+  "defense_line_scope": "second_line_compliance",
+  "severity": "high",
+  "base_confidence": 0.80,
+  "regulation_citation": "12 CFR 1003.4(a)(16)",
+  "key_data_field": true
+}
+----
+
+*Rule structure -- Rate Spread Recalculation:*
+
+[source,json]
+----
+{
+  "rule_id": "hmda-rate-spread-recalc",
+  "rule_name": "Rate Spread Recalculation from APR and APOR",
+  "target_field": "rate_spread",
+  "comparison_type": "expression",
+  "expression": "abs(target.rate_spread - (source.apr - source.apor)) > 0.25",
+  "testing_stage": "stage_2",
+  "defense_line_scope": "second_line_compliance",
+  "severity": "high",
+  "base_confidence": 0.90,
+  "regulation_citation": "12 CFR 1003.4(a)(12)",
+  "key_data_field": true
+}
+----
+
+[[sect-temporal-rules]]
+====== Temporal and Date Logic
+
+Regulatory compliance frequently involves date calculations, deadlines, and timing requirements.
+The rule engine supports temporal comparison types for these scenarios.
+
+*Rule structure:*
+
+[source,json]
+----
+{
+  "rule_id": "trid-3-day-rule",
+  "rule_name": "TRID Closing Disclosure 3-Business-Day Rule",
+  "target_field": "closing_date",
+  "comparison_type": "temporal",
+  "source_field": "cd_received_date",
+  "source_doc_types": ["closing-disclosure"],
+  "temporal_config": {
+    "operator": "gte",
+    "offset_value": 3,
+    "offset_unit": "business_days",
+    "calendar": "us_federal",
+    "description": "Closing date must be at least 3 business days after CD receipt"
+  },
+  "severity": "critical",
+  "regulation_citation": "12 CFR 1026.19(f)(1)(ii)"
+}
+----
+
+*Supported temporal operators:*
+
+* `gte` -- target date >= source date + offset (e.g., closing >= CD receipt + 3 business days)
+* `lte` -- target date <= source date + offset (e.g., rate lock expiration <= application date + 60 days)
+* `eq` -- target date = source date + offset (exact date match with offset)
+* `within` -- target date is within plus-or-minus offset of source date (date proximity)
+
+*Calendar support:*
+
+* `us_federal` -- US federal business day calendar (excludes weekends + federal holidays)
+* `calendar_days` -- simple calendar day count
+* `state:{code}` -- state-specific calendar (for state-level regulatory deadlines)
+
+*Edge cases:*
+
+* If either date field is missing or unparseable, the rule produces `unable_to_determine` with confidence x0.5.
+* Date parsing supports ISO 8601, MM/DD/YYYY, and common US date formats.
+The parser normalizes to ISO 8601 before comparison.
+
+[[sect-pack-expression-language]]
+====== Expression Language (CEL)
+
+Decision D4 established declarative JSON as the pack interface.
+As pack complexity grows, pure JSON configuration becomes insufficient for expressing real-world regulatory logic -- particularly conditional chains, cross-field validations, and computed thresholds.
+
+The pack expression language extends D4 with a controlled, sandboxed expression evaluator.
+AuditIQ adopts the *Common Expression Language (CEL)* -- a non-Turing-complete expression language designed by Google for security-critical policy evaluation.
+
+*Why CEL:*
+
+* *Non-Turing-complete:* CEL expressions always terminate.
+No infinite loops, no recursion, no unbounded computation.
+This is a hard security requirement for packs.
+* *Sandboxed:* CEL has no I/O, no network access, no file system access, no side effects.
+It evaluates expressions against provided data only.
+* *Auditable:* CEL expressions are human-readable strings embedded in JSON.
+Examiners can review them directly.
+* *Proven:* CEL is used in Google Cloud IAM, Kubernetes admission webhooks, Firebase security rules, and Envoy proxy.
+It is production-hardened for policy evaluation.
+
+*Available variables in CEL expressions:*
+
+* `target` -- the target record object (all fields accessible by field_id)
+* `source` -- the source document object (all extracted fields)
+* `results` -- map of prior rule results (keyed by rule_id), each containing `value`, `status`, `confidence`
+* `metadata` -- audit context (audit_id, pack_version, run_date)
+
+*Expression constraints (enforced at pack validation):*
+
+* Maximum expression length: 1,024 characters.
+* No function definitions -- expressions only.
+* Only CEL standard functions + AuditIQ custom functions (see below).
+* Expressions must type-check at pack validation time.
+
+*AuditIQ custom CEL functions:*
+
+* `businessDaysBetween(date1, date2, calendar)` -- returns business day count
+* `normalize(value, type)` -- applies normalization rules (e.g., currency formatting, address standardization)
+* `lookupEnum(value, table_name)` -- validates value against a reference enum table defined in the pack
+* `withinTolerance(actual, expected, tolerance, unit)` -- returns boolean for tolerance comparison
+
+*Example expressions:*
+
+[source]
+----
+// FHA-specific PMI validation
+target.loan_type == 'FHA' && source.mortgage_insurance_premium > 0
+
+// TRID 3-day rule
+businessDaysBetween(source.cd_received_date, target.closing_date, 'us_federal') >= 3
+
+// Cross-field LTV validation
+abs(target.ltv_ratio - (target.loan_amount / source.appraised_value * 100)) <= 0.5
+
+// Conditional severity escalation
+results['loan-amount-check'].status == 'mismatch' && target.loan_amount > 500000
+----
+
+===== Rule Precedence and Conflict Resolution
+
+When multiple rules evaluate the same target field and produce conflicting results, the engine applies the following precedence:
+
+. *Highest severity wins:* If rule A produces a `critical` finding and rule B produces a `low` finding for the same field, the critical finding is reported.
+The low finding is attached as a supplementary note.
+. *Most specific rule wins:* A conditional rule that matches its precondition takes precedence over a generic rule for the same field.
+. *Explicit conflict flag:* If two rules of the same severity produce contradictory findings (one says match, one says mismatch), both are flagged for human review with a `rule_conflict` indicator.
+
+===== Rule Execution Order
+
+Rules are executed in dependency-aware order:
+
+. All rules are topologically sorted by `depends_on` references.
+. Rules with no dependencies execute first, in parallel where possible.
+. Rules with dependencies execute after their prerequisites complete.
+. The engine enforces a maximum total execution time of 30 seconds per record.
+If this budget is exceeded, remaining rules are marked `timed_out` and routed to manual review.
+
+[[sect-pack-ai-boundary]]
+==== AI-Pack Boundary Specification
+
+The pack is declarative; the AI pipeline is probabilistic.
+The boundary between these two domains is one of the most critical design decisions in AuditIQ.
+Getting it wrong means either: (a) packs that are too dumb to handle real documents, or (b) AI that makes unauditable decisions.
+This section draws the line precisely.
+
+===== The Boundary Principle
+
+*Deterministic operations live in the pack.
+Probabilistic operations live in the AI pipeline.
+Every crossing of the boundary is explicitly labeled, scored, and auditable.*
+
+[cols="30%,35%,35%",options="header"]
+|===
+|Operation |Owner |Rationale
+
+|Target data validation (schema check)
+|Pack (deterministic)
+|Target data is structured; validation is rule-based; no uncertainty.
+
+|Source document extraction (OCR, layout parsing)
+|AI pipeline (probabilistic)
+|Unstructured documents introduce OCR uncertainty; extraction confidence (AFC) quantifies this.
+
+|Schema mapping (target field -> source field)
+|AI pipeline (probabilistic) with pack constraints
+|Mapping requires semantic similarity judgment; confidence scored; pack constrains candidate space via source schemas.
+
+|Comparison execution (target value vs. source value)
+|Pack (deterministic)
+|Once values are extracted and mapped, comparison is rule-based.
+The pack defines what "equal" or "within tolerance" means.
+
+|Scoring (severity assignment)
+|Pack (deterministic)
+|Severity is defined by the pack rule.
+Confidence is computed from the three-layer formula.
+
+|Narrative generation (finding descriptions, report summaries)
+|AI pipeline (probabilistic)
+|Natural language generation is inherently probabilistic.
+All AI narratives require human approval before finalization.
+
+|Rule suggestion (during pack authoring)
+|AI pipeline (advisory only)
+|AI can suggest new rules based on regulatory text analysis, but a human compliance expert must approve and add them to the pack.
+|===
+
+===== AI-Assisted Rule Creation
+
+When RiskExec compliance experts author packs, AI assists by:
+
+. *Regulatory text analysis:* Given a regulation citation (e.g., 12 CFR 1003.4), AI extracts candidate audit rules -- field requirements, validation conditions, and severity suggestions.
+. *Rule draft generation:* AI generates draft comparison rules in the pack JSON schema format.
+These are suggestions, not final rules.
+. *Gap detection:* AI compares a draft pack against the full regulatory text and flags coverage gaps -- fields or requirements that have no corresponding rule.
+
+*Guardrail:* AI-suggested rules are always created in `draft` status.
+They cannot be published until a human compliance expert reviews and approves each rule.
+The pack manifest records `ai_suggested: true` on any rule that originated from AI assistance, and this flag is visible in exam-ready bundles.
+
+===== AI in the Rule Execution Hot Path
+
+The general principle is that rule execution is deterministic.
+However, there are specific scenarios where the AI pipeline is invoked during rule execution:
+
+*Scenario 1: Extraction confidence below threshold.*
+If a source document field has AFC < 0.50, the value is unreliable.
+The rule engine can invoke AI re-extraction: a second-pass extraction using a different model (e.g., LLM-based extraction via Mistral) to produce an alternative value with its own AFC score.
+If the re-extracted value's AFC exceeds the threshold, it is used.
+If not, the rule produces `unable_to_determine`.
+
+*Scenario 2: Fuzzy/semantic matching for unstructured fields.*
+Some fields (e.g., property address, borrower name) cannot be compared with exact_match due to formatting variations.
+The rule engine delegates these to a fuzzy matching service that uses NLP-based similarity scoring.
+The fuzzy match confidence is recorded as an additional signal in the rule's confidence calculation.
+
+*Scenario 3: AI-assisted normalization.*
+When standard normalization rules (address standardization, currency formatting) fail, AI-based normalization can be invoked as a fallback.
+The AI normalization result is flagged with `ai_normalized: true` and its confidence is reduced (x0.7) to reflect the additional uncertainty.
+
+*In all three scenarios:*
+
+* The AI invocation is logged as an audit event with model version, input, output, and confidence.
+* The finding is tagged with `ai_assisted: true` in the finding record.
+* Human-in-loop triggers apply: any AI-assisted finding with severity >= `high` requires mandatory human review regardless of confidence score.
+
+===== Confidence Propagation Model
+
+The three-layer confidence model (<<sect-scoring-framework>>) computes combined confidence as:
+
+....
+combined_confidence = min(mapping_confidence, extraction_confidence, rule_confidence)
+....
+
+This section specifies precisely how each layer is computed in the context of pack rule execution.
+
+*Extraction confidence (AFC):*
+Produced by the Document Processing Service.
+Per-field composite score from 6 signals (see <<sect-glossary>>).
+When extraction is not applicable (record-to-record audit), defaults to 1.0.
+
+*Mapping confidence:*
+Produced by the Schema Mapping Service.
+5-signal hybrid heuristic (name similarity, synonym match, type compatibility, document section context, historical acceptance).
+When mapping is pre-defined in the pack (no ambiguity), defaults to 1.0.
+
+*Rule confidence:*
+Starts at `base_confidence` from the pack rule definition.
+Reduced by the following modifiers:
+
+* Precondition not satisfied (dependent rule unclear): x0.7
+* Normalization failed: x0.5
+* Fewer than `minimum_sources` available (multi-doc rules): x0.7
+* AI-assisted extraction used: x0.85
+* AI-assisted normalization used: x0.7
+
+Multiple modifiers stack multiplicatively:
+
+....
+rule_confidence = base_confidence * modifier_1 * modifier_2 * ... * modifier_n
+rule_confidence = max(0.0, min(1.0, rule_confidence))
+....
+
+*Combined confidence routing:*
+
+* >=0.85: Auto-confirm eligible.
+No human review required.
+* 0.50-0.84: Human review required.
+Reviewer validates finding.
+* <0.50: Finding rejected.
+Routed to manual re-review if severity is critical or high.
+
+These thresholds are pack-configurable via `scoring_rules.confidence_thresholds`.
+The values above are the platform defaults and the values used by the HMDA Origination pack.
+
+For the full regulatory compliance hierarchy (five layers from regulation to audit rule set), institution policy profiles, AI-driven policy profile creation pipeline, and effective rule set merge logic, see <<sect-policy-management-engine>>.
+
+==== Pack Versioning and Distribution
+
+*Version format:* Semantic Versioning (MAJOR.MINOR.PATCH)
+
+* *MAJOR:* Breaking changes to schemas or rule logic (requires migration).
+Increment when: target field added/removed, comparison rule logic fundamentally changes, severity assignments revised across multiple rules.
+* *MINOR:* New rules or schemas added (backward-compatible).
+Increment when: new comparison rules added for existing fields, new source document type supported, regulatory citation updated.
+* *PATCH:* Bug fixes, typo corrections (no functional changes).
+Increment when: rule description typo fixed, test case corrected, no change to rule evaluation behavior.
+
+*Distribution channel:*
+
+* *Phase 1:* RiskExec ships HMDA Origination QC pack v1.0 in the platform binary.
+Pack is embedded in the deployment artifact and versioned with the platform release.
+* *Phase 2+:* Packs distributed via internal pack registry API with version pinning and rollback capability.
+Customers pin to a specific pack version per audit run.
+Rollback to a prior pack version is supported for new runs.
+
+[[sect-pack-testing]]
+==== Pack Testing and Validation Harness
+
+===== Harness Requirements
+
+* Load a pack manifest and validate its JSON schema compliance.
+* Validate all CEL expressions for syntax and type correctness.
+* Detect circular dependencies in rule chains.
+* Load and execute each test case against the pack rules.
+* Compare actual findings to expected findings.
+* Report pass/fail, coverage metrics, rule execution time, and expression evaluation results.
+
+===== Test Case Requirements
+
+*Minimum test cases per rule:*
+
+* 1 positive case (values match -- no finding expected)
+* 1 negative case (values mismatch -- finding expected with specified severity)
+* 1 edge case (missing field, boundary value, format variation, or multi-document disagreement)
+
+*Golden dataset requirements:*
+
+Each regulation-specific pack must include a golden dataset: a curated set of anonymized loan records with known-correct findings, constructed from production data.
+The golden dataset serves as the regression test baseline.
+
+* *HMDA Origination pack:* Golden dataset of >=200 anonymized loan records from >=5 lenders, covering all loan types (conventional, FHA, VA, USDA), property types (1-4 family, multifamily, manufactured), and action taken codes (1-8).
+* *Per-document-type:* Golden documents with pre-verified field extractions for each source document type the pack supports.
+
+===== Success Criteria (Before Publication)
+
+* All test cases pass (0 failures).
+* Rule coverage >=90% of pack rules have at least one test case that exercises them.
+* No test case execution exceeds 5 seconds per record.
+* All CEL expressions evaluate without runtime errors.
+* No circular dependencies detected.
+* All AI suggestions (if any) are labeled and traced to model/version.
+* Regression: No prior-version test case that previously passed now fails (unless the failure is intentional and documented in the change log).
+
+===== Continuous Regression Testing
+
+Published packs are retested nightly against their golden datasets.
+If a regression is detected (e.g., due to platform engine changes), an alert is generated and the pack is flagged for review.
+This ensures that platform updates do not silently break pack behavior.
+
+==== Pack Interface Contract (System-to-Pack)
+
+The platform interacts with packs via the following immutable contract:
+
+[source,typescript]
+----
+interface AuditPackContract {
+  // Manifest loading
+  loadManifest(packId: string, version: string): Promise<PackManifest>;
+
+  // Institution Policy Profile loading
+  loadPolicyProfile(
+    profileId: string,
+    profileVersion: string
+  ): Promise<InstitutionPolicyProfile>;
+
+  // Effective Rule Set computation (see Regulatory Compliance Hierarchy)
+  computeEffectiveRuleSet(
+    packId: string,
+    packVersion: string,
+    profileId?: string,
+    profileVersion?: string
+  ): EffectiveRuleSet;
+
+  // Schema validation
+  validateTargetRecord(record: object, packId: string): ValidationResult;
+  validateSourceDocument(doc: object, docType: string, packId: string): ValidationResult;
+
+  // Mapping suggestion
+  suggestMappings(
+    targetSchema: object,
+    sourceSchema: object,
+    packId: string
+  ): MappingSuggestion[];
+
+  // Comparison execution (deterministic + expression evaluation)
+  // When an EffectiveRuleSet is provided, it is used instead of the base pack rules
+  executeComparisons(
+    targetRecord: object,
+    sourceData: object,
+    mappings: FieldMapping[],
+    effectiveRuleSet: EffectiveRuleSet,
+    priorResults?: Map<string, RuleResult>
+  ): ComparisonResult[];
+
+  // Multi-document corroboration
+  executeCorroboration(
+    targetRecord: object,
+    sourceDocuments: Map<string, object>,
+    effectiveRuleSet: EffectiveRuleSet
+  ): CorroborationResult[];
+
+  // Procedural checkpoint evaluation
+  evaluateCheckpoints(
+    loanFile: LoanFile,
+    effectiveRuleSet: EffectiveRuleSet
+  ): CheckpointResult[];
+
+  // Scoring
+  scoreFindings(findings: Finding[], effectiveRuleSet: EffectiveRuleSet): ScoredFinding[];
+
+  // Report generation
+  generateReport(auditData: AuditData, effectiveRuleSet: EffectiveRuleSet): Report;
+
+  // Expression evaluation (CEL)
+  evaluateExpression(
+    expression: string,
+    context: ExpressionContext
+  ): ExpressionResult;
+}
+
+// Finding includes origin attribution
+interface Finding {
+  rule_id: string;
+  rule_origin: 'regulatory' | 'policy_tightened' | 'policy_supplemental' | 'procedural_checkpoint' | 'complaint';  // 'complaint' reserved for future complaint management integration
+  regulation_citation?: string;
+  policy_citation?: PolicyCitation;
+  severity: string;
+  confidence: number;
+  // ... other finding fields
+}
+----
+
+*Immutability guarantee:* For a given (packId, packVersion, profileId, profileVersion, targetRecord, sourceData, mappings), the output of executeComparisons() is always identical.
+All non-deterministic outputs (AI narratives, AI-assisted extractions) are explicitly generated separately and labeled.
+CEL expressions are deterministic by design -- same inputs always produce same outputs.
+
+*Backward compatibility:* The `profileId` and `profileVersion` parameters are optional.
+When no Institution Policy Profile is provided, the Effective Rule Set equals the base Regulatory Pack -- all rules are tagged `rule_origin: regulatory`.
+This ensures existing audit runs and institutions without policy profiles continue to work without modification.
+
+[[sect-policy-management-engine]]
+=== Policy Management & Compliance Engine
+
+This section specifies the institution policy profile schema, embedding architecture, AI-driven policy profile creation pipeline, training data bootstrapping, and effective rule set merge logic that together form the Policy Management & Compliance Engine.
+
+[[sect-institution-policy-profile]]
+==== Institution Policy Profile Specification
+
+The Institution Policy Profile is a versioned JSON artifact with the following schema:
+
+[source,json]
+----
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AuditIQ Institution Policy Profile v1.0",
+  "type": "object",
+  "required": [
+    "profile_id",
+    "institution_id",
+    "institution_name",
+    "base_pack_id",
+    "base_pack_version_constraint",
+    "profile_version",
+    "created_date",
+    "status"
+  ],
+  "properties": {
+    "profile_id": {
+      "type": "string",
+      "description": "Unique profile identifier, format: {institution_id}-{regulation}-policy-profile",
+      "pattern": "^[a-z0-9-]+$"
+    },
+    "institution_id": {
+      "type": "string",
+      "description": "Unique institution identifier"
+    },
+    "institution_name": {
+      "type": "string"
+    },
+    "base_pack_id": {
+      "type": "string",
+      "description": "The regulatory pack this profile overlays (e.g., 'hmda-origination-v1')"
+    },
+    "base_pack_version_constraint": {
+      "type": "string",
+      "description": "Semver range of compatible base pack versions (e.g., '>=1.0.0 <2.0.0')"
+    },
+    "profile_version": {
+      "type": "string",
+      "description": "Semantic versioning: MAJOR.MINOR.PATCH",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "created_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "published", "deprecated", "retired"]
+    },
+    "approved_by": {
+      "type": "array",
+      "description": "Human approvers who reviewed and approved this profile",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "role": { "type": "string" },
+          "organization": { "type": "string" },
+          "approval_date": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "policy_document_registry": {
+      "type": "array",
+      "description": "Institution policy and procedure documents that inform this profile",
+      "items": {
+        "type": "object",
+        "required": ["document_id", "title", "document_type", "effective_date"],
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "description": "Unique identifier for the policy document"
+          },
+          "title": {
+            "type": "string",
+            "description": "e.g., 'ABC Bank HMDA Data Integrity Policy v3.2'"
+          },
+          "document_type": {
+            "type": "string",
+            "enum": ["board_policy", "compliance_policy", "operating_procedure", "job_aid", "board_resolution", "risk_appetite_statement"],
+            "description": "Classification of the document within the institution's governance framework"
+          },
+          "effective_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "version": {
+            "type": "string"
+          },
+          "owner": {
+            "type": "string",
+            "description": "Department or individual responsible for maintaining the document"
+          },
+          "storage_reference": {
+            "type": "string",
+            "description": "URI or reference to the document in the institution's document store"
+          },
+          "regulations_addressed": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Regulations this document addresses, e.g., ['12 CFR 1003', 'Reg C']"
+          },
+          "ai_extraction_confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Overall confidence score from AI extraction of this document"
+          }
+        }
+      }
+    },
+    "threshold_overrides": {
+      "type": "array",
+      "description": "Institution-specific threshold tightenings applied to base pack rules",
+      "items": {
+        "type": "object",
+        "required": ["override_id", "base_rule_id", "override_type", "policy_citation"],
+        "properties": {
+          "override_id": { "type": "string" },
+          "base_rule_id": {
+            "type": "string",
+            "description": "The rule_id in the base pack that this override tightens"
+          },
+          "override_type": {
+            "type": "string",
+            "enum": ["tolerance_tighten", "severity_escalate", "confidence_raise"],
+            "description": "Type of override — all overrides must be stricter than the base rule"
+          },
+          "original_value": {
+            "type": "number",
+            "description": "The base pack's threshold value (for audit trail)"
+          },
+          "override_value": {
+            "type": "number",
+            "description": "The institution's stricter threshold value"
+          },
+          "policy_citation": {
+            "type": "object",
+            "required": ["document_id", "section"],
+            "properties": {
+              "document_id": { "type": "string" },
+              "section": { "type": "string" },
+              "page": { "type": "string" },
+              "quote": {
+                "type": "string",
+                "description": "Verbatim quote from the policy document supporting this override"
+              }
+            }
+          },
+          "ai_suggested": {
+            "type": "boolean",
+            "description": "Whether this override was suggested by AI during profile creation"
+          },
+          "approved": {
+            "type": "boolean",
+            "description": "Whether a human compliance expert has approved this override"
+          }
+        }
+      }
+    },
+    "supplemental_rules": {
+      "type": "array",
+      "description": "Additional audit rules driven by institution policy that go beyond the base regulatory pack",
+      "items": {
+        "type": "object",
+        "required": ["rule_id", "rule_name", "rule_type", "policy_citation"],
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "description": "Prefixed with 'policy-' to distinguish from regulatory rules"
+          },
+          "rule_name": { "type": "string" },
+          "rule_type": {
+            "type": "string",
+            "enum": ["documentation_check", "approval_verification", "timing_requirement", "escalation_trigger", "data_quality_check", "custom"],
+            "description": "Category of the supplemental rule"
+          },
+          "description": { "type": "string" },
+          "comparison_type": {
+            "type": "string",
+            "enum": ["exact_match", "tolerance_absolute", "tolerance_percentage", "temporal", "expression", "document_presence", "approval_chain"],
+            "description": "Extends base comparison types with policy-specific types"
+          },
+          "expression": {
+            "type": "string",
+            "description": "CEL expression for complex policy logic"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "informational"]
+          },
+          "policy_citation": {
+            "type": "object",
+            "required": ["document_id", "section"],
+            "properties": {
+              "document_id": { "type": "string" },
+              "section": { "type": "string" },
+              "page": { "type": "string" },
+              "quote": { "type": "string" }
+            }
+          },
+          "ai_suggested": { "type": "boolean" },
+          "approved": { "type": "boolean" }
+        }
+      }
+    },
+    "procedural_checkpoints": {
+      "type": "array",
+      "description": "Documentation and procedural requirements from the institution's operating procedures",
+      "items": {
+        "type": "object",
+        "required": ["checkpoint_id", "checkpoint_name", "checkpoint_type", "policy_citation"],
+        "properties": {
+          "checkpoint_id": { "type": "string" },
+          "checkpoint_name": { "type": "string" },
+          "checkpoint_type": {
+            "type": "string",
+            "enum": ["document_present", "signature_required", "approval_required", "timing_deadline", "review_completed", "exception_documented"],
+            "description": "Category of the procedural checkpoint"
+          },
+          "description": { "type": "string" },
+          "verification_method": {
+            "type": "string",
+            "enum": ["ai_document_detection", "field_check", "manual_attestation"],
+            "description": "How this checkpoint is verified during the audit"
+          },
+          "deadline_expression": {
+            "type": "string",
+            "description": "CEL expression for timing-based checkpoints, e.g., 'days_between(closing_date, qc_review_date) <= 15'"
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["critical", "high", "medium", "low", "informational"]
+          },
+          "policy_citation": {
+            "type": "object",
+            "required": ["document_id", "section"],
+            "properties": {
+              "document_id": { "type": "string" },
+              "section": { "type": "string" },
+              "page": { "type": "string" },
+              "quote": { "type": "string" }
+            }
+          },
+          "ai_suggested": { "type": "boolean" },
+          "approved": { "type": "boolean" }
+        }
+      }
+    },
+    "policy_to_regulation_traceability": {
+      "type": "array",
+      "description": "Mapping of each institution policy requirement to its regulatory basis",
+      "items": {
+        "type": "object",
+        "required": ["policy_requirement_id", "regulation_citation"],
+        "properties": {
+          "policy_requirement_id": {
+            "type": "string",
+            "description": "References an override_id, supplemental rule_id, or checkpoint_id"
+          },
+          "regulation_citation": {
+            "type": "string",
+            "description": "The regulation this policy requirement implements, e.g., '12 CFR 1003.4(a)(1)'"
+          },
+          "guidance_citation": {
+            "type": "string",
+            "description": "The guidance document this policy requirement addresses, e.g., 'CFPB HMDA Exam Procedures, p. 47'"
+          },
+          "traceability_type": {
+            "type": "string",
+            "enum": ["direct_implementation", "stricter_than_required", "beyond_regulatory_scope", "best_practice"],
+            "description": "How the policy requirement relates to the regulation"
+          }
+        }
+      }
+    },
+    "gap_analysis": {
+      "type": "array",
+      "description": "Regulatory requirements in the base pack for which no corresponding institution policy was found via structural graph traversal or vector fallback",
+      "items": {
+        "type": "object",
+        "properties": {
+          "base_rule_id": {
+            "type": "string",
+            "description": "The base pack rule with no policy coverage"
+          },
+          "gap_type": {
+            "type": "string",
+            "enum": ["no_policy_found", "structurally_unanchored", "policy_weaker_than_regulation", "policy_ambiguous"],
+            "description": "Nature of the gap. 'structurally_unanchored' means the regulation node exists in the graph but no policy sentences anchor to any concept in its subgraph — evidence of absence, not absence of evidence"
+          },
+          "risk_level": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "graph_traversal_path": {
+            "type": "array",
+            "description": "The ontology nodes inspected during structural alignment — makes the gap auditable by showing exactly which regulatory concepts were checked",
+            "items": {
+              "type": "object",
+              "properties": {
+                "node_id": {
+                  "type": "string",
+                  "description": "Ontology node URI (e.g., 'fibo:LoanAmount', 'finregont:§1003.4(a)(7)')"
+                },
+                "node_label": {
+                  "type": "string",
+                  "description": "Human-readable label for the node"
+                },
+                "hop_distance": {
+                  "type": "integer",
+                  "description": "Number of hops from the regulation node in the graph traversal"
+                },
+                "anchored_sentences_found": {
+                  "type": "integer",
+                  "description": "Number of PolicySentence edges found on this node (0 for a gap)"
+                }
+              }
+            }
+          },
+          "vector_fallback_attempted": {
+            "type": "boolean",
+            "description": "Whether vector fallback (RAG) was attempted after structural traversal yielded no results"
+          },
+          "vector_fallback_top_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Highest semantic similarity score from vector fallback, if attempted. Scores below the alignment threshold confirm the gap"
+          },
+          "recommendation": {
+            "type": "string",
+            "description": "AI-generated recommendation referencing the specific ontology concept the institution's policy needs to address"
+          },
+          "acknowledged": {
+            "type": "boolean",
+            "description": "Whether the institution has acknowledged this gap"
+          }
+        }
+      }
+    }
+  }
+}
+----
+
+[[sect-embedding-architecture]]
+==== Sentence Transformer Embedding Architecture
+
+The AI-Driven Policy Profile Creation Pipeline (<<sect-ai-policy-pipeline>>) depends on a two-layer embedding architecture that bridges unstructured policy language and the structured compliance knowledge graph.
+Neither layer works well alone: the graph tells you what concepts exist and how they relate; the embeddings tell you which sentences in messy, unstructured policy documents are _about_ those concepts.
+
+[[sect-embedding-domain-finetuning]]
+===== Domain-Fine-Tuned Sentence Transformer
+
+All embedding operations -- regulatory citation retrieval, policy sentence indexing, and policy-to-regulation alignment -- share a single sentence transformer (SBERT) fine-tuned on financial regulatory language.
+This model is registered once in the Model Registry (see <<sect-model-registry>>) and versioned alongside the regulatory corpus.
+
+General-purpose embedding models (e.g., Nomic Embed, BGE-large) are insufficient for compliance text because they fail on three critical dimensions:
+
+* *Negation sensitivity.* "Loan amount shall match" and "loan amount shall not exceed" have opposite compliance implications but high cosine similarity in general embedding space.
+A fine-tuned model learns that negation inverts the compliance vector.
+* *Numeric threshold context.* "$25" and "$50" are near-identical to a general model but represent materially different compliance postures.
+A fine-tuned model encodes threshold magnitude as a salient feature.
+* *Deontic language.* "Must," "shall," "may," and "should" carry precise legal meanings -- mandatory obligation, permissive option, aspirational guidance -- that general models treat as soft synonyms.
+A fine-tuned model places these terms far apart in compliance embedding space.
+
+The fine-tuning corpus and training signal are bootstrapped from the graph itself (see <<sect-training-data-bootstrap>>).
+
+[[sect-two-layer-embeddings]]
+===== Two Embedding Layers, One Graph
+
+.Two-Layer Embedding Architecture
+[mermaid]
+----
+graph TD
+  subgraph "Layer 1 — Ontology Node Embeddings"
+    A["FIBO classes<br/>FinRegOnt sections<br/>MISMO fields"] --> B["OWL2Vec* / on2vec<br/>Graph walks + label semantics"]
+    B --> C["Node embedding<br/><i>Encodes graph position +<br/>textual description</i>"]
+  end
+
+  subgraph "Layer 2 — Document Sentence Embeddings"
+    D["Regulation sentences<br/>Guidance sentences<br/>Policy sentences<br/>Procedure sentences"] --> E["Domain-fine-tuned<br/>Sentence Transformer (SBERT)"]
+    E --> F["Sentence embedding<br/><i>Encodes compliance semantics</i>"]
+  end
+
+  C --> G["Cross-space<br/>cosine similarity"]
+  F --> G
+  G --> H["Graph anchoring edge<br/>PolicySentence ──implements──→ GraphNode"]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style E fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style F fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style G fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Layer 1 -- Ontology node embeddings (structural):* Each node in the unified compliance graph -- every FIBO class, every FinRegOnt regulation section, every MISMO field definition -- receives an embedding that encodes both its _position in the graph_ (subclass hierarchy, equivalence relations, restriction edges) and its _label and textual description_.
+OWL2Vec* generates these embeddings by walking the OWL graph structure and combining structural features with label semantics.
+The on2vec approach extends this by integrating GNN-based graph structure with sentence transformer text features into a single embedding.
+
+*Layer 2 -- Document sentence embeddings (textual):* Every sentence extracted from a regulation, guidance document, institution policy, or procedure is embedded using the domain-fine-tuned sentence transformer.
+Embeddings are stored in Qdrant (the same vector store used by the Regulatory Citation Engine -- see <<sect-regulatory-citation-engine>>) with metadata tagging the source document, sentence position, and document type.
+Sentence-level granularity is required because individual policy sentences carry distinct obligations that paragraph-level chunking would conflate.
+
+*Cross-space anchoring:* When a policy sentence is embedded, it is not stored as a free-floating vector.
+It is _anchored_ to the nearest graph node(s) via cosine similarity between the sentence embedding (Layer 2) and the ontology node embeddings (Layer 1).
+Top-_k_ candidate nodes are identified by similarity, then an LLM reranker confirms the anchor ("is this sentence genuinely about this regulatory concept?").
+Confirmed anchors create a graph edge: `PolicySentence ──implements──→ GraphNode`.
+
+This anchoring is what makes the graph _useful_ rather than merely _correct_.
+The graph provides the structural scaffold; the embeddings provide the glue that attaches messy, unstructured institutional language to precise regulatory concepts.
+
+[[sect-embedding-boundary-guardrail]]
+===== Design Guardrail -- Embedding Boundaries
+
+[IMPORTANT]
+====
+Embeddings are used _only_ at the boundary where unstructured text meets structured knowledge.
+
+Inside the graph, relationships -- subclass, equivalence, `owl:sameAs`, FinRegOnt-to-FIBO mappings -- are traversed via SPARQL and graph queries, not approximated as embedding distances.
+Structural relationships are _exact_; embedding similarity is _approximate_.
+Substituting one for the other introduces false positives where embedding similarity says two concepts are "close" but the graph knows they are structurally unrelated.
+====
+
+[[sect-ai-policy-pipeline]]
+==== AI-Driven Policy Profile Creation Pipeline
+
+The Institution Policy Profile is created primarily by AI, with mandatory human review and approval.
+This pipeline dramatically compresses what would otherwise be weeks of manual policy analysis into days.
+
+.AI-Driven Policy Profile Creation Pipeline
+[mermaid]
+----
+graph TD
+  A["<b>Phase 1 — Document Intake</b><br/>Institution uploads policy &<br/>procedure documents"] --> B["<b>Phase 2 — AI Extraction</b><br/>AI extracts policy-level requirements<br/>(thresholds, procedures, exceptions)"]
+  B --> C["<b>Phase 3 — Regulatory Alignment</b><br/>AI maps policy requirements to<br/>base pack rules using RAG"]
+  C --> D["<b>Phase 4 — Draft Profile Generation</b><br/>AI assembles structured draft<br/>with confidence scores"]
+  D --> E["<b>Phase 5 — Human Review</b><br/>RiskExec + Institution compliance<br/>experts review and approve"]
+  E -->|Approved| F["<b>Phase 6 — Publication</b><br/>Profile published and available<br/>for audit runs"]
+  E -->|Revisions needed| B
+
+  G["<b>Ongoing — Policy Change Detection</b><br/>Institution re-uploads updated policies;<br/>AI performs diff analysis"] --> B
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style C fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style D fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style E fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style F fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style G fill:#4A6FA5,color:#fff,stroke:#2B4570
+----
+
+===== Phase 1 -- Policy Document Intake, Classification, and Graph Anchoring
+
+The institution uploads their compliance policy and procedure documents.
+These may include:
+
+* Board-approved compliance policies (e.g., HMDA Data Integrity Policy)
+* Operating procedures (e.g., HMDA Data Collection Procedures)
+* Job aids and desk references
+* Board resolutions related to compliance
+* Risk appetite statements
+* Internal audit findings and corrective action plans
+
+AI classifies each uploaded document using the existing document processing pipeline (Docling-Graph -- see <<sect-docling-graph>>).
+Classification assigns:
+
+* *Document type:* board_policy, compliance_policy, operating_procedure, job_aid, board_resolution, risk_appetite_statement
+* *Regulatory domain(s):* which regulations the document addresses (matched against the base pack's `regulation` field)
+* *Effective date and version:* extracted from document metadata or cover page
+* *Extraction confidence:* overall confidence score for the AI's ability to parse and extract from this document
+
+.Policy Document Intake -- Detail Flow
+[mermaid]
+----
+graph TD
+  A["Institution<br/>uploads documents"] --> B["Docling-Graph<br/>document processing"]
+  B --> C["Document<br/>classification"]
+  C --> D["Policy document<br/>registry created"]
+  B --> E["Sentence-level<br/>extraction"]
+  E --> F["Domain-fine-tuned<br/>Sentence Transformer"]
+  F --> G["Sentence embeddings<br/>stored in Qdrant"]
+  F --> H["Cross-space cosine sim<br/>against ontology node<br/>embeddings (Layer 1)"]
+  H --> I["LLM reranker<br/>confirms anchors"]
+  I --> J["Graph anchoring edges<br/>PolicySentence ──implements──→<br/>GraphNode"]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style C fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style D fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style E fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style F fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style G fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style H fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style I fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+Extracted text is segmented at sentence-level granularity -- not paragraph-level -- because individual policy sentences carry distinct obligations that paragraph chunking would conflate.
+Each sentence is embedded using the domain-fine-tuned sentence transformer (see <<sect-embedding-domain-finetuning>>) and stored in Qdrant with metadata tagging the source document, sentence position, and document type.
+
+Simultaneously, each sentence embedding is compared against the ontology node embeddings (Layer 1) via cross-space cosine similarity.
+Top-_k_ candidate graph nodes are identified and passed through an LLM reranker to confirm the anchor.
+Confirmed anchors create graph edges (`PolicySentence ──implements──→ GraphNode`), attaching the unstructured policy language to precise concepts in the compliance knowledge graph.
+Sentences that do not anchor to any graph node above a configurable confidence threshold are stored in the vector index only -- they remain available for RAG fallback in Phase 3 but do not participate in structural alignment.
+
+===== Phase 2 -- AI-Driven Policy Requirement Extraction
+
+AI reads each classified policy document and extracts *policy-level requirements* -- not loan-level field data.
+This is a distinct extraction task from the standard document processing pipeline.
+
+*What AI extracts from policy documents:*
+
+[cols="30%,35%,35%",options="header"]
+|===
+|Requirement Type |Description |Example
+
+|Thresholds and tolerances
+|Numeric limits that are stricter than the regulatory minimum
+|"Loan amount discrepancies exceeding $25 require supervisor escalation"
+
+|Procedural requirements
+|Steps or approvals mandated by the institution's procedures
+|"Rate-lock exceptions require dual sign-off from originator and branch manager within 24 hours"
+
+|Documentation requirements
+|Documents or records that must be present in the loan file
+|"Signed disclosure acknowledgment must be filed within 3 business days of application"
+
+|Exception criteria
+|Conditions under which standard procedures are overridden
+|"Manual overrides of automated underwriting require VP-level approval and written justification"
+
+|Internal escalation triggers
+|Conditions that trigger internal review or escalation
+|"Any HMDA data error rate exceeding 2% triggers a full population re-review"
+
+|Timing and deadline requirements
+|Institution-specific deadlines beyond regulatory requirements
+|"QC review must be completed within 15 days of closing"
+
+|Risk appetite parameters
+|Board-level risk tolerance statements affecting audit scope
+|"Zero tolerance for HMDA reporting errors on government-monitored loan types"
+|===
+
+Each extracted requirement carries:
+
+* A source citation (document_id, section, page, verbatim quote)
+* An extraction confidence score
+* A preliminary classification (threshold, procedural, documentation, exception, escalation, timing)
+* A *graph anchor reference* -- the ontology node(s) to which the requirement's source sentence was anchored in Phase 1, with anchoring confidence scores
+
+The graph anchor reference is critical because it links the extracted requirement to a precise concept in the compliance knowledge graph, not just to a document location.
+A requirement whose source sentence anchors strongly to a known regulatory concept (e.g., `fibo:LoanAmount` linked to `finregont:§1003.4(a)(7)`) is inherently more trustworthy than one that floats unanchored in the vector store.
+The anchoring confidence is factored into the alignment confidence in Phase 3.
+
+===== Phase 3 -- Regulation-to-Policy Alignment (Graph-First, Vector-Fallback)
+
+This is the critical step where the compliance knowledge graph acts as the structural scaffold.
+For each rule in the base Regulatory Pack, alignment proceeds in two passes: a structural graph traversal first, then a vector-based fallback only if the graph yields no result.
+
+.Graph-First Policy-to-Pack Alignment
+[mermaid]
+----
+graph TD
+  subgraph "Pass 1 — Structural Graph Traversal"
+    A["Base pack rule<br/>(e.g., hmda-loan-amount-tolerance)"] --> B["Resolve rule to<br/>ontology node(s)<br/><i>FinRegOnt § → FIBO concept<br/>→ MISMO field</i>"]
+    B --> C["Query graph for<br/>PolicySentence edges<br/>anchored to node(s)"]
+    C --> D{"Anchored policy<br/>sentences found?"}
+    D -->|Yes| E["Classify alignment<br/>from graph edges"]
+  end
+
+  subgraph "Pass 2 — Vector Fallback"
+    D -->|No| F["Generate semantic<br/>query from rule"]
+    F --> G["RAG retrieval from<br/>policy vector store"]
+    G --> H{"Policy language<br/>found?"}
+    H -->|Yes| I["Classify alignment<br/>from RAG results"]
+  end
+
+  subgraph "Gap Detection"
+    H -->|No| J["Confirmed gap<br/><i>Structural + semantic<br/>evidence of absence</i>"]
+  end
+
+  E --> K["Match / Tighten / Extend"]
+  I --> K
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style E fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style F fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style G fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style H fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style I fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style J fill:#CC4444,color:#fff,stroke:#993333
+  style K fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Pass 1 -- Structural graph traversal:* Each base pack rule maps to one or more ontology nodes via the compliance knowledge graph (e.g., rule `hmda-loan-amount-tolerance` -> `finregont:§1003.4(a)(7)` -> `fibo:LoanAmount` -> `mismo:LoanPrincipalAmount`).
+The system queries the graph for any `PolicySentence ──implements──→` edges attached to these nodes -- sentences that were anchored during Phase 1 intake.
+If anchored policy sentences exist, alignment classification proceeds directly from the structured relationship.
+This is the preferred path because it produces _structurally grounded_ alignments, not probabilistic retrieval results.
+
+*Pass 2 -- Vector fallback:* If the graph traversal finds no anchored policy sentences for a given rule's concept nodes, the system falls back to semantic search.
+A query is generated from the rule's description and regulatory citation, and RAG retrieval searches the full policy sentence vector store in Qdrant.
+Results from the fallback path carry lower alignment confidence because they lack structural grounding.
+
+*Alignment categories:*
+
+* *Match:* The policy restates or directly implements the regulatory requirement.
+No override is needed, but the policy citation is captured in the `policy_to_regulation_traceability` array for exam defensibility.
+* *Tightening:* The policy imposes a stricter threshold or higher severity than the regulation requires.
+A `threshold_override` entry is generated.
+* *Extension:* The policy adds requirements that go beyond the scope of the base pack rule (e.g., additional approval steps, documentation checks).
+A `supplemental_rule` or `procedural_checkpoint` entry is generated.
+* *Gap:* Neither structural traversal nor vector fallback found corresponding policy language.
+A `gap_analysis` entry is generated with the full graph path that was inspected -- which regulatory concept was checked, which FIBO/MISMO nodes were traversed, and what the search yielded.
+This dual-pass failure constitutes _evidence of absence_, not just _absence of evidence_, because the graph provides structural completeness: the system knows every regulatory concept that should have coverage.
+
+[[sect-alignment-confidence]]
+*Alignment confidence:* Each alignment carries a composite confidence score incorporating four signals:
+
+[cols="30%,15%,55%",options="header"]
+|===
+|Signal |Weight |Description
+
+|Graph anchor strength
+|0.35
+|Cosine similarity between the policy sentence embedding and the ontology node embedding at anchoring time.
+Higher values indicate the sentence is semantically close to the formal concept.
+
+|LLM reranker confirmation
+|0.25
+|Confidence from the LLM reranker that confirmed the anchor in Phase 1.
+Measures whether the sentence genuinely addresses the regulatory concept, not just superficially resembles it.
+
+|Structural distance
+|0.20
+|Inverse of the hop count between the regulation node (the pack rule's origin) and the anchored concept node in the graph.
+Direct matches (zero hops) score 1.0; multi-hop traversals decay.
+
+|Semantic similarity (RAG)
+|0.20
+|Cosine similarity from the vector store retrieval.
+For Pass 1 (graph-resolved) alignments, this signal is computed but weighted lower.
+For Pass 2 (fallback) alignments, this is the primary signal.
+|===
+
+Low-confidence alignments (composite score < 0.70) are flagged for mandatory human review in Phase 5.
+
+Additionally, AI performs an *unanchored scan* -- searching for policy sentences that were embedded but did not anchor to any graph node above the confidence threshold.
+These become candidate supplemental rules with no regulatory anchor, classified as `beyond_regulatory_scope` in the traceability mapping.
+
+===== Phase 4 -- Draft Profile Generation
+
+AI assembles the structured draft Institution Policy Profile from the Phase 2 and Phase 3 outputs:
+
+* `policy_document_registry` -- populated from Phase 1 classification
+* `threshold_overrides` -- generated from Phase 3 tightenings
+* `supplemental_rules` -- generated from Phase 2 extensions and Phase 3 unanchored findings
+* `procedural_checkpoints` -- generated from Phase 2 procedural/documentation/timing requirements
+* `policy_to_regulation_traceability` -- generated from Phase 3 alignments
+* `gap_analysis` -- generated from Phase 3 gaps
+
+Every entry is tagged with `ai_suggested: true` and `approved: false`.
+No AI-generated entry becomes effective until a human sets `approved: true`.
+
+===== Phase 5 -- Human Review and Approval
+
+The draft profile is reviewed jointly by a RiskExec compliance expert and the institution's compliance officer.
+
+.Human Review Workflow
+[mermaid]
+----
+graph TD
+  A["Draft profile<br/>presented to reviewers"] --> B["Review threshold<br/>overrides"]
+  B --> C["Review supplemental<br/>rules"]
+  C --> D["Review procedural<br/>checkpoints"]
+  D --> E["Review gap<br/>analysis findings"]
+  E --> F{"All entries<br/>reviewed?"}
+  F -->|No| B
+  F -->|Yes| G{"All approved<br/>or rejected?"}
+  G -->|Low-confidence items remain| H["Re-submit to AI<br/>with reviewer feedback"]
+  H --> B
+  G -->|Yes| I["Dual approval<br/>(RiskExec + Institution)"]
+  I --> J["Profile published"]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style C fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style D fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style E fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style F fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style G fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style H fill:#7B3FA0,color:#fff,stroke:#5A2D78
+  style I fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style J fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Review actions per entry:*
+
+* *Accept:* Entry is correct as generated.
+Reviewer sets `approved: true`.
+* *Modify:* Entry is directionally correct but needs adjustment (e.g., AI extracted the wrong threshold value).
+Reviewer edits the entry and sets `approved: true`.
+* *Reject:* Entry is incorrect or irrelevant.
+Entry is removed from the profile.
+* *Escalate:* Entry requires further analysis -- the reviewer is unsure whether the policy language supports the AI's interpretation.
+Entry is flagged for deeper review.
+
+*Mandatory review triggers:*
+
+* Any entry with extraction confidence < 0.70
+* Any threshold override that changes severity from informational/low to high/critical
+* Any supplemental rule with `comparison_type: expression` (CEL-based)
+* All gap analysis findings (gaps require institution acknowledgment)
+
+*Dual approval requirement:* The profile requires approval from both a RiskExec compliance expert (validates regulatory accuracy) and an institution compliance officer (validates policy interpretation).
+Neither party alone can publish the profile.
+
+===== Phase 6 -- Ongoing Policy Change Detection
+
+When an institution updates its policies or procedures, the profile must be re-evaluated.
+
+* The institution uploads the updated policy documents.
+* AI performs a diff analysis against the prior version of the policy documents.
+* AI identifies which profile entries are affected by the policy changes.
+* A draft profile update is generated containing only the deltas -- new overrides, modified thresholds, removed entries.
+* The update goes through the same human review and dual approval process.
+* The profile version is incremented (MINOR for additions/tightenings, MAJOR for structural changes).
+
+*Trigger: Base pack update.*
+When RiskExec publishes a new version of the base Regulatory Pack, all Institution Policy Profiles linked to that pack are automatically flagged for re-validation.
+The AI pipeline re-runs Phase 3 (alignment) against the new pack rules and generates a delta report.
+
+[[sect-training-data-bootstrap]]
+==== Training Data Bootstrapping from the Graph
+
+The domain-fine-tuned sentence transformer (see <<sect-embedding-domain-finetuning>>) requires training pairs that teach the model how compliance language clusters.
+The compliance knowledge graph generates its own training signal, creating a self-improving loop.
+
+===== Pair Generation Strategy
+
+[cols="20%,40%,40%",options="header"]
+|===
+|Pair Type |Construction |Example
+
+|Positive (same concept)
+|Two sentences anchored to the same graph node -- one from a regulation, one from a policy.
+The model learns that these sentences, despite different surface language, address the same compliance concept.
+|Regulation: "The loan amount reported shall be verified against the closing disclosure within a tolerance of $50." +
+Policy: "Loan principal discrepancies exceeding $25 require supervisor escalation." +
+Label: same_concept
+
+|Negative (different concept)
+|Two sentences anchored to different graph nodes.
+The model learns that superficial similarity (both mention loans, both mention dates) does not imply conceptual equivalence.
+|Regulation: "Action taken date must be reported within 30 calendar days." +
+Policy: "QC review must be completed within 15 business days of closing." +
+Label: different_concept
+
+|Hard negative (same domain, different obligation)
+|Sentences anchored to sibling nodes in the ontology (e.g., two different HMDA fields under the same CFR section).
+These are the most valuable training pairs because they force the model to distinguish between closely related but distinct compliance obligations.
+|Regulation: "The applicant's ethnicity shall be reported as observed or stated." +
+Policy: "Demographic data collection follows applicant self-identification procedures for race." +
+Label: different_concept (ethnicity != race in HMDA)
+|===
+
+===== Self-Improving Loop
+
+As more institution policy documents are processed through the pipeline, the graph accumulates more anchored sentences.
+Each new anchoring event generates additional training pairs.
+The fine-tuning cycle operates as follows:
+
+. *Accumulate:* Policy documents from multiple institutions are processed; graph anchoring edges accumulate.
+. *Extract pairs:* Positive pairs from same-node anchors; negative and hard-negative pairs from different-node anchors within the same regulatory domain.
+. *Fine-tune:* When the training corpus reaches a minimum threshold (>=500 labeled pairs -- aligned with the calibration thresholds in <<sect-scoring-framework>>), the sentence transformer is fine-tuned and a new version is registered in the Model Registry.
+. *Re-anchor:* Optionally, existing policy sentences are re-embedded with the improved model and re-anchored, improving alignment quality for previously processed institutions.
+. *Repeat:* Each cycle produces a model that anchors more accurately, which generates higher-quality training pairs for the next cycle.
+
+*Cold-start strategy:* Before the system has processed enough institution documents to generate 500 training pairs, the sentence transformer operates with a warm-start fine-tune on publicly available regulatory text (CFR corpus, FFIEC examination procedures, published consent orders).
+This provides baseline deontic and threshold sensitivity while the institution-specific training signal accumulates.
+
+[[sect-effective-rule-merge]]
+==== Effective Rule Set -- Merge Logic
+
+The Effective Rule Set is computed deterministically at audit-instance creation time by merging the base Regulatory Pack with the Institution Policy Profile.
+
+.Effective Rule Set Merge Algorithm
+[mermaid]
+----
+graph TD
+  A["Load base Regulatory Pack<br/>(pack_id, pack_version)"] --> B["Load Institution Policy Profile<br/>(profile_id, profile_version)"]
+  B --> C["Validate profile compatibility<br/>(base_pack_version_constraint)"]
+  C --> D["Apply threshold overrides<br/><i>Only tightenings allowed</i>"]
+  D --> E["Inject supplemental rules<br/><i>Prefixed with 'policy-'</i>"]
+  E --> F["Inject procedural checkpoints<br/><i>Verification methods assigned</i>"]
+  F --> G["Tag all rules with origin<br/><i>regulatory | policy_tightened | policy_supplemental</i>"]
+  G --> H["Freeze Effective Rule Set<br/><i>Immutable for audit run duration</i>"]
+
+  style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style B fill:#8B5E3C,color:#fff,stroke:#5C3A1E
+  style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+  style D fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style E fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style F fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style G fill:#2E8B57,color:#fff,stroke:#1B5E3B
+  style H fill:#2E8B57,color:#fff,stroke:#1B5E3B
+----
+
+*Merge rules:*
+
+. *Threshold overrides are applied in one direction only.*
+A policy profile can reduce a tolerance (e.g., $50 -> $25), escalate a severity (e.g., medium -> high), or raise a confidence threshold.
+It cannot widen a tolerance, downgrade a severity, or lower a confidence threshold.
+If a profile attempts to weaken a regulatory rule, the merge rejects the override and logs a validation error.
+. *Supplemental rules are injected alongside base pack rules.*
+Supplemental rule IDs are prefixed with `policy-` to distinguish them from regulatory rules in findings and reports.
+Supplemental rules are executed by the same rule engine with the same confidence propagation model.
+. *Procedural checkpoints are injected as a distinct rule category.*
+Checkpoints may use `ai_document_detection` (the AI pipeline checks for the presence of a required document), `field_check` (deterministic field comparison), or `manual_attestation` (requires human attestation during the audit).
+. *Every rule in the Effective Rule Set is tagged with its origin:*
+* `regulatory` -- rule from the base pack, unmodified
+* `policy_tightened` -- base pack rule with a policy-driven threshold override
+* `policy_supplemental` -- supplemental rule from the policy profile
+* `procedural_checkpoint` -- procedural checkpoint from the policy profile
+. *The Effective Rule Set is immutable for the duration of the audit run.*
+If either the pack or the profile is updated mid-audit, the running audit continues with the original Effective Rule Set.
+New audit runs pick up the latest versions.
+
+*Finding attribution:* Every finding produced by the audit engine includes an `origin` field indicating whether it was triggered by a regulatory rule, a policy-tightened rule, a policy-supplemental rule, or a procedural checkpoint.
+This allows examiners to clearly distinguish regulatory violations from policy adherence issues in the exam-ready bundle.

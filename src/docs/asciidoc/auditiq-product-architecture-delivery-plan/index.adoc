@@ -2,7 +2,7 @@
 :subtitle: RiskExec — Comprehensive Specification v0.30
 :doctype: book
 :author: Erik Pieczkowski
-:revnumber: 0.32
+:revnumber: 0.33
 :revdate: 2026-03-07
 :build-timestamp: local build
 :toc:
@@ -51,22 +51,10 @@ include::architecture-overview/index.adoc[]
 include::component-level-design/index.adoc[]
 
 // ============================================================
-// Part V: Specifications
+// Part V: AI & Governance
 // ============================================================
 
-= Part V: Specifications
-
-include::audit-pack-specification/index.adoc[]
-
-include::regulatory-compliance-and-policy-management/index.adoc[]
-
-include::exam-ready-bundle-specification/index.adoc[]
-
-// ============================================================
-// Part VI: AI & Governance
-// ============================================================
-
-= Part VI: AI & Governance
+= Part V: AI & Governance
 
 include::ai-governance-and-model-risk-controls/index.adoc[]
 
@@ -79,10 +67,10 @@ include::docling-graph-integration/index.adoc[]
 include::immutability-vs-correctability/index.adoc[]
 
 // ============================================================
-// Part VII: Delivery & Business
+// Part VI: Delivery & Business
 // ============================================================
 
-= Part VII: Delivery & Business
+= Part VI: Delivery & Business
 
 include::pricing-and-packaging/index.adoc[]
 
@@ -95,10 +83,10 @@ include::risks-constraints-and-mitigations/index.adoc[]
 include::future-roadmap/index.adoc[]
 
 // ============================================================
-// Part VIII: Reference
+// Part VII: Reference
 // ============================================================
 
-= Part VIII: Reference
+= Part VII: Reference
 
 include::competitive-intelligence/index.adoc[]
 

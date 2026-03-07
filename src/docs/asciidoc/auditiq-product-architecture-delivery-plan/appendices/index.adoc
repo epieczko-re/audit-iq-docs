@@ -688,3 +688,655 @@ Attachments:
 . Internal Competitive Pricing Study — Proprietary pricing intelligence (~141 customers)
 
 '''
+
+[[sect-appendix-hmda-field-coverage]]
+=== Appendix F: HMDA Origination Pack — Field Coverage Matrix
+
+This section specifies the complete field-by-field coverage for the HMDA Origination QC pack (MVP).
+The HMDA LAR schema defines ~80 data points per the MISMO-aligned HMDA Reporting Dataset.
+Each field is mapped to its source document(s), comparison type, target confidence, and phase availability.
+
+[[sect-37-key-data-fields]]
+==== 37 Key Data Fields
+
+The FFIEC designates 37 of the ~80 HMDA LAR fields as *Key Data Fields* — the fields examiners scrutinize first and that trigger resubmission orders when error rates exceed 5% (see <<sect-concept-of-operations, Two-Stage Testing Model>>).
+The HMDA audit pack tags these fields with `key_data_field: true` in the target schema.
+Stage 1 error rate tracking (FR-4.7) counts discrepancies only against Key Data Fields.
+
+The 37 Key Data Fields span all categories in the coverage matrix below.
+In the Detailed Field Matrix tables, Key Data Fields are marked with *[K]* in the HMDA Field column.
+
+*Key Data Fields by category:*
+
+* *Borrower/Co-Borrower (8):* Borrower Name, Co-Borrower Name, Borrower Age, Borrower Race, Borrower Ethnicity, Borrower Sex, Borrower Income, Borrower Credit Score
+* *Loan Information (10):* Loan Amount, Loan Type, Loan Purpose, Interest Rate, Rate Spread, Loan Term, Lien Status, Amortization Type, Total Loan Costs, Origination Charges
+* *Property Information (5):* Property Address, Property Value, Property Type, Census Tract, County Code
+* *Action Taken / Disposition (4):* Action Taken, Action Taken Date, Denial Reason(s), Application Date
+* *Pricing Information (6):* Total Points and Fees, APR, HOEPA Status, Mortgage Insurance Premium, Negative Amortization, Balloon Payment
+* *Other (4):* Preapproval, Occupancy Type, Construction Method, Introductory Rate Period
+
+==== Coverage Summary
+
+[cols="25%,15%,15%,15%,15%,15%",options="header"]
+|===
+|Category |Total Fields |Phase 1 (CD) |Phase 1 (LOS) |Phase 2 (URLA+) |Manual Only
+
+|Borrower/Co-Borrower Information
+|12
+|3
+|9
+|8
+|1
+
+|Property Information
+|8
+|2
+|6
+|5
+|0
+
+|Loan Information
+|15
+|6
+|10
+|12
+|0
+
+|Action Taken / Disposition
+|5
+|0
+|5
+|3
+|0
+
+|Pricing Information
+|10
+|4
+|6
+|8
+|0
+
+|HOEPA / High-Cost Indicators
+|4
+|1
+|3
+|2
+|0
+
+|Demographic / ECOA
+|14
+|0
+|2
+|10
+|6
+
+|Geographic / Census
+|8
+|1
+|7
+|3
+|0
+
+|Application / Preapproval
+|4
+|0
+|4
+|4
+|0
+
+|*TOTAL*
+|*~80*
+|*~17*
+|*~52*
+|*~55*
+|*~7*
+|===
+
+*Phase 1 coverage reality:* The Closing Disclosure provides reliable extraction for ~17 fields (~21% of HMDA LAR).
+The LOS structured data export (record-to-record) covers ~52 fields (~65%) with extraction confidence = 1.0.
+Combined Phase 1 coverage is ~60 fields (~75%) through the combination of CD extraction and LOS data.
+Phase 2 adds URLA/1003 and appraisal extraction, bringing coverage to ~90%.
+~7 fields (primarily demographic/ECOA) require manual entry due to privacy restrictions and regulatory constraints.
+
+==== Detailed Field Matrix
+
+*Borrower / Co-Borrower Information:*
+
+[cols="20%,15%,15%,10%,10%,15%,15%",options="header"]
+|===
+|HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
+
+|*[K]* Borrower Name
+|`BorrowerFullName`
+|CD, URLA
+|1 (CD)
+|exact_match (fuzzy)
+|≥0.90
+|High
+
+|*[K]* Co-Borrower Name
+|`CoBorrowerFullName`
+|CD, URLA
+|1 (CD)
+|exact_match (fuzzy)
+|≥0.85
+|High
+
+|*[K]* Borrower Age
+|`BorrowerAge`
+|URLA
+|2
+|exact_match
+|≥0.85
+|Medium
+
+|*[K]* Borrower Race (collected)
+|`BorrowerRaceType`
+|URLA, GMI
+|2
+|lookup
+|N/A (manual)
+|Medium
+
+|*[K]* Borrower Ethnicity (collected)
+|`BorrowerEthnicityType`
+|URLA, GMI
+|2
+|lookup
+|N/A (manual)
+|Medium
+
+|*[K]* Borrower Sex (collected)
+|`BorrowerSexType`
+|URLA, GMI
+|2
+|lookup
+|N/A (manual)
+|Medium
+
+|*[K]* Borrower Income
+|`BorrowerTotalMonthlyIncome`
+|URLA, pay stubs
+|2
+|tolerance_percentage (5%)
+|≥0.80
+|High
+
+|*[K]* Borrower Credit Score
+|`BorrowerCreditScore`
+|Credit report, LOS
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|Medium
+
+|Co-Borrower Credit Score
+|`CoBorrowerCreditScore`
+|Credit report, LOS
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|Medium
+
+|Credit Score Model
+|`CreditScoreModelType`
+|LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Low
+
+|Borrower Debt-to-Income
+|`BorrowerDTIRatio`
+|URLA, LOS
+|1 (LOS)
+|tolerance_percentage (2%)
+|1.0 (structured)
+|Medium
+
+|Number of Borrowers
+|`TotalBorrowerCount`
+|LOS
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|Low
+|===
+
+*Loan Information:*
+
+[cols="20%,15%,15%,10%,10%,15%,15%",options="header"]
+|===
+|HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
+
+|*[K]* Loan Amount
+|`LoanAmount`
+|CD, LE, URLA, LOS
+|1 (CD+LOS)
+|multi_doc_corroboration
+|≥0.92
+|Critical
+
+|*[K]* Loan Type
+|`MortgageLoanType`
+|CD, LOS
+|1 (CD)
+|lookup
+|≥0.90
+|Critical
+
+|*[K]* Loan Purpose
+|`LoanPurposeType`
+|CD, URLA, LOS
+|1 (CD)
+|lookup
+|≥0.90
+|Critical
+
+|*[K]* Interest Rate
+|`NoteRatePercent`
+|CD, LOS
+|1 (CD)
+|tolerance_percentage (0.125%)
+|≥0.88
+|High
+
+|*[K]* Rate Spread
+|`RateSpread`
+|LOS
+|1 (LOS)
+|cross_field (computed)
+|1.0 (structured)
+|High
+
+|*[K]* Loan Term
+|`LoanTermMonths`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.88
+|Medium
+
+|*[K]* Introductory Rate Period
+|`IntroductoryRatePeriodMonths`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.85
+|Medium
+
+|*[K]* Lien Status
+|`LienStatusType`
+|Title, LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|High
+
+|*[K]* Amortization Type
+|`AmortizationType`
+|CD, LOS
+|1 (CD)
+|lookup
+|≥0.88
+|Medium
+
+|Prepayment Penalty Term
+|`PrepaymentPenaltyTermMonths`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.85
+|Medium
+
+|Non-Amortizing Features
+|`NonAmortizingFeatureType`
+|CD, LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Medium
+
+|*[K]* Total Loan Costs
+|`TotalLoanCosts`
+|CD
+|1 (CD)
+|tolerance_absolute ($50)
+|≥0.85
+|High
+
+|*[K]* Origination Charges
+|`OriginationCharges`
+|CD
+|1 (CD)
+|tolerance_absolute ($25)
+|≥0.85
+|High
+
+|Discount Points
+|`DiscountPointsAmount`
+|CD
+|1 (CD)
+|tolerance_absolute ($10)
+|≥0.85
+|Medium
+
+|Lender Credits
+|`LenderCreditsAmount`
+|CD
+|1 (CD)
+|tolerance_absolute ($10)
+|≥0.85
+|Medium
+|===
+
+*Property Information:*
+
+[cols="20%,15%,15%,10%,10%,15%,15%",options="header"]
+|===
+|HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
+
+|*[K]* Property Address
+|`PropertyAddress`
+|CD, appraisal, LOS
+|1 (CD)
+|exact_match (fuzzy + normalized)
+|≥0.85
+|High
+
+|*[K]* Property Value
+|`PropertyValuationAmount`
+|Appraisal, LOS
+|2 (appraisal)
+|tolerance_percentage (1%)
+|≥0.85
+|High
+
+|*[K]* Property Type
+|`PropertyType`
+|LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|High
+
+|*[K]* Construction Method
+|`ConstructionMethodType`
+|LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Medium
+
+|*[K]* Occupancy Type
+|`OccupancyType`
+|URLA, LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Medium
+
+|Manufactured Home Type
+|`ManufacturedHomeType`
+|LOS
+|1 (LOS)
+|lookup (conditional)
+|1.0 (structured)
+|Medium
+
+|*[K]* Census Tract
+|`CensusTractIdentifier`
+|LOS, geocoding
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|Critical
+
+|*[K]* County Code
+|`CountyFIPSCode`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.85
+|High
+|===
+
+*Action Taken / Disposition:*
+
+[cols="20%,15%,15%,10%,10%,15%,15%",options="header"]
+|===
+|HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
+
+|*[K]* Action Taken
+|`ActionTakenType`
+|LOS
+|1 (LOS)
+|lookup (enum 1–8)
+|1.0 (structured)
+|Critical
+
+|*[K]* Action Taken Date
+|`ActionTakenDate`
+|LOS
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|High
+
+|*[K]* Denial Reason(s)
+|`DenialReasonType`
+|LOS, denial letter
+|1 (LOS)
+|lookup (conditional)
+|1.0 (structured)
+|High
+
+|*[K]* Application Date
+|`ApplicationDate`
+|LOS
+|1 (LOS)
+|exact_match
+|1.0 (structured)
+|Medium
+
+|*[K]* Preapproval
+|`PreapprovalType`
+|LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Medium
+|===
+
+*Pricing Information:*
+
+[cols="20%,15%,15%,10%,10%,15%,15%",options="header"]
+|===
+|HMDA Field |MISMO Name |Source Doc(s) |Phase |Rule Type |AFC Target |Severity
+
+|*[K]* Total Points and Fees
+|`TotalPointsAndFees`
+|CD, LOS
+|1 (CD)
+|tolerance_absolute ($50)
+|≥0.85
+|High
+
+|*[K]* APR
+|`APR`
+|CD, TIL
+|1 (CD)
+|tolerance_percentage (0.125%)
+|≥0.88
+|Critical
+
+|*[K]* HOEPA Status
+|`HOEPAStatusType`
+|CD, LOS
+|1 (CD)
+|expression (computed from APR + points/fees thresholds)
+|≥0.85
+|Critical
+
+|*[K]* Mortgage Insurance Premium
+|`MortgageInsurancePremium`
+|CD
+|1 (CD)
+|tolerance_absolute ($25)
+|≥0.85
+|Medium
+
+|Mortgage Insurance Type
+|`MortgageInsuranceType`
+|CD, LOS
+|1 (LOS)
+|lookup (conditional on loan type)
+|1.0 (structured)
+|Medium
+
+|Penalty Interest Rate
+|`PenaltyInterestRate`
+|CD, LOS
+|1 (CD)
+|tolerance_percentage (0.25%)
+|≥0.85
+|Medium
+
+|*[K]* Balloon Payment
+|`BalloonPaymentIndicator`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.88
+|Medium
+
+|Interest-Only Payment
+|`InterestOnlyPaymentIndicator`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.88
+|Medium
+
+|*[K]* Negative Amortization
+|`NegativeAmortizationIndicator`
+|CD, LOS
+|1 (CD)
+|exact_match
+|≥0.88
+|High
+
+|Other Non-Amortizing Features
+|`OtherNonAmortizingFeatures`
+|CD, LOS
+|1 (LOS)
+|lookup
+|1.0 (structured)
+|Medium
+|===
+
+==== Known Gaps and Mitigations
+
+[cols="30%,30%,40%",options="header"]
+|===
+|Gap |Affected Fields |Mitigation
+
+|Demographic data (race, ethnicity, sex) requires manual entry due to privacy constraints
+|BorrowerRaceType, BorrowerEthnicityType, BorrowerSexType, CoBorrower equivalents, and visual observation fields
+|These fields are flagged as `manual_entry_required` in the pack.
+The UI presents a dedicated demographic data entry screen.
+No AI extraction is attempted.
+
+|Closing Disclosure covers only ~21% of HMDA fields
+|See Phase column in matrices above
+|Phase 1 combines CD extraction (~17 fields) with LOS structured data (~52 fields) for ~75% automated coverage.
+Phase 2 adds URLA/1003 for ~90% coverage.
+The pack's coverage matrix explicitly labels each field's phase availability.
+
+|Address fuzzy matching can produce false positives
+|PropertyAddress, BorrowerMailingAddress
+|Address normalization service (USPS CASS-certified) standardizes addresses before comparison.
+Fuzzy match threshold set conservatively (≥0.90 similarity required for auto-accept).
+
+|HOEPA status is a computed field requiring APR and points/fees calculations
+|HOEPAStatusType
+|CEL expression computes HOEPA status from extracted APR and points/fees values.
+Because this is a derived comparison, confidence is the minimum of all input field confidences.
+
+|Census tract requires geocoding, not document extraction
+|CensusTractIdentifier
+|Census tract is validated against LOS structured data.
+If LOS data is unavailable, geocoding service derives census tract from property address with a separate confidence score.
+|===
+
+==== Multi-Document Corroboration Map
+
+The following Key Data Fields appear on multiple source documents and use `multi_doc_corroboration` rules or benefit from cross-document consistency checking.
+Fields validated against multiple sources produce higher confidence scores (see <<sect-multi-doc-corroboration>>).
+
+[cols="20%,30%,15%,35%",options="header"]
+|===
+|HMDA Field |Source Documents |Min Sources |Corroboration Notes
+
+|Loan Amount
+|CD, LE, URLA, LOS
+|2
+|Core corroboration field; tolerance ±$0.50; all four sources must agree within tolerance
+
+|Interest Rate
+|CD, LOS
+|2
+|CD extracted rate vs. LOS structured rate; tolerance ±0.125%
+
+|Property Address
+|CD, Appraisal, LOS
+|2
+|Fuzzy match with USPS CASS normalization; address standardization before comparison
+
+|Loan Type
+|CD, LOS
+|2
+|Lookup validation on both sources; must agree exactly
+
+|Loan Purpose
+|CD, URLA, LOS
+|2
+|Lookup validation; CD and URLA both carry this field
+
+|Total Loan Costs
+|CD
+|1
+|Single-source (CD only); no corroboration available in Phase 1
+
+|Borrower Name
+|CD, URLA
+|2
+|Fuzzy match; name formatting variations expected (middle name, suffix)
+
+|APR
+|CD, TIL
+|1
+|CD is primary source; TIL as corroboration when available
+
+|Total Points and Fees
+|CD, LOS
+|2
+|CD extracted vs. LOS structured; tolerance ±$50
+|===
+
+*Coverage note:* In Phase 1, multi-doc corroboration is available for ~8 fields where CD extraction overlaps with LOS structured data.
+Phase 2 (URLA/1003 extraction) expands corroboration to ~20 fields.
+Fields with only one available source rely solely on extraction confidence (AFC) without cross-document validation.
+
+==== Cross-References
+
+* *<<sect-key-concepts>>:* Audit Packs as the "Brain" Plugin Model; Target vs. Source Schema Definitions; Three-Layer Confidence Scoring
+* *<<sect-scoring-framework>>:* Confidence scoring layers, severity definitions, and routing thresholds
+* *<<sect-decision-d4>>:* Decision D4 — original locked decision for declarative JSON v1
+* *<<sect-decision-d6>>:* Decision D6 — MISMO Reference Model as canonical data schema
+* *<<sect-docling-graph>>:* Docling-Graph integration and Pydantic template requirements for packs
+* *<<sect-immutability>>:* Immutability semantics for pack versions — published packs are immutable
+* *<<sect-exam-ready-bundle>>:* Exam-ready bundle includes pack configuration snapshot
+* *<<sect-appendices>>:* Appendix B — full example HMDA pack manifest JSON
+
+'''

@@ -456,6 +456,35 @@ Shows bundle version chain, current coverage, approval status, and integrity ver
 * *[Email Bundle]* opens email composition with bundle attached (requires confirmation)
 * Bundle cannot be generated if any AI narratives are unapproved or Critical findings are untriaged
 
+[[sect-bundle-versioning-lifecycle]]
+====== Bundle Versioning & Lifecycle
+
+The exam pack is created when the audit enters `InProgress` state and updated on every material event.
+Each update produces a new bundle version linked to its predecessor, forming an auditable version chain.
+
+*Version triggers (automatic):*
+
+* Finding created, closed, reopened, or escalated
+* Evidence superseded or new evidence attached
+* Approval recorded by any line of defense
+* Corrective action completed or verified
+* Sampling methodology updated
+
+*Version semantics:*
+
+* *Major version (v1 -> v2):* Structural changes -- new findings added, findings reopened, approval status changed
+* *Minor version (v1.0 -> v1.1):* Metadata updates -- corrective action progress, evidence additions, narrative edits
+
+*Bundle state machine:*
+
+* *Draft:* Bundle created at audit start; updated continuously as findings and evidence accumulate
+* *Review:* Manager initiates bundle review; integrity checks run automatically
+* *Approved:* All required approvals collected; bundle locked for export
+* *Exported:* Bundle downloaded or transmitted to examiner; hash recorded
+* *Superseded:* New version created after post-export changes; previous version preserved in version chain
+
+See <<sect-exam-ready-bundle>> for the complete exam-ready bundle specification.
+
 '''
 
 [[wf-findings-register]]
