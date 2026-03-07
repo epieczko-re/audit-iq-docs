@@ -981,6 +981,13 @@ CREATE INDEX idx_users_role ON users(tenant_id, role);
 *Consuming screens (<<sect-workflow-screen-guide>>):* <<wf-audit-dashboard, WF-01 Audit Dashboard>> (all audits with status badges, progress metrics, and quick actions) | <<wf-audit-config, WF-02 Audit Configuration>> (create audit run with pack selection and parameter configuration) | <<wf-audit-progress, WF-03 Audit Progress Monitor>> (real-time phase progress driven by orchestration state transitions)
 ****
 
+The Audit Orchestration Service is the central coordinator for every audit run in AuditIQ.
+It owns the authoritative state machine that governs an audit's progression from creation through ingestion, validation, comparison, review, and finalization.
+No other service may advance or roll back an audit's state — all transitions flow through the Orchestration Service, which validates preconditions, enforces tenant concurrency limits, and emits an event for every state change.
+
+By centralizing lifecycle control in a single service, AuditIQ gains a consistent, auditable record of how each audit progressed, a single place to enforce business rules (such as requiring second-level review before finalization), and a clean coordination point for the downstream services — <<sect-ingestion-service, Ingestion>>, <<sect-doc-processing, Document Processing>>, <<sect-comparison-engine, Comparison & Rules Engine>>, and <<sect-reporting-service, Reporting>> — that perform the actual audit work.
+The subsections below define the state machine transitions, GraphQL API contract, pack-loading semantics, concurrency limits, failure-handling policies, and event emission contract that together specify the service's behaviour.
+
 *Responsibilities:*
 
 * Manage the complete audit lifecycle from creation to finalization
