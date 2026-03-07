@@ -790,9 +790,21 @@ sequenceDiagram
 
 ==== Developer Context
 
-*Services:* Normalization Engine, Comparison & Rules Engine, LLM Integration (LiteLLM/Mistral), Findings Management Service, Provenance Logger.
-*Data flow:* Approved mappings + pack rules → Normalization → Comparison Engine → findings → LLM narrative → review queue → effective challenge → approved findings.
-*AI governance:* 3 required disclaimers per AI output; 21-field provenance schema per AI call; PII redaction before all LLM calls.
-*Architecture detail:* See the Architecture section above for component details, data flows, and API contracts.
+[cols="1h,3a", options="header"]
+|===
+| Aspect | Detail
+
+| Services
+| Normalization Engine, Comparison & Rules Engine, LLM Integration (LiteLLM/Mistral), Findings Management Service, Provenance Logger.
+
+| Data flow
+| Approved mappings + pack rules → Normalization → Comparison Engine → findings → LLM narrative → review queue → effective challenge → approved findings.
+
+| AI governance
+| 3 required disclaimers per AI output; 21-field provenance schema per AI call; PII redaction before all LLM calls.
+
+| Architecture detail
+| See the Architecture section above for component details, data flows, and API contracts.
+|===
 
 '''

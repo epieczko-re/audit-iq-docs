@@ -361,7 +361,15 @@ Dashboard functional requirements are captured in FR-8.10 under <<_epic_8_report
 
 ==== Developer Context
 
-*Services:* Reporting Service (analytics queries), PostgreSQL (materialized views for KPIs).
-*Architecture detail:* Dashboard data sourced from audit trail events via aggregation queries; tenant-isolated via RLS.
+[cols="1h,3a", options="header"]
+|===
+| Aspect | Detail
+
+| Services
+| Reporting Service (analytics queries), PostgreSQL (materialized views for KPIs).
+
+| Architecture detail
+| Dashboard data sourced from audit trail events via aggregation queries; tenant-isolated via RLS.
+|===
 
 '''
