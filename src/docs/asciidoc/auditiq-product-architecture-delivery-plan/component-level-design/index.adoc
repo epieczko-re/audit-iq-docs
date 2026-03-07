@@ -897,6 +897,173 @@ interface FindingOutput {
 *Determinism:* Fully deterministic.
 Same inputs → same findings.
 
+[[sect-scoring-framework]]
+=== Confidence & Severity Scoring
+
+The Scoring component sits in the Intelligence Layer and combines signals from the Comparison & Rules Engine, Document Processing (AFC), and Schema Mapping into per-finding confidence and severity scores.
+It feeds combined confidence back to <<sect-findings-management, Findings Management>> for routing and lifecycle decisions.
+
+[[sect-confidence-scoring]]
+==== Confidence Scoring (Three Layers)
+
+Every finding carries three independent confidence measures, each produced by a different upstream component:
+
+*Layer 1: Mapping Confidence*
+
+* Measures: How confident is the system that target field X corresponds to source field Y?
+* Inputs: Field name similarity, data type compatibility, historical acceptance, value distribution
+* Range: 0.0–1.0
+* Formula (v1): `0.30 * name_similarity + 0.25 * synonym_match + 0.20 * type_compat + 0.15 * doc_section_context + 0.10 * historical_acceptance` (5-signal hybrid heuristic; see <<sect-schema-mapping-service>> for full specification and <<sect-two-layer-confidence, Two-Layer Confidence Design>> for calibrated scoring)
+* Computed by: Schema Mapping Service during mapping phase
+* Immutable: No, can be corrected via new mapping approval
+
+*Layer 2: Extraction Confidence*
+
+* Measures: How confident is the system that the extracted value from a source document is correct?
+* Inputs: OCR engine quality, layout complexity, document page tier, model version
+* Range: 0.0–1.0
+* Determinant: AuditIQ Field Confidence (AFC) composite score — see <<sect-doc-processing, Document Processing>> for the six-signal formula
+* Computed by: Document Processing Service
+* Immutable: No (extraction confidence is metadata on extracted values, not a state change)
+
+*Layer 3: Rule Application Confidence*
+
+* Measures: How confident is the system that a validation rule correctly applies to this specific data context?
+* Inputs: Precondition satisfaction, data quality, rule specificity, normalization success
+* Range: 0.0–1.0
+* Formula (v1): `base_confidence = pack_rule_definition.confidence   if precondition_not_satisfied:     rule_confidence *= 0.7 (reduced due to uncertain context)   if normalization_failed:     rule_confidence *= 0.5 (values may not be comparable)   return max(0.0, min(1.0, rule_confidence))`
+* Computed by: Comparison & Rules Engine
+* Immutable: No (metadata on finding, not a state change)
+
+*Combined Confidence Formula:*
+
+....
+combined_confidence = min(
+  mapping_confidence,
+  extraction_confidence (if applicable, else 1.0),
+  rule_confidence
+)
+....
+
+NOTE: The `min()` formula is a conservative gate used at the *finding* level.
+The Schema Mapping Service uses a separate <<sect-two-layer-confidence, Two-Layer Confidence Design>> with calibrated logistic regression for *mapping-specific* routing decisions.
+Both feed into the finding's overall confidence score.
+
+*Interpretation and routing thresholds:* See <<sect-glossary, Canonical Glossary — Routing Thresholds>> for the authoritative threshold bands (≥0.85 auto-confirm, 0.50–0.84 human review, <0.50 reject) and <<sect-glossary, UI Confidence Badge Colors>>.
+
+==== Severity Scoring (Pack-Defined)
+
+*Severity defines regulatory importance, not system confidence.
+Orthogonal to confidence.*
+
+For the canonical severity definitions table (Critical, High, Medium, Low, Informational) with examples, required actions, and review timelines, see <<sect-glossary, Canonical Glossary — Severity Definitions>>.
+
+*Severity is assigned by:* 1.
+Pack rule definition (default severity) 2.
+Optionally overridden by Reviewer with justification 3.
+May be escalated by Manager if pattern detected
+
+*Severity is immutable once finding is triaged* (unless explicitly re-scored by Manager with audit trail event).
+
+==== Human-in-Loop Triggers
+
+*Conditions that require mandatory human approval before finalization:*
+
+[cols="23%,25%,34%,18%",options="header"]
+|===
+|Trigger |Condition |Required Role |Action
+|*Critical finding* |Any finding with severity=`critical' |Manager or Audit Lead |Must review and sign off before audit finalization
+|*Low confidence finding* |combined_confidence < 0.50 |Reviewer |Cannot create finding; must re-review with manual document inspection
+|*AI-generated narrative* |Any narrative in report |Manager |Cannot finalize report without explicit "Approve" click on AI content
+|*Mapping override* |Reviewer overrides auto-suggested mapping |Reviewer |Must provide justification text before acceptance
+|*Second review required* |Configured sampling % applies to finding |Senior Reviewer (different from primary) |Independent re-review before closure
+|*Escalation override* |Manager resolves escalated finding |Manager |Must provide resolution rationale
+|===
+
+*Implementation:* API gateway middleware checks conditions before state transitions.
+If condition triggers, state change is blocked with error message and audit event is logged.
+
+[[sect-confidence-calibration]]
+==== Confidence Calibration & Monitoring
+
+*Calibration rationale:* Confidence scores from Docling, schema matcher, and rules engine are learned/heuristic-based.
+They must be calibrated against ground truth (human decisions) to remain accurate.
+
+*Calibration approach (Phase 2):*
+
+[arabic]
+. *Collection:* After human review, compare AI-generated confidence scores to actual outcomes:
+* Did AI mark it high-confidence? Did human agree?
+* Did AI mark it low-confidence? Did human override?
+. *Metrics:*
+* *Calibration error:* % of high-confidence findings where human disagreed
+* *Coverage:* % of findings where AI confidence threshold correctly predicted human review need
+. *Adjustment:* If calibration error >5% for a given component (e.g., Docling), adjust thresholds or retrain model.
+
+NOTE: For Schema Mapping-specific calibration (bootstrap procedure, go/kill criteria, and recalibration cadence), see <<sect-schema-mapping-service, Schema Mapping Service — Bootstrap Calibration Procedure>>.
+
+*Monitoring dashboard (Phase 2):*
+
+* Daily plots: Confidence vs. human agreement rate
+* Alert: If calibration error exceeds 5% threshold
+* Trends: How confidence scores evolve as packs mature
+
+==== Risk-Based Prioritization
+
+*Not in MVP, but framework for Phase 2:*
+
+Findings can be prioritized by risk score combining severity, confidence, and customer risk profile:
+
+....
+risk_score = (
+  severity_weight[severity] * 0.4 +
+  (1 - combined_confidence) * 0.3 +  // Lower confidence = higher risk
+  materiality_score * 0.3             // Loan amount, violation type
+)
+....
+
+*Use case:* Manager can filter findings by risk_score descending to focus on highest-impact issues first.
+
+==== Scoring Service API Contract
+
+[source,typescript]
+----
+interface ScoringRequest {
+  finding: Finding;
+  pack: AuditPack;
+  context: ScoringContext; // Target record, source data, extracted values
+}
+
+interface ScoringResult {
+  finding_id: string;
+
+  // Confidence layers
+  mapping_confidence: number;
+  extraction_confidence: number;
+  rule_confidence: number;
+  combined_confidence: number;
+
+  // Confidence metadata
+  confidence_rationale: string; // Explanation for human review
+
+  // Severity
+  severity: string;
+  severity_rationale: string;
+
+  // Thresholds
+  auto_review_required: boolean; // If combined_confidence < threshold
+  critical_review_required: boolean; // If severity = 'critical'
+
+  // Risk score (Phase 2)
+  risk_score?: number;
+
+  // Audit trail
+  scored_at: timestamp;
+  scored_by_engine: string; // e.g., 'scoring-service-v1.2'
+  scoring_version: string; // e.g., '1.0'
+}
+----
+
 [[sect-findings-management]]
 === Findings Management Service
 
