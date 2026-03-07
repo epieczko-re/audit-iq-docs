@@ -11,8 +11,6 @@ It is organized around user journeys first, with the supporting stage details im
 
 * *User Journey Overview* — seven end-to-end workflow diagrams across the three execution modes (Manual, OCR-Assisted, Automated Pre-Scan).
 * *Stages 1–6* — per-stage detail aligned to the journeys: screens, wireframes, interactions, functional requirements by epic, and service architecture.
-* *Non-Functional Requirements* — cross-cutting quality attributes and performance targets.
-* *Acceptance Criteria Summary* — summary of acceptance testing approach.
 * *Reference Material* — global layout, screen inventory, and UI development strategy for implementation lookup.
 
 *Read this section first when estimating sprint work.*
@@ -32,8 +30,6 @@ include::_stage-4-remediation-reporting.adoc[]
 include::_stage-5-dashboards.adoc[]
 
 include::_stage-6-admin-registry.adoc[]
-
-include::_nfr-and-acceptance.adoc[]
 
 include::_global-layout.adoc[]
 
