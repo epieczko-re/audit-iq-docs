@@ -2162,6 +2162,66 @@ interface ReportSection {
 *Consuming screens (<<sect-workflow-screen-guide>>):* <<wf-bundle-export, WF-17 Exam-Ready Bundle Export>> (14-artifact versioned ZIP bundle with approval manifests, coverage stats, change log, and pipeline provenance)
 ****
 
+==== Context: Audit Pack vs. Exam Pack
+
+Readers new to AuditIQ often conflate two concepts that sound similar but serve fundamentally different purposes.
+Understanding the distinction is essential before reviewing this component's design.
+
+*Audit Pack (input — "the brain"):*
+An audit pack is a declarative JSON configuration artifact that tells the platform _how_ to audit.
+It encapsulates rules, scoring weights, field schemas, evidence requirements, sampling methodology, severity classifications, normalizations, and report templates for a specific regulatory domain (e.g., HMDA Origination QC).
+The platform interprets the pack to drive ingestion validation, schema mapping, comparison rules, scoring, and report generation.
+An audit pack is authored, versioned, and published before any audit begins — it is the "brain" that the platform's engine executes against.
+See <<sect-audit-pack-spec>> for the full pack specification and <<sect-key-concepts>> for the strategic rationale behind the pack model.
+
+*Exam Pack (output — "the dossier"):*
+An exam pack (formally, the "exam pack dossier" or "exam-ready bundle") is the _output_ artifact that the platform continuously assembles as the audit progresses.
+It is a versioned, self-contained ZIP bundle containing every artifact a regulatory examiner needs to evaluate the audit without accessing the platform: the audit summary report, findings register, corrective action log, coverage and sampling statistics, approval manifests, exceptions log, change log, audit trail excerpt, source document index, pack configuration snapshot, pipeline provenance, and Three Lines Model defense-lines certification — 14 files total, each individually SHA-256 hashed.
+
+The exam pack is not generated once at the end.
+It is a *living dossier* that the Exam Pack Lifecycle Manager creates when the audit starts (v1.0) and automatically updates on every material event — a finding triaged, a corrective action completed, a line-of-defense approval recorded — producing a new bundle version each time.
+This means the institution is always examination-ready, not just at finalization.
+
+*Why the distinction matters:*
+
+[cols="30%,35%,35%",options="header"]
+|===
+|Dimension |Audit Pack |Exam Pack
+
+|*Nature*
+|Input configuration
+|Output artifact
+
+|*Created*
+|Before the audit begins (authored by RiskExec or, in Phase 2+, by the institution)
+|At audit creation and continuously updated throughout the audit lifecycle
+
+|*Contents*
+|Rules, schemas, scoring weights, normalizations, report templates, sampling methodology
+|Findings, evidence, approvals, coverage statistics, exceptions, change history, provenance
+
+|*Versioning trigger*
+|Explicit publish action by pack author; active audits pin to a specific version
+|Automatic — every material audit event triggers a new bundle version
+
+|*Audience*
+|Platform engine (machine-consumed); pack authors (human-maintained)
+|Regulatory examiners, auditors, compliance officers (human-consumed); exported as self-contained ZIP
+
+|*Mutability*
+|Immutable once published; new version required for changes (active audits never auto-upgrade)
+|Append-only version chain; prior versions are never modified, only superseded
+
+|*Cross-reference*
+|<<sect-audit-pack-spec>>
+|<<sect-exam-pack-concept>>; this section
+|===
+
+In short: the audit pack defines _what to check and how to score it_; the exam pack proves _what was checked, what was found, and who approved it_.
+The Exam Pack Lifecycle Manager is the component responsible for the latter — assembling, versioning, and exporting that proof.
+
+==== Component Design
+
 *Responsibilities:*
 
 * Maintain the exam pack as a continuously updated dossier throughout the audit lifecycle
