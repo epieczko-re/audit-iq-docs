@@ -281,6 +281,14 @@ Regulation P implements GLBA privacy requirements.
 |*SOC 2 (Service Organization Control 2)*
 |AICPA audit framework that certifies a service organization's controls for security, availability, processing integrity, confidentiality, and privacy.
 AuditIQ targets SOC 2 Type II readiness by June 30, 2026.
+
+|*IIA Three Lines Model*
+|Principles-based governance framework published by The Institute of Internal Auditors (IIA) in July 2020, replacing the older "Three Lines of Defense" model.
+Defines six principles: (1) Governance, (2) Governing body roles, (3) Management and first- and second-line roles, (4) Third-line roles, (5) Third-line independence, (6) Creating and protecting value.
+First-line roles deliver products/services and own risk day-to-day; second-line roles provide expertise, monitoring, and challenge on risk-related matters; third-line roles (internal audit) provide independent assurance and advice.
+The "lines" denote roles, not organizational silos, and all operate concurrently.
+AuditIQ maps first-line roles to QC (`qc_reviewer`, `qc_manager`), second-line roles to Compliance (`compliance_analyst`, `compliance_officer`), and third-line roles to Internal Audit (`auditor`, `audit_director`).
+See <<sect-three-lines-model-gap>> and <<sect-concept-of-operations>>.
 |===
 
 === AI & Embedding Terminology

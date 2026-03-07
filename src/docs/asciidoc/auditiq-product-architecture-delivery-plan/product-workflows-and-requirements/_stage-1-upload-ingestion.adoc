@@ -342,7 +342,7 @@ No AI is involved in ingestion.
 |===
 |ID |Requirement |Acceptance Criteria |Priority
 |FR-10.1
-|System shall provide an audit dashboard showing all audit runs the authenticated user has access to, with RBAC-filtered visibility per the Three-Lines-of-Defense model.
+|System shall provide an audit dashboard showing all audit runs the authenticated user has access to, with RBAC-filtered visibility per the IIA Three Lines Model.
 a|*Acceptance Criteria (FR-10.1 — Audit Dashboard):*
 
 * Given a `qc_reviewer` user, when they access the audit dashboard, then only audits assigned to them are visible.

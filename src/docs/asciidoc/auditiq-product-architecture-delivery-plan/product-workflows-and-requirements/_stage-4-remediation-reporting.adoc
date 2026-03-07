@@ -375,7 +375,7 @@ Full-featured data table with all finding fields, export capabilities, and audit
 . Owner receives notification → submits corrective action with evidence within SLA.
 . Independent reviewer verifies correction → retest passed → manager approves closure (required for Critical/High).
 . All findings closed → manager generates audit summary report.
-. Exam-ready bundle exported as versioned ZIP (14 artifacts) → three-lines-of-defense certification.
+. Exam-ready bundle exported as versioned ZIP (14 artifacts) → Three Lines Model certification.
 
 ==== Key Edge Cases
 
@@ -405,7 +405,7 @@ Full-featured data table with all finding fields, export capabilities, and audit
 |FR-8.2 |AI-assisted narrative generation for audit summaries: mandatory human review and explicit approval before finalization. |Given a completed audit, when AI narrative is requested, then draft is produced labeled "AI-generated draft — requires approval," and cannot be included in finalized reports until a Manager-role user clicks "Approve." |P0
 |FR-8.3 |Export formats: PDF (formatted reports), CSV (data exports), XLSX (data exports with formatting), JSON (API). |Given a findings export request, when CSV is selected, then all findings with all metadata fields are exported in a clean CSV with headers. |P0
 |FR-8.4 |Exam pack dossier: continuously updated, versioned exam-ready bundle per <<sect-exam-ready-bundle>> specification. Bundle is created at audit start, updated on every material event, and exportable at any point. |Given an active audit, when a finding is created or closed, then a new bundle version is auto-generated within 60 seconds with updated coverage statistics and change log. Given a finalized audit, when exam bundle is exported, then the ZIP contains all 14 files specified in <<sect-exam-ready-bundle>> with valid manifest, hash verification, and version chain. |P0
-|FR-8.5 |Three-lines-of-defense approval manifest: structured sign-off records from QC Manager, Compliance Officer, and Audit Director before bundle export. |Given a bundle in review status, when all three lines record approvals, then the approval manifest is populated with role, scope, findings count, sign-off statement, and digital signature hash. Bundle export is blocked until all required approvals are recorded. |P0
+|FR-8.5 |Three Lines Model approval manifest: structured sign-off records from QC Manager (first line), Compliance Officer (second line), and Audit Director (third line) before bundle export. |Given a bundle in review status, when all three lines record approvals, then the approval manifest is populated with role, scope, findings count, sign-off statement, and digital signature hash. Bundle export is blocked until all required approvals are recorded. |P0
 |FR-8.6 |Coverage and sampling statistics: machine-readable coverage matrix, confidence distributions, and error metrics included in every bundle version. |Given a completed pre-scan, when coverage statistics are requested, then the response includes rule coverage (rules tested / total rules), confidence tier distribution, error rate, and sampling representativeness check. |P0
 |FR-8.7 |Exceptions and overrides log: every human override of system confidence, severity, or rule application tracked with justification and evidence reference. |Given a reviewer overrides a confidence score, when the override is saved, then an exception record is created with original value, new value, justification, and evidence reference; the exception appears in the next bundle version. |P0
 |FR-8.8 |Bundle version history and diff: version chain showing what changed between any two bundle versions. |Given a bundle with 5 versions, when a diff between v2.0 and v2.3 is requested, then the response shows findings added/closed/reopened, evidence changes, and approvals added between those versions. |P1
@@ -530,7 +530,7 @@ Attachments:
   - Sampling methodology documentation
 ....
 
-*Exam pack dossier:* Continuously updated, versioned exam-ready bundle containing all reports, evidence files, audit trail, coverage statistics, approval manifests, exceptions log, change log, pipeline provenance, and three-lines-of-defense certification — with SHA-256 hash verification on every artifact.
+*Exam pack dossier:* Continuously updated, versioned exam-ready bundle containing all reports, evidence files, audit trail, coverage statistics, approval manifests, exceptions log, change log, pipeline provenance, and Three Lines Model certification — with SHA-256 hash verification on every artifact.
 The bundle is created at audit start and auto-versioned on every material event (finding created/closed, approval recorded, evidence superseded).
 See <<sect-exam-ready-bundle>> for the complete specification.
 

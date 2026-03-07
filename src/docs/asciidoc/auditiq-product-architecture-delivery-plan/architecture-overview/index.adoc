@@ -106,7 +106,7 @@ Buyers do not want a ZIP file generated at the end; they want a living dossier t
 * *Exceptions and overrides log:* Every instance where a human overrode system confidence, severity, or rule application — with justification.
 * *Change log and version chain:* When findings change status (reopened, corrected, escalated), the exam pack auto-generates a new version with a delta summary.
 * *Pipeline provenance:* Which extraction model version, mapping service version, and rules engine version produced each finding — traceable to <<sect-model-registry>>.
-* *Three-lines-of-defense certification:* Proof that QC, Compliance, and Audit each independently evaluated the evidence.
+* *Three Lines Model certification:* Proof that first-line (QC), second-line (Compliance), and third-line (Audit) roles each independently evaluated the evidence.
 
 *Lifecycle semantics:*
 
@@ -375,7 +375,7 @@ See <<sect-rbac-permission-matrix>>.
 See <<sect-audit-orchestration>>.
 * *Audit Pack Manager:* Pack versioning, distribution, validation harness.
 See <<sect-audit-pack-spec>>.
-* *Exam Pack Lifecycle Manager:* Maintains the exam pack as a continuously updated dossier — versioning, coverage statistics, approval manifests, change logs, and three-lines-of-defense certification.
+* *Exam Pack Lifecycle Manager:* Maintains the exam pack as a continuously updated dossier — versioning, coverage statistics, approval manifests, change logs, and Three Lines Model certification.
 See <<sect-exam-pack-lifecycle-manager>>.
 * *Workflow Engine:* State machine enforcement, event publishing, retry/compensation.
 
@@ -718,7 +718,7 @@ Queue depth monitoring alerts when document processing backlog exceeds threshold
 
 |Elevation of Privilege
 |User accesses resources beyond their role
-|RBAC enforcement at API Gateway; segregation of duties; least-privilege Managed Identity; Three-Lines-of-Defense role separation
+|RBAC enforcement at API Gateway; segregation of duties; least-privilege Managed Identity; Three Lines Model role separation
 |First-line QC reviewer attempts to access audit director endpoints to approve their own findings.
 |API Gateway rejects requests where JWT role claims do not match endpoint authorization requirements.
 Role escalation attempts logged and alerted.
@@ -1087,7 +1087,7 @@ Legacy TLS versions (1.0/1.1) are disabled.
 |All human users must authenticate with MFA.
 Service-to-service communication uses Managed Identity (no stored credentials).
 
-|RBAC with Three-Lines-of-Defense role separation
+|RBAC with Three Lines Model role separation
 |IIA Three Lines Model — independent assurance
 |Platform enforces role-based access that prevents first-line users from approving their own findings.
 Second-line and third-line roles have independent review authority.

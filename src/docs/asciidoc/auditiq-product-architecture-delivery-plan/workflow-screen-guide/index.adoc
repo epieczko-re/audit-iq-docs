@@ -666,7 +666,7 @@ Findings flow from identification through closure with approval gates at each tr
 . Owner receives notification → submits corrective action with evidence within SLA.
 . Independent reviewer verifies correction → retest passed → manager approves closure (required for Critical/High).
 . All findings closed → manager generates audit summary report.
-. Exam-ready bundle exported as versioned ZIP (14 artifacts) → three-lines-of-defense certification.
+. Exam-ready bundle exported as versioned ZIP (14 artifacts) → Three Lines Model certification.
 
 ==== Key Edge Cases
 
@@ -906,7 +906,7 @@ Admin screens cover user management, pack lifecycle, model registry, system conf
 |WF-22
 |<<wf-user-mgmt, User Management>>
 |FR-7.1, FR-7.2 (<<sect-product-requirements>>)
-|Three-lines-of-defense RBAC; role assignment with cross-line isolation enforcement.
+|Three Lines Model RBAC; role assignment with cross-line isolation enforcement.
 
 |WF-23
 |<<wf-pack-mgmt, Pack Management>>
