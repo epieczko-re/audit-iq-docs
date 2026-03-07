@@ -1,0 +1,28 @@
+= Journey: Extraction & Mapping
+:toc:
+
+:summary: TL;DR
+
+== Personas & Roles
+
+== Goal / Success Criteria
+
+== End-to-End Flow
+
+== Step-by-step Flow (maps to implementation)
+. Step — Extraction & Mapping (maps to Stage 2)
+include::../_stage-2-extraction-mapping.adoc[]
+
+== Screens & Wireframes
+
+== Functional Requirements (by epic)
+
+== Data / Services Architecture
+
+== Non-functional Requirements
+
+== Acceptance Criteria & Test Cases
+
+== Implementation Notes
+* Sprint mapping: See Implementation → Workflow Delivery Matrix
+* Dependencies / Risks
