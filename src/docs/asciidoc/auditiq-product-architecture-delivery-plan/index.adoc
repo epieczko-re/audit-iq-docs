@@ -1,8 +1,8 @@
 = AuditIQ: Product + Architecture + Delivery Plan
-:subtitle: RiskExec — Comprehensive Specification v0.26
+:subtitle: RiskExec — Comprehensive Specification v0.27
 :doctype: book
 :author: Erik Pieczkowski
-:revnumber: 0.26
+:revnumber: 0.27
 :revdate: 2026-03-07
 :build-timestamp: local build
 :toc:
@@ -33,20 +33,18 @@ include::product-vision-and-strategic-positioning/index.adoc[]
 include::concept-of-operations/index.adoc[]
 
 // ============================================================
-// Part III: User Workflows & Screens
+// Part III: Product Workflows & Requirements
 // ============================================================
 
-= Part III: User Workflows & Screens
+= Part III: Product Workflows & Requirements
 
-include::workflow-screen-guide/index.adoc[]
+include::product-workflows-and-requirements/index.adoc[]
 
 // ============================================================
-// Part IV: Requirements & Specifications
+// Part IV: Specifications
 // ============================================================
 
-= Part IV: Requirements & Specifications
-
-include::product-requirements/index.adoc[]
+= Part IV: Specifications
 
 include::audit-pack-specification/index.adoc[]
 

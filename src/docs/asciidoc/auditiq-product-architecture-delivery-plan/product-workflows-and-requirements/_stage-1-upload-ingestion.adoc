@@ -1,0 +1,526 @@
+=== Stage 1: Upload & Ingestion
+
+This stage covers audit creation, configuration, dataset upload, document upload, and initial validation.
+The user creates an audit run, selects an audit pack, uploads the HMDA LAR target dataset and source documents, and monitors ingestion progress.
+
+==== User Journey
+
+The end-to-end audit lifecycle is shown in <<user-journey-overview, Workflow 1>>.
+Document upload and extraction flow is shown in <<user-journey-overview, Workflow 2>>.
+
+.Diagram gap
+[NOTE]
+====
+Stage 1 currently lacks a consolidated workflow diagram showing the upload-through-validation flow as a single Mermaid flowchart.
+The ingestion sequence diagram (under Architecture below) covers the service interactions but not the user decision points.
+A dedicated Stage 1 user-journey flowchart should be created covering: audit creation → pack selection → dataset upload → schema validation → document upload → classification → matching → extraction trigger.
+====
+
+==== Screens
+
+[cols="8%,25%,32%,35%",options="header"]
+|===
+|WF # |Screen |Requirements |Summary
+
+|WF-01
+|<<wf-audit-dashboard, Audit Dashboard>>
+|FR-10.1, FR-10.4
+|Dashboard shows all audits with RBAC-filtered visibility; status badges, progress metrics, quick actions.
+
+|WF-02
+|<<wf-audit-config, Audit Configuration>>
+|FR-10.2, FR-10.5
+|Create audit run with pack selection, sample size, confidence threshold, dataset upload; validates schema against pack.
+
+|WF-04
+|<<wf-doc-upload, Document Upload>>
+|FR-1.3, FR-1.4, FR-1.5
+|Drag-drop or batch upload of PDF/TIFF/ZIP; auto-classification with confidence; loan-record matching.
+
+|WF-05
+|<<wf-processing-status, Processing Status>>
+|FR-2.1, FR-2.5
+|Per-document extraction progress, page grades, fallback triggers, field counts.
+|===
+
+[[wf-audit-dashboard]]
+===== WF-01: Audit Dashboard
+
+*Purpose:* Primary landing screen after login.
+Shows all audits the user has access to, with status indicators, progress metrics, and quick actions.
+
+*Roles:* All roles.
+RBAC filtering controls visibility: `qc_reviewer` and `auditor` roles see only their assigned audits; `qc_manager`, `compliance_officer`, and `audit_director` roles see all audits within their line of defense; Admin sees all audits across all lines.
+
+*Flowbite components:* Card (summary metrics), Table (audit list), Badge (status/severity), Button (actions), Dropdown (filters).
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Audit Dashboard</b>
+  ---
+  {#
+    <b>Active Audits</b> | <b>Pending Review</b> | <b>Completed</b> | <b>Total Findings</b>
+    <color:RoyalBlue><b>12</b></color> | <color:Orange><b>4</b></color> | <color:Green><b>28</b></color> | <color:Gray><b>347</b></color>
+  }
+  ---
+  { [+ Create New Audit] | ^Filter by Status: All^ | ^Pack: All^ | "Search audits...              " }
+  ---
+  {#
+    <b>Audit Name</b> | <b>Pack</b> | <b>Status</b> | <b>Progress</b> | <b>Findings</b> | <b>Created</b> | <b>Actions</b>
+    HMDA Q1 2026 Origination | hmda-origination v1.0 | <color:RoyalBlue>In Progress</color> | 67% | 23 (2 Critical) | 2026-02-15 | [View] [Resume]
+    HMDA Q4 2025 Review | hmda-origination v1.0 | <color:Orange>Review Complete</color> | 100% | 18 (0 Critical) | 2026-01-10 | [View] [Finalize]
+    CRA Assessment 2025 | cra-assessment v0.9 | <color:Green>Finalized</color> | 100% | 12 (1 Critical) | 2025-12-01 | [View] [Export]
+    TRID Compliance Check | trid-disclosure v1.0 | <color:Gray>Created</color> | 0% | — | 2026-03-01 | [Configure] [Delete]
+  }
+  ---
+  { Showing 1–4 of 40 audits | [< Prev] [1] [2] [3] [Next >] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *[+ Create New Audit]* opens <<wf-audit-config, Audit Configuration>> screen (visible only to `qc_manager`, `compliance_officer`, `audit_director`, and Admin roles)
+* *Status badge* colors: Created (gray), In Progress (blue), Review Complete (orange), Reporting (purple), Finalized (green)
+* *Findings* column shows total count with critical count in red if >0
+* *Progress* column shows percentage based on audit phase completion
+* Table is sortable by all columns; filterable by status, pack, date range, and defense line
+
+'''
+
+[[wf-audit-config]]
+===== WF-02: Audit Configuration
+
+*Purpose:* Create and configure a new audit run.
+User selects pack, defines scope, uploads target dataset, and sets review parameters.
+
+*Roles:* Manager, Audit Lead (`qc_manager`, `compliance_officer`, `audit_director`).
+
+*Flowbite components:* Form (inputs), Select (pack/scope), DatePicker (audit period), Slider (confidence threshold), File Upload (dataset), Button (actions).
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Create New Audit</b>
+  { Home > Audits > Create New }
+  ===
+  {+
+    <b>Audit Details</b>
+    {
+      Audit Name        | "HMDA Q1 2026 Origination Review       "
+      Pack Template     | ^hmda-origination v1.0              ^
+      Audit Scope       | ^Origination                        ^
+      Execution Mode    | (X) OCR-Assisted  () Manual  () Automated
+    }
+  }
+  ---
+  {+
+    <b>Audit Period & Sample</b>
+    {
+      Start Date        | "2026-01-01  "
+      End Date          | "2026-03-31  "
+      Loan Sample Size  | "50           "
+      Sampling Method   | ^Random Stratified               ^
+    }
+  }
+  ---
+  {+
+    <b>Review Parameters</b>
+    {
+      Confidence Threshold | "0.85         " | (Auto-confirm findings above this threshold)
+      Second Review %      | "15            " | (% of findings requiring independent second review)
+      Escalation Rules     | [X] Auto-escalate Critical findings  [] Custom rules
+    }
+  }
+  ---
+  {+
+    <b>Target Dataset</b>
+    {
+      Upload Method | (X) CSV Upload  () API Import  () RiskExec Import
+      .
+      [ Drag & drop CSV file here, or click to browse ]
+      .
+      Schema         | ^hmda-lar-2024                      ^
+      Max file size: 100 MB
+    }
+  }
+  ===
+  { [Cancel] | . | . | . | [Save as Draft] | [Create Audit & Continue >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Pack Template* dropdown shows only packs with `status = 'approved'` from pack registry
+* *Confidence Threshold* slider (0.50–1.00) controls finding auto-confirm cutoff; defaults to 0.85 per canonical thresholds (<<sect-glossary>>)
+* *[Create Audit & Continue >>]* validates all fields, creates audit run, navigates to <<wf-doc-upload, Document Upload>>
+* Dataset upload triggers validation (schema check against pack-defined fields, record count, encoding); errors shown inline
+
+'''
+
+[[wf-doc-upload]]
+===== WF-04: Document Upload
+
+*Purpose:* Upload loan documents (PDF, TIFF, scanned images) for extraction.
+Supports drag-and-drop, batch upload (ZIP), and per-document classification.
+
+*Roles:* Reviewer, Manager, Audit Lead.
+
+*Flowbite components:* Dropzone, Table, Badge, Progress Bar, Button.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Document Upload</b>
+  { Home > Audits > AUD-2026-001 > Documents > Upload }
+  ===
+  {+
+    <b>Upload Documents</b>
+    {
+      .
+      .
+      [ Drag & drop PDF, TIFF, or ZIP files here ]
+      [ or click to browse ]
+      .
+      Accepted formats: PDF, TIFF, JPEG, PNG, ZIP
+      Max file size: 50 MB per file | Max batch: 500 MB
+      .
+    }
+  }
+  ---
+  {+
+    <b>Uploaded Files</b> (6 files)
+    {#
+      <b>Filename</b> | <b>Size</b> | <b>Type (Auto)</b> | <b>Confidence</b> | <b>Loan #</b> | <b>Status</b> | <b>Actions</b>
+      CD_Loan_10045.pdf | 2.1 MB | <color:Green>Closing Disclosure</color> | 0.97 | 10045 | <color:Green>Ready</color> | [Reclassify] [Remove]
+      1003_Loan_10045.pdf | 4.3 MB | <color:Green>URLA (1003)</color> | 0.93 | 10045 | <color:Green>Ready</color> | [Reclassify] [Remove]
+      Appraisal_10045.pdf | 8.7 MB | <color:Green>Appraisal</color> | 0.91 | 10045 | <color:Green>Ready</color> | [Reclassify] [Remove]
+      scan_page_001.tiff | 1.8 MB | <color:Orange>Unknown</color> | 0.42 | — | <color:Orange>Needs Classification</color> | [Classify] [Remove]
+      title_search.pdf | 3.2 MB | <color:Green>Title Document</color> | 0.88 | 10045 | <color:Green>Ready</color> | [Reclassify] [Remove]
+      loan_bundle.zip | 45 MB | <color:RoyalBlue>ZIP (12 files)</color> | — | — | <color:RoyalBlue>Extracting...</color> | [Cancel]
+    }
+  }
+  ---
+  {+
+    <b>Loan Record Matching</b>
+    {
+      Auto-match method: | (X) Loan number in filename  () OCR-extracted loan number  () Manual assignment
+      Unmatched documents: | <color:Orange>1 document requires manual loan assignment</color>
+    }
+  }
+  ===
+  { [<< Back] | . | . | [Match Documents to Records] | [Start Extraction >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Document classification* runs automatically on upload using filename heuristics and first-page OCR
+* *Confidence* column shows classification confidence; orange (<0.85) items need manual classification
+* *[Reclassify]* opens dropdown: Closing Disclosure, Loan Estimate, URLA (1003), Appraisal, Title Document, Other
+* *[Start Extraction >>]* begins Docling processing pipeline; navigates to <<wf-processing-status>>
+* ZIP files are auto-extracted and each contained file classified individually
+
+'''
+
+[[wf-processing-status]]
+===== WF-05: Processing Status
+
+*Purpose:* Monitor document extraction progress at the page and field level.
+Shows Docling processing status, page grades, fallback triggers, and per-document field counts.
+
+*Roles:* All roles with access to the audit.
+
+*Flowbite components:* Table, Progress Bar, Badge, Accordion, Alert.
+
+[plantuml]
+----
+@startsalt
+{+
+  <b>Processing Status</b>
+  { Home > Audits > AUD-2026-001 > Documents > Processing }
+  ===
+  {+
+    <b>Overall Progress</b>
+    {#
+      <b>Metric</b> | <b>Value</b>
+      Documents total      | 127
+      Documents processed  | 99 (78%)
+      Documents in queue   | 28
+      Avg processing time  | 4.2s / document
+      Fallbacks triggered  | 12 pages (cloud OCR)
+    }
+  }
+  ---
+  {+
+    <b>Per-Document Status</b>
+    {#
+      <b>Document</b> | <b>Type</b> | <b>Pages</b> | <b>Status</b> | <b>Page Grade</b> | <b>Fields</b> | <b>Fallbacks</b> | <b>Actions</b>
+      CD_Loan_10045.pdf | Closing Disclosure | 5 | <color:Green>Complete</color> | EXCELLENT | 42/42 | 0 | [Review Fields]
+      1003_Loan_10045.pdf | URLA (1003) | 8 | <color:Green>Complete</color> | GOOD | 67/71 | 1 pg | [Review Fields]
+      Appraisal_10045.pdf | Appraisal | 24 | <color:RoyalBlue>Processing</color> | — | 15/38 | — | [View Progress]
+      scan_page_001.tiff | Unknown | 1 | <color:Orange>Fallback</color> | POOR | 3/12 | 1 pg | [Review Fields]
+      title_search.pdf | Title Document | 6 | <color:Gray>Queued</color> | — | — | — | —
+    }
+  }
+  ---
+  {+
+    <b>Fallback Details</b>
+    {#
+      <b>Document</b> | <b>Page</b> | <b>Reason</b> | <b>Fallback Method</b> | <b>Result</b>
+      1003_Loan_10045.pdf | Page 6 | Page grade: FAIR | Cloud OCR (Azure) | <color:Green>Improved</color>
+      scan_page_001.tiff | Page 1 | Page grade: POOR | Cloud OCR (Azure) | <color:Orange>Partial</color>
+    }
+  }
+  ===
+  { [<< Back to Documents] | [Retry Failed] | [Continue to Mapping >>] }
+}
+@endsalt
+----
+
+*Key interactions:*
+
+* *Page Grade* reflects Docling conversion quality: EXCELLENT, GOOD, FAIR, POOR (<<sect-doc-processing>>)
+* *Fallback* column shows pages where cloud OCR was triggered (page grade POOR/FAIR or >30% key fields below AFC 0.50)
+* *[Review Fields]* navigates to <<wf-extraction-review>> for that document
+* Processing runs asynchronously; page refreshes via polling or WebSocket updates
+
+'''
+
+==== Happy Path
+
+[arabic]
+. Manager creates a new audit → selects HMDA origination pack → defines sample (50 loans) and date range.
+. Manager uploads HMDA LAR CSV (target dataset) → system validates 37 Key Data Fields against pack schema → confirms record count.
+. Reviewer uploads source documents (CDs, 1003s) → system auto-classifies and matches to LAR records by loan number.
+. Audit enters `DocumentsUploaded` state → extraction begins automatically.
+
+==== Key Edge Cases
+
+* *Schema validation failure:* Missing required columns → system rejects upload with specific error listing; user re-uploads corrected file.
+* *Unmatched documents:* Document classification confidence < 0.85 → routed to manual classification queue.
+* *Oversized file:* > 100 MB single file → client-side rejection before upload begins (FR-1.5).
+
+==== Functional Requirements
+
+===== Epic 1: Data Ingestion / Connectors
+
+[cols="10%,27%,43%,20%",options="header"]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-1.1
+|System shall accept target datasets via CSV upload, API endpoint, and cross-module transfer from existing RiskExec modules (HMDA, CRA).
+a|*Acceptance Criteria (FR-1.1 — Ingestion performance):*
+
+* *Test dataset:* 5,000-record HMDA LAR synthetic dataset (representative value distributions and edge cases; see <<sect-appendices, Appendix E>>).
+* *Test environment (canonical):* 8 vCPU, 32 GB RAM, 200 GB NVMe storage; managed Postgres with provisioned IOPS=3000; 100 Mbps network, Dockerized service instances.
+* Given a valid HMDA LAR CSV with 5,000 records uploaded via the CSV endpoint in the canonical test environment, the system must:
+** Ingest and validate all records with P95 end-to-end completion time ≤ 60 s.
+** Report ≤ 0.1% records rejected for transient processing errors; permanently invalid rows reported with line numbers and standard error codes.
+** Guarantee 0% silent data corruption: valid records stored exactly as received with per-record SHA-256 checksums logged and verifiable.
+** Provide validation summary in the UI and as a JSON/CSV download.
+|P0
+|FR-1.2 |System shall perform automated completeness and format validation on ingested datasets. |Given a CSV missing required columns, when uploaded, then system rejects with specific error listing missing columns. Given a CSV with malformed date values, when uploaded, then system flags affected rows with line numbers and expected format. |P0
+|FR-1.3 |System shall accept source documents in PDF, TIFF, JPEG, and PNG formats. |Given a multi-page PDF, when uploaded, then document is stored, classified, and available in the document viewer within 10 seconds per page. |P0
+|FR-1.4 |System shall support bulk document upload with batch classification. |Given a ZIP containing 50 mixed-format documents, when uploaded, then all documents are extracted, classified by type (CD, LE, URLA, etc.), and linked to target records via loan number matching. |P1
+|FR-1.5 |System shall enforce maximum file size limits: 100MB per single file, 1GB per batch upload. |Given a file exceeding 100MB, when upload is attempted, then system rejects with clear size limit message before upload begins (client-side validation). |P0
+|===
+
+*Deterministic boundary:* All ingestion operations are deterministic.
+The same input file always produces the same validated output.
+No AI is involved in ingestion.
+
+===== Epic 10: Audit Lifecycle Management
+
+[cols="10%,27%,43%,20%",options="header"]
+|===
+|ID |Requirement |Acceptance Criteria |Priority
+|FR-10.1
+|System shall provide an audit dashboard showing all audit runs the authenticated user has access to, with RBAC-filtered visibility per the Three-Lines-of-Defense model.
+a|*Acceptance Criteria (FR-10.1 — Audit Dashboard):*
+
+* Given a `qc_reviewer` user, when they access the audit dashboard, then only audits assigned to them are visible.
+* Given a `qc_manager` user, when they access the audit dashboard, then all First Line audits within their tenant are visible.
+* Given an `audit_director` user, when they access the dashboard, then all audits across all lines within their tenant are visible.
+* Dashboard displays status badges, progress metrics, finding counts, and quick actions for each audit.
+* Table is sortable by all columns and filterable by status, pack, date range, and defense line.
+|P0
+
+|FR-10.2
+|System shall allow authorized users to create and configure a new audit run, including pack selection, scope definition, sample size, audit period, confidence thresholds, and review parameters.
+a|*Acceptance Criteria (FR-10.2 — Audit Configuration):*
+
+* Given a `qc_manager` creating a new audit, when they select a pack template, then only packs with `status = 'approved'` are shown.
+* Given a confidence threshold slider, when set to 0.85, then findings with combined confidence >= 0.85 are auto-confirmed per canonical thresholds (<<sect-glossary>>).
+* Given a completed configuration form, when submitted, then system validates all fields, creates the audit run, and navigates to document upload.
+* Only `qc_manager`, `compliance_officer`, `audit_director`, and `admin` roles can create audit runs.
+|P0
+
+|FR-10.3
+|System shall provide real-time audit progress monitoring showing phase completion status across all audit lifecycle stages (upload, extraction, mapping, rules, review, finalization).
+a|*Acceptance Criteria (FR-10.3 — Audit Progress Monitor):*
+
+* Given an active audit with documents being processed, when the progress monitor is viewed, then phase progress percentages update via WebSocket or polling (30-second interval).
+* Given extraction in progress, then AFC routing distribution (auto-confirmed, human review, manual entry) is displayed and updated as documents process.
+* Reviewers see progress for their assigned records; Managers see aggregate progress across all records and reviewers.
+|P0
+
+|FR-10.4
+|System shall enforce the audit workflow state machine: Created → DocumentsUploaded → Extracted → ReviewerInProgress → FindingsGenerated → ManagerReview → ManagerApproval → Finalized.
+State transitions emit immutable audit events with `actor_id`, `timestamp`, and `rationale`.
+a|*Acceptance Criteria (FR-10.4 — Audit State Machine):*
+
+* Given an audit in `Created` state, when documents are uploaded, then audit transitions to `DocumentsUploaded` and an audit event is emitted.
+* Given an audit in `ManagerApproval` state, when the manager finalizes, then audit transitions to `Finalized`, the report is generated, and no further modifications are permitted.
+* Given a manager requesting re-review, when in `ManagerReview` state, then audit returns to `FindingsGenerated` with documented rationale.
+|P0
+
+|FR-10.5
+|System shall support three execution modes per audit run — Manual, OCR-Assisted, and Automated Pre-Scan — selectable at audit configuration time based on source data type and audit scope.
+|Given an admin configuring a new audit, when they select execution mode, then the system adjusts available workflow options accordingly: Manual mode skips extraction automation, OCR-Assisted enables Docling extraction with AFC routing, and Automated Pre-Scan enables full record-to-record comparison. |P0
+|===
+
+*Deterministic boundary:* Audit lifecycle management (creation, state transitions, progress tracking) is fully deterministic.
+No AI is involved in audit lifecycle operations.
+
+==== Architecture
+
+===== Ingestion Workflow
+
+The ingestion workflow covers audit setup, dataset upload, and schema validation.
+These are the first steps in both manual and OCR-assisted audit modes (see <<sect-concept-of-operations>>).
+
+[mermaid]
+----
+sequenceDiagram
+  participant Admin
+  participant System
+  participant DB as Staging DB
+
+  Admin->>System: Create audit run + select pack
+  Admin->>System: Upload target dataset (CSV/API/cross-module)
+  System->>System: Validate schema against pack definition
+  alt Validation passes
+    System->>DB: Store validated records in staging area
+    System->>System: Compute per-record SHA-256 checksums
+    System-->>Admin: Validation summary (UI + JSON/CSV download)
+  else Validation fails
+    System-->>Admin: Error report (missing columns, malformed rows)
+    Admin->>System: Upload corrected dataset
+  end
+  Admin->>System: Upload source documents (PDF, TIFF, JPEG, PNG)
+  System->>System: Classify documents (CD, LE, URLA, etc.)
+  System->>System: Link documents to target records via loan number
+  System-->>Admin: Document classification summary
+----
+
+===== Ingestion Architecture
+
+*Component:* Ingestion Service (<<sect-component-design>>)
+
+*Input contracts:*
+
+[source,typescript]
+----
+interface IngestionRequest {
+  auditId: string;
+  dataSource: 'csv_upload' | 'api_endpoint' | 'cross_module';
+  datasetName: string;
+  targetSchema: string; // e.g., 'hmda-lar-2024'
+  recordCount: number;
+  estimatedSize: number; // bytes
+  uploadedAt: timestamp;
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  recordsProcessed: number;
+  recordsRejected: number;
+  errors: ValidationError[];
+  warnings: ValidationWarning[];
+  completionTime: number; // ms
+}
+----
+
+*Error handling:*
+
+[cols="1,2",options="header"]
+|===
+|Error |Handling
+
+|File size > 100MB
+|Client-side rejection before upload
+
+|Encoding issues (non-UTF-8)
+|Attempt conversion; flag if fails; allow skip
+
+|Missing required columns
+|Reject entire upload; list missing columns
+
+|Malformed date values
+|Reject affected rows; suggest expected format
+
+|Duplicate record IDs
+|Flag with warning; allow user to choose which to keep
+|===
+
+===== Audit Lifecycle Workflow
+
+The audit lifecycle workflow covers audit creation, configuration, state management, and progress monitoring.
+This is the scaffolding that ties together Epics 1–8 into a coherent end-to-end experience.
+
+[mermaid]
+----
+stateDiagram-v2
+  direction TB
+  [*] --> Created
+  Created --> DocumentsUploaded: Upload loan file + HMDA doc
+  DocumentsUploaded --> Extracted: Docling extraction complete
+  Extracted --> ReviewerInProgress: Reviewer starts review
+  ReviewerInProgress --> FindingsGenerated: Findings + scores created
+  FindingsGenerated --> ManagerReview: Manager reviews escalations
+  ManagerReview --> ManagerApproval: All critical findings approved
+  ManagerApproval --> Finalized: Audit finalized + report generated
+  Finalized --> [*]
+  ReviewerInProgress --> ReviewerInProgress: Corrections, overrides
+  ManagerReview --> FindingsGenerated: Manager requests re-review
+
+  classDef blueState fill:#4A6FA5,color:#fff,stroke:#2B4570
+  classDef greenState fill:#2E8B57,color:#fff,stroke:#1B5E3B
+
+  class Created,DocumentsUploaded,Extracted,ReviewerInProgress blueState
+  class FindingsGenerated,ManagerReview,ManagerApproval blueState
+  class Finalized greenState
+----
+
+===== Audit Lifecycle Architecture
+
+*Component:* Audit Lifecycle Manager (<<sect-component-design>>)
+
+*State management:* The Audit Lifecycle Manager owns the state machine and enforces valid transitions.
+Each transition emits an immutable audit event to the Event Store.
+Invalid transitions (e.g., jumping from `Created` to `Finalized`) are rejected with a descriptive error.
+
+*Progress tracking:* The progress monitor aggregates status from downstream services (Ingestion Service, Document Processing Service, Schema Mapping Service, Comparison Engine, Findings Management Service) to compute per-phase completion percentages.
+
+*Execution mode routing:* The selected execution mode determines which downstream services are invoked and in what order:
+
+* *Manual:* Ingestion → Document Upload → Manual Review (skip automated extraction and comparison)
+* *OCR-Assisted:* Ingestion → Document Upload → Docling Extraction + AFC → Schema Mapping → Comparison Engine → Review
+* *Automated Pre-Scan:* Ingestion → Schema Mapping → Comparison Engine → Review (both target and source are structured data)
+
+==== Developer Context
+
+*Services:* Ingestion Service, Azure Blob Storage (encryption + quarantine), Document Classifier, Audit Lifecycle Manager.
+*Data flow:* CSV → Ingestion Service (validation + SHA-256 checksums) → PostgreSQL staging tables.
+PDFs → Blob Storage → Document Classifier → link to LAR records.
+*API contracts:* `IngestionRequest`, `ValidationResult` interfaces (see Architecture above).
+*Architecture detail:* <<sect-architecture-by-workflow, Upload & Ingestion stage>>.
+
+'''
