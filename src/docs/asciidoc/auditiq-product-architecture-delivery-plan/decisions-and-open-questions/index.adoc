@@ -1,35 +1,6 @@
 [[sect-decisions]]
 == Architectural Decisions, Open Questions, and Assumptions
 
-=== Decision Log Summary
-
-*DECISIONS LOCKED (see <<sect-mvp-decisions>> below for full rationale and alternatives):*
-
-[cols="13%,27%,22%,30%,8%",options="header"]
-|===
-|ID |Decision |Status |Rationale |Overrideable?
-|*D1* |Document extraction: *Docling baseline + cloud OCR fallback* |LOCKED |Docling provides open-source control + accuracy; cloud OCR (Azure) is fallback for edge cases (handwritten docs). |Only if Docling accuracy <75% in Phase 0 testing
-|*D2* |Schema mapping: *Simple confidence-scored matcher v1 + LogMap prototype research track* |LOCKED |Simple matcher reduces complexity & time-to-launch; LogMap research runs in parallel, ready for Phase 2 upgrade if promising. |Conditional: If Phase 1b accuracy <80%, escalate LogMap to critical path
-|*D3* |Audit trail: *Append-only event log + periodic snapshots + immutability rules per artifact (<<sect-immutability>>)* |LOCKED |Balances immutability (regulator requirement) + correctability (business need); defined semantics prevent ambiguity. |Only if regulatory guidance changes
-|*D4* |Pack interface: *Declarative JSON v1 (no executable logic)* |LOCKED |Reduces security risk (no code injection); versioning and validation easier; executable packs deferred to Phase 2 research. |Only if pack complexity demands executable rules
-|*D5* |Tenant isolation: *Row-level security for Phase 1; encryption + audit logging in Phase 1c* |LOCKED |RLS provides functional isolation; encryption + audit logging satisfy SOC 2 / regulatory audit requirements. Full encryption of data-at-rest deferred to Phase 2 based on customer demand. |Conditional: If security audit identifies critical gaps, escalate encryption to Phase 1c
-|*D6* |Canonical data schema: *MISMO Reference Model (flattened subset) for all loan-level attributes* |LOCKED |MISMO is the mortgage industry standard; reduces LOS integration friction; recognized by examiners; HMDA Reporting Dataset covers Phase 1 fields. Proprietary `custom:` namespace for non-MISMO fields. See <<sect-mismo-alignment>>. |If MISMO coverage <60% for a new regulation domain (Phase 2+), evaluate domain-specific alternatives
-|===
-
-NOTE: Decision IDs D7 and D8 were reserved for two v0.1 draft decisions (LLM provider selection and report templating approach) that were consolidated into D1 and D4 respectively during the v0.2 rewrite.
-The IDs are intentionally skipped to preserve traceability with early review notes.
-
-*New Decisions D9–D12 (Phase 1b–1c scope):*
-
-[cols="16%,29%,23%,8%,8%,8%,8%",options="header"]
-|===
-|ID |Decision |Status |Options Considered |Choice |Rationale |Conditions to Override
-|*D9* |*AI governance: Approval gates for all AI-generated content* |LOCKED |(a) AI output auto-finalized (fast, risky); (b) Optional human review (configurable); (c) *Mandatory approval (chosen)*. |Option (c): Mandatory approval for all AI narratives + critical findings. |Regulators expect explainability + human accountability; auto-finalization violates expected norms. |Only if customer feedback >80% report approval gates as friction
-|*D10* |*Exam bundle format: Structured ZIP vs. merged PDF* |OPEN |(a) ZIP with manifest + CSV + PDF (complex but modular); (b) Merged PDF (simple but not machine-readable); (c) Both. |Option (c): Both formats supported; ZIP default for technical users, PDF for print/email. |Exam reviewers have mixed preferences; ZIP supports regulatory data exchange. |None; both formats ship in MVP
-|*D11* |*Confidence thresholds: Hard thresholds vs. customer-configurable* |OPEN |(a) Hard-coded (simple, consistent across customers); (b) Customer config (flexible, complex); (c) Hybrid. |Option (c): *Defaults locked; customer override via professional services* (Phase 1c, not self-service). |Default thresholds tuned on test packs; customers can request tuning for custom packs. |Defer to Phase 2 if demand for self-service threshold config grows
-|*D12* |*Pack update cadence: Versioning + approval workflow* |OPEN |(a) Auto-rollout of pack updates (fast, risky); (b) Customer approval per update (slow, safe); (c) Staging environments for pre-launch. |Option (c): Staging environment + automated tests; updates staged by default, promoted to prod after customer UAT (1-week approval window). |Reduces customer risk; maintains audit trail of updates. |Monitor for friction in Q2 beta; adjust approval timeline if needed
-|===
-
 === Open Questions (Unresolved Before MVP)
 
 [cols="31%,38%,23%,8%",options="header"]
