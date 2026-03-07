@@ -333,6 +333,165 @@ flowchart TD
 
 '''
 
+=== Workflow 5: Audit Execution — Manual Mode
+
+This workflow details the step-by-step process for a fully manual audit, where the reviewer performs all field comparisons without automated extraction or pre-scan assistance.
+
+*Actors:* Admin (setup), Reviewer (comparison + findings), Manager (approval + reporting)
+*Trigger:* Admin creates a new audit run in Manual execution mode
+*End State:* All records reviewed, findings generated, report exported
+
+*Key Steps:*
+
+[arabic]
+. *Setup:* Admin creates an audit run, selects the audit pack (e.g., HMDA Origination), uploads or links the target dataset (HMDA LAR extract), and configures the sample size per FFIEC guidelines.
+. *Ingestion:* System validates the target dataset schema against the pack definition (37 Key Data Fields for HMDA), flags validation errors, and confirms record count against the configured sample.
+. *Document linking:* Reviewer or batch process associates source documents (Closing Disclosures, applications, rate-lock confirmations) with target LAR records.
+. *Stage 1 — Data Integrity Review:* Reviewer opens a record in the side-by-side viewer: HMDA LAR fields on the left, source document on the right.
+Reviewer compares each of the 37 Key Data Fields, marks as confirmed/discrepancy/unable to determine.
+For numeric fields (loan amount, rate, income), pack-defined tolerance rules apply (e.g., ±$1 rounding tolerance for loan amount).
+. *Finding creation:* When a discrepancy is identified, reviewer creates a finding with: correct source value, root cause selection, severity (auto-suggested by pack rules, overridable), and comment.
+. *Stage 2 — Substantive Review:* For records flagged by Stage 1 or selected for deeper analysis, reviewer evaluates whether reported data accurately reflects the underlying transaction (e.g., action-taken code consistency with application history, denial reason alignment with adverse action notices).
+. *Remediation:* Findings route to responsible parties via the remediation lifecycle (<<sect-finding-remediation>>).
+Corrective actions are tracked with SLA-driven due dates (Critical: 1 day, High: 3 days, Medium: 7 days, Low: 14 days) and evidence attachments.
+. *Second review:* Configurable sampling of completed reviews for quality assurance (default: 15% of findings require independent second review).
+. *Reporting:* Manager reviews dashboards, generates audit summary report, exports exam-ready bundle (<<sect-exam-ready-bundle>>).
+
+*Design Reference:* <<sect-concept-of-operations>>, <<sect-product-requirements>>
+
+[mermaid]
+----
+sequenceDiagram
+  participant Admin
+  participant System
+  participant Reviewer
+  participant Manager
+
+  Admin->>System: Create audit run + select pack
+  Admin->>System: Upload target dataset (HMDA LAR)
+  System->>System: Validate schema (37 Key Data Fields)
+  System-->>Admin: Validation result (errors/warnings)
+  Admin->>System: Link source documents to LAR records
+  Reviewer->>System: Open record in side-by-side viewer
+  Reviewer->>System: Stage 1: Compare fields (confirm / discrepancy / unable)
+  Reviewer->>System: Create finding (value, root cause, severity, comment)
+  Reviewer->>System: Stage 2: Substantive review of flagged records
+  System->>System: Route findings to responsible parties
+  Reviewer->>System: Track remediation + evidence
+  System->>System: Second review (QA sampling)
+  Manager->>System: Review dashboards
+  Manager->>System: Generate audit summary report
+  System-->>Manager: Exam-ready bundle
+----
+
+'''
+
+=== Workflow 6: Audit Execution — OCR-Assisted Mode (Phase 1+)
+
+This workflow details the OCR-assisted audit process where Docling extracts data from source documents and the comparison engine generates preliminary findings, with human review focused on uncertain cases.
+
+*Actors:* Admin (setup), System (Docling, Comparison Engine), Reviewer (validation + findings), Manager (approval + reporting)
+*Trigger:* Admin creates a new audit run in OCR-Assisted execution mode
+*End State:* All records reviewed (auto-confirmed + human-validated), findings generated, report exported
+
+*Key Steps:*
+
+[arabic]
+. *Setup:* Admin creates an audit run, selects the audit pack (e.g., HMDA Origination), uploads the target dataset (HMDA LAR extract), and configures sample size and confidence thresholds.
+. *Ingestion:* System validates the target dataset schema against the pack definition (37 Key Data Fields for HMDA), flags validation errors.
+. *Document linking:* Reviewer or batch process associates source documents (PDFs, images) with target LAR records.
+. *OCR extraction:* Document processing pipeline (Docling) extracts text, tables, and key-value pairs from source documents.
+Each extracted value carries an Automated Field-level Confidence (AFC) score routed per canonical thresholds (<<sect-glossary>>): AFC >= 0.85 auto-confirmed, 0.50 \<= AFC < 0.85 flagged for human review, AFC < 0.50 routed to manual entry.
+. *Stage 1 — Automated Pre-Scan:* Comparison engine applies pack rules to match target LAR values against extracted source values across the 37 Key Data Fields.
+Generates preliminary findings with combined confidence scores (extraction × rule application), routed per the same tier structure: combined >= 0.85 auto-confirmed, 0.50–0.84 flagged for review, < 0.50 rejected and flagged for manual re-review.
+. *Stage 1 — Human Review:* Reviewer sees pre-populated comparison results.
+Auto-confirmed matches (combined confidence >= 0.85) are pre-marked but reviewer can override.
+Medium-confidence items (0.50–0.84) are highlighted for manual verification.
+Low-confidence items (< 0.50) require full manual review.
+Reviewer focuses time on genuinely uncertain cases.
+. *Stage 2 — Substantive Review:* For records flagged by Stage 1 or selected for deeper analysis, reviewer evaluates whether reported data accurately reflects the underlying transaction.
+. *Remediation:* Findings route to responsible parties via the remediation lifecycle (<<sect-finding-remediation>>).
+Corrective actions are tracked with SLA-driven due dates and evidence attachments.
+. *Second review:* Configurable sampling of completed reviews for quality assurance.
+. *Reporting:* Manager reviews dashboards, generates audit summary report, exports exam-ready bundle (<<sect-exam-ready-bundle>>).
+
+*Design Reference:* <<sect-concept-of-operations>>, <<sect-product-requirements>>
+
+[mermaid]
+----
+sequenceDiagram
+  participant System
+  participant Docling
+  participant CompEngine as Comparison Engine
+  participant Reviewer
+  participant Manager
+
+  System->>Docling: Send source documents
+  Docling->>System: Extracted text, tables, key-value pairs + AFC scores
+  System->>CompEngine: Stage 1: Apply pack rules (target vs. extracted source)
+  CompEngine->>System: Preliminary findings + combined confidence scores
+  System->>Reviewer: Pre-populated comparison results (tiered by confidence)
+  Note over Reviewer: AFC >= 0.85: auto-confirmed (overridable)
+  Note over Reviewer: 0.50–0.84: flagged for human review
+  Note over Reviewer: < 0.50: manual review required
+  Reviewer->>System: Verify flagged items + override if needed
+  Reviewer->>System: Stage 2: Substantive review of flagged records
+  Reviewer->>System: Create/adjust findings
+  System->>Manager: Escalated findings for review
+  Manager->>System: Approve / request re-review
+  Manager->>System: Generate report + exam-ready bundle
+----
+
+'''
+
+=== Workflow 7: Audit Execution — Automated Pre-Scan ("Target-to-Source" / "Record-to-Record")
+
+For structured data audits (e.g., HMDA LAR against LOS database extract), the full Stage 1 comparison can be automated.
+
+*Actors:* Admin (setup + mapping approval), System (Comparison Engine), Reviewer (finding review), Manager (approval + reporting)
+*Trigger:* Admin creates a new audit run in Automated Pre-Scan execution mode with structured source data
+*End State:* All records compared automatically, human review completed for flagged findings, report exported
+
+*Key Steps:*
+
+[arabic]
+. Both target and source datasets are uploaded as structured data (CSV, API).
+. System auto-suggests schema mapping with calibrated confidence scores (<<sect-scoring-framework>>).
+Mappings with calibrated score >= 0.95 are auto-accepted; 0.70–0.94 require human review; < 0.70 require manual mapping.
+. Admin reviews and approves the schema mapping.
+If the admin rejects a mapping suggestion, the system presents alternative candidates ranked by confidence, or the admin selects the correct target field manually.
+. Comparison engine runs all pack rules automatically across mapped fields.
+. Output: full findings register with combined confidence scores, routed per canonical thresholds (<<sect-glossary>>).
+. Human review is required for: all Critical/High findings, all findings with combined confidence below 0.85, and all AI-generated narratives.
+
+*Design Reference:* <<sect-concept-of-operations>>, <<sect-product-requirements>>
+
+[mermaid]
+----
+sequenceDiagram
+  participant Admin
+  participant System
+  participant CompEngine as Comparison Engine
+  participant Reviewer
+  participant Manager
+
+  Admin->>System: Upload target dataset (CSV/API)
+  Admin->>System: Upload source dataset (CSV/API)
+  System->>System: Auto-suggest schema mapping + confidence scores
+  System-->>Admin: Present mapping suggestions (tiered by confidence)
+  Admin->>System: Approve, adjust, or manually map fields
+  System->>CompEngine: Run all pack rules automatically
+  CompEngine->>System: Full findings register + combined confidence scores
+  System->>Reviewer: Critical/High findings for review
+  System->>Reviewer: Below-threshold (< 0.85) findings for review
+  Reviewer->>System: Approve / override findings
+  System->>Manager: Escalated findings
+  Manager->>System: Final approval
+  Manager->>System: Generate report + exam-ready bundle
+----
+
+'''
+
 === UI Development Strategy
 
 ____

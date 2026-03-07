@@ -23,12 +23,12 @@ The user creates an audit run, selects an audit pack, uploads the HMDA LAR targe
 
 |WF-01
 |<<wf-audit-dashboard, Audit Dashboard>>
-|FR-5.1, FR-7.1
+|FR-10.1, FR-10.4
 |Dashboard shows all audits with RBAC-filtered visibility; status badges, progress metrics, quick actions.
 
 |WF-02
 |<<wf-audit-config, Audit Configuration>>
-|FR-1.1, FR-5.1, FR-5.2
+|FR-10.2, FR-10.5
 |Create audit run with pack selection, sample size, confidence threshold, dataset upload; validates schema against pack.
 
 |WF-04
@@ -38,7 +38,7 @@ The user creates an audit run, selects an audit pack, uploads the HMDA LAR targe
 
 |WF-03
 |<<wf-audit-progress, Audit Progress Monitor>>
-|FR-1.1, FR-2.1
+|FR-10.3, FR-10.4
 |Real-time phase progress (upload, extraction, mapping, rules, review, finalization); AFC routing distribution.
 |===
 
