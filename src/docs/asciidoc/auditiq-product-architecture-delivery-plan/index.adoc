@@ -50,8 +50,6 @@ include::architecture-overview/index.adoc[]
 
 include::component-level-design/index.adoc[]
 
-include::data-model/index.adoc[]
-
 // ============================================================
 // Part V: Specifications
 // ============================================================
