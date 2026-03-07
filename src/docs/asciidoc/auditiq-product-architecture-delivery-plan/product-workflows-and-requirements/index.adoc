@@ -18,6 +18,136 @@ Each journey is an end-to-end specification containing workflow diagrams, screen
 Read this section first when estimating sprint work.
 ____
 
+[[sect-use-case-model]]
+=== Use-Case Model
+
+The diagram below shows which actor roles participate in each user journey.
+Actors are grouped by their IIA Three Lines Model designation; the AI Engine and platform services appear as system actors on the right.
+
+[plantuml,use-case-model,svg]
+----
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #F0F4FF
+  BorderColor #4A6FA5
+}
+
+' ── First-Line actors ──
+package "First Line (QC)" as first_line {
+  actor "QC Reviewer" as qc_rev
+  actor "QC Manager" as qc_mgr
+}
+
+' ── Second-Line actors ──
+package "Second Line (Compliance)" as second_line {
+  actor "Compliance Analyst" as comp_analyst
+  actor "Compliance Officer" as comp_officer
+}
+
+' ── Third-Line actors ──
+package "Third Line (Internal Audit)" as third_line {
+  actor "Auditor" as auditor
+  actor "Audit Director" as audit_dir
+}
+
+' ── External actor ──
+actor "Examiner\n(External)" as examiner
+
+' ── System actors ──
+package "System" as system_actors {
+  actor "AI Engine" as ai
+  actor "Platform\nServices" as platform
+}
+
+' ── Admin actor ──
+actor "IT Admin /\nModel Risk Officer" as admin
+
+' ── Journeys ──
+rectangle "AuditIQ Platform" {
+  usecase "Upload &\nIngestion" as UC1
+  usecase "Extraction &\nMapping" as UC2
+  usecase "Finding Review\n& Approval" as UC3
+  usecase "Remediation\n& Reporting" as UC4
+  usecase "Dashboards &\nAnalytics" as UC5
+  usecase "Admin &\nRegistry" as UC6
+}
+
+' ── First-line relationships ──
+qc_rev --> UC1
+qc_rev --> UC2
+qc_rev --> UC3
+qc_rev --> UC4
+qc_mgr --> UC3
+qc_mgr --> UC4
+qc_mgr --> UC5
+
+' ── Second-line relationships ──
+comp_analyst --> UC1
+comp_analyst --> UC3
+comp_analyst --> UC4
+comp_officer --> UC3
+comp_officer --> UC4
+comp_officer --> UC5
+
+' ── Third-line relationships ──
+auditor --> UC1
+auditor --> UC3
+auditor --> UC4
+audit_dir --> UC4
+audit_dir --> UC5
+
+' ── External relationships ──
+examiner --> UC4
+
+' ── System relationships ──
+UC1 --> platform
+UC2 --> platform
+UC2 --> ai
+UC3 --> ai
+UC4 --> platform
+UC5 --> platform
+
+' ── Admin relationships ──
+admin --> UC6
+@enduml
+----
+
+**Actors by line of defense:**
+
+[cols="2,3,5",options="header"]
+|===
+|Line
+|Roles
+|Primary Journeys
+
+|First Line (QC)
+|`qc_reviewer`, `qc_manager`
+|Upload & Ingestion, Extraction & Mapping, Finding Review & Approval, Remediation & Reporting, Dashboards
+
+|Second Line (Compliance)
+|`compliance_analyst`, `compliance_officer`
+|Upload & Ingestion, Finding Review & Approval, Remediation & Reporting, Dashboards
+
+|Third Line (Internal Audit)
+|`auditor`, `audit_director`
+|Upload & Ingestion, Finding Review & Approval, Remediation & Reporting, Dashboards
+
+|Platform Administration
+|`it_admin`, `model_risk_officer`
+|Admin & Registry
+
+|External
+|Examiner
+|Remediation & Reporting (read-only exam bundle)
+|===
+
+All three lines share a common evidence base but maintain independent judgment — no AI output enters the official audit record without explicit human approval (see <<sect-ai-governance>>).
+
+'''
+
 [[sect-journey-screen-map]]
 === Journey-to-Screen Map
 
