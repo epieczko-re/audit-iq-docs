@@ -7,22 +7,59 @@ ____
 This section is the single reference for every MVP screen, workflow, functional requirement, and architecture detail in AuditIQ.
 
 **Organization:** This section is organized around **user journeys**.
-Each journey is an end-to-end specification containing flow diagrams, personas, step-by-step flows (mapped to implementation stages where helpful), screens and wireframes, functional requirements (by epic), data & service crosswalks, NFRs, and acceptance criteria.
+Each journey is an end-to-end specification containing workflow diagrams, screens and wireframes, functional requirements (by epic), architecture details (components, data flows, API contracts), NFRs, and acceptance criteria.
 
 *How to read this section:*
 
-* *User Journey Overview* — end-to-end workflow diagrams across execution modes (Manual, OCR-Assisted, Automated Pre-Scan).
-* *Journeys* — one document per user journey containing flow → screens → requirements → NFRs → acceptance criteria.
-* *Implementation* — stage-level canonical definitions and the Workflow Delivery Matrix (delivery/sprint mapping).
-Stage 1–6 are maintained as implementation artifacts and are referenced from journeys.
-* *Reference Material* — global layout, screen inventory, and UI development strategy.
+* *Journey-to-Screen Map* — connects each journey to execution mode, primary screens, and coverage.
+* *Journeys* — one document per user journey containing flow diagrams → screens → requirements → architecture → NFRs → acceptance criteria.
+* *Reference Material* — global layout, screen inventory, UI development strategy, and the Workflow Delivery Matrix (delivery/sprint mapping).
 
 Read this section first when estimating sprint work.
 ____
 
-include::_user-journey-overview.adoc[]
+=== Journey-to-Screen Map
 
-// Journeys — each journey contains the flow and includes the relevant stage-level details
+This map connects each journey to execution mode and the primary screens users see while completing the journey.
+
+[cols="11%,18%,21%,50%",options="header"]
+|===
+|Journey |Execution Mode |Coverage |Primary Screens
+
+|Upload & Ingestion
+|All modes
+|Audit creation through document upload
+|WF-01 Audit Dashboard, WF-02 Audit Configuration, WF-04 Document Upload, WF-03 Audit Progress Monitor
+
+|Extraction & Mapping
+|OCR-Assisted, Automated Pre-Scan
+|Document processing through field mapping
+|WF-06 Field Extraction Review, WF-07 Document Viewer, WF-08 Mapping Review, WF-09 Synonym Dictionary
+
+|Finding Review & Approval
+|All modes
+|Rule execution through finding approval
+|WF-10 Findings Review Queue, WF-11 Finding Detail, WF-12 AI Narrative Approval, WF-12b Record Comparison, WF-13 Manager Escalation
+
+|Remediation & Reporting
+|All modes
+|Corrective action through exam-ready bundle
+|WF-14 Remediation Tracking, WF-15 Aging Dashboard, WF-16 Report Generation, WF-17 Exam-Ready Bundle Export, WF-18 Findings Register
+
+|Dashboards & Analytics
+|All modes (read-only)
+|Portfolio health and operational monitoring
+|WF-19 Executive Dashboard, WF-20 Manager Dashboard, WF-21 Drift Monitoring
+
+|Admin & Registry
+|Platform administration
+|User management, packs, models, settings
+|WF-22 User Management, WF-23 Pack Management, WF-24 Model Registry Admin, WF-25 System Settings, WF-26 Audit Trail Viewer
+|===
+
+'''
+
+// Journeys — each journey is self-contained with flow diagrams, screens, requirements, architecture, and acceptance criteria
 include::journeys/journey-upload-ingestion.adoc[]
 include::journeys/journey-extraction-mapping.adoc[]
 include::journeys/journey-finding-review.adoc[]
@@ -30,7 +67,7 @@ include::journeys/journey-remediation-reporting.adoc[]
 include::journeys/journey-dashboards.adoc[]
 include::journeys/journey-admin-registry.adoc[]
 
-// Implementation and references
+// Delivery matrix and reference material
 include::implementation/workflow-delivery-matrix.adoc[]
 
 include::_global-layout.adoc[]

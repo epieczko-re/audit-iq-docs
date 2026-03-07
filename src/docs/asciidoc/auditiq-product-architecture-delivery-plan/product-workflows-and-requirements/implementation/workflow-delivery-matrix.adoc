@@ -1,39 +1,20 @@
-= Implementation: Workflow Delivery Matrix & Stages
-:toc:
+[[sect-workflow-delivery-matrix]]
+=== Workflow Delivery Matrix
 
-== Overview
-This document contains the canonical Stage 1–6 definitions and the mapping to sprints / delivery increments.
-The "Stage X" files are canonical implementation artifacts and are included below for reference.
+This matrix maps user journeys to sprints, owners, and delivery increments.
+Journey specifications (screens, functional requirements, architecture) are defined in the journey sections above.
 
-== Stage 1 — Upload & Ingestion
-include::../_stage-1-upload-ingestion.adoc[]
-
-== Stage 2 — Extraction & Mapping
-include::../_stage-2-extraction-mapping.adoc[]
-
-== Stage 3 — Finding Review
-include::../_stage-3-finding-review.adoc[]
-
-== Stage 4 — Remediation & Reporting
-include::../_stage-4-remediation-reporting.adoc[]
-
-== Stage 5 — Dashboards
-include::../_stage-5-dashboards.adoc[]
-
-== Stage 6 — Admin & Registry
-include::../_stage-6-admin-registry.adoc[]
-
-== Workflow Delivery Matrix
-// If there is an existing Workflow Delivery Matrix file, include it here. Otherwise create the matrix table below.
-
-.Workflow Delivery Matrix (example)
+.Workflow Delivery Matrix
 [cols="25,25,25,25",options="header"]
 |===
-|Stage |Sprint(s) |Owner |Notes
-|Stage 1 |Sprint X |Team A |...
-|Stage 2 |Sprint Y |Team B |...
-|Stage 3 |Sprint Z |Team C |...
+|Journey |Sprint(s) |Owner |Notes
+|Upload & Ingestion |Sprint X |Team A |...
+|Extraction & Mapping |Sprint Y |Team B |...
+|Finding Review & Approval |Sprint Z |Team C |...
+|Remediation & Reporting |Sprint Z+1 |Team A |...
+|Dashboards & Analytics |Sprint Z+2 |Team B |...
+|Admin & Registry |Sprint Z+3 |Team C |...
 |===
 
-== How Journeys Map to Stages
-// Provide a table or paragraph describing the mapping journey ↔ stage ↔ sprint.
+NOTE: Sprint assignments are placeholders.
+See <<sect-delivery-plan>> for the detailed delivery timeline.
