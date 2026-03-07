@@ -981,12 +981,34 @@ CREATE INDEX idx_users_role ON users(tenant_id, role);
 *Consuming screens (<<sect-workflow-screen-guide>>):* <<wf-audit-dashboard, WF-01 Audit Dashboard>> (all audits with status badges, progress metrics, and quick actions) | <<wf-audit-config, WF-02 Audit Configuration>> (create audit run with pack selection and parameter configuration) | <<wf-audit-progress, WF-03 Audit Progress Monitor>> (real-time phase progress driven by orchestration state transitions)
 ****
 
-The Audit Orchestration Service is the central coordinator for every audit run in AuditIQ.
-It owns the authoritative state machine that governs an audit's progression from creation through ingestion, validation, comparison, review, and finalization.
-No other service may advance or roll back an audit's state — all transitions flow through the Orchestration Service, which validates preconditions, enforces tenant concurrency limits, and emits an event for every state change.
+==== Why Audit Orchestration Matters
 
-By centralizing lifecycle control in a single service, AuditIQ gains a consistent, auditable record of how each audit progressed, a single place to enforce business rules (such as requiring second-level review before finalization), and a clean coordination point for the downstream services — <<sect-ingestion-service, Ingestion>>, <<sect-doc-processing, Document Processing>>, <<sect-comparison-engine, Comparison & Rules Engine>>, and <<sect-reporting-service, Reporting>> — that perform the actual audit work.
-The subsections below define the state machine transitions, GraphQL API contract, pack-loading semantics, concurrency limits, failure-handling policies, and event emission contract that together specify the service's behaviour.
+A regulatory audit is not a single operation — it is a multi-phase process that can span days or weeks, involve multiple reviewers across different lines of defense, and must produce an evidence trail that withstands examiner scrutiny.
+Without a dedicated orchestration layer, the responsibility for sequencing these phases — ingestion, validation, comparison, review, approval — would be scattered across individual services and UI controllers, each enforcing its own rules about what can happen next.
+The result would be inconsistent state management, gaps in the audit trail, and no single authority to answer the question every examiner eventually asks: _"Show me exactly how this audit progressed from start to finish."_
+
+The Audit Orchestration Service exists to eliminate that fragmentation.
+It is the single authority that owns every audit's lifecycle, enforcing a deterministic state machine that governs which transitions are legal, which preconditions must be met, and which downstream services are invoked at each phase.
+Every state change — whether triggered by a user action, a service callback, or a timeout — flows through the Orchestration Service, which validates the transition, enforces tenant concurrency limits, and emits an immutable event before advancing the audit.
+
+This centralized design delivers three properties that are essential in a regulated environment:
+
+* *Auditability.* Every audit run produces a complete, ordered event history that records who triggered each transition, when it occurred, and what preconditions were satisfied.
+This history is the foundation of the <<sect-exam-pack-lifecycle, Exam-Ready Bundle>> and the primary artifact examiners review.
+* *Consistency.* Business rules — such as requiring second-level review before finalization, or blocking new audits when a tenant's concurrency limit is reached — are enforced in exactly one place.
+No downstream service can bypass or contradict these rules.
+* *Resilience.* Because the Orchestration Service owns the state machine, it also owns failure recovery.
+When a downstream service times out or a partial batch fails, the Orchestration Service applies compensating transitions, routes events to a dead-letter queue, and preserves a clean rollback path — rather than leaving the audit in an ambiguous state.
+
+==== How It Fits in the Architecture
+
+The Orchestration Service sits between the <<sect-api-gateway, API Gateway>> (which receives user and system requests) and the four services that perform the actual audit work: <<sect-ingestion-service, Ingestion>>, <<sect-doc-processing, Document Processing>>, <<sect-comparison-engine, Comparison & Rules Engine>>, and <<sect-reporting-service, Reporting>>.
+It does not perform ingestion, comparison, or report generation itself — it coordinates those services, telling each one when to start, monitoring their progress, and deciding what happens next based on the result.
+
+An <<sect-audit-pack-spec, Audit Pack>> provides the declarative configuration — rules, schemas, scoring weights — that the Orchestration Service loads and pins to the audit run at creation time.
+The pack tells the platform _what_ to audit; the Orchestration Service controls _when_ and _in what order_ each phase executes.
+
+The subsections below define the authoritative state machine transitions, GraphQL API contract, pack-loading semantics, concurrency limits, failure-handling policies, and event emission contract that together specify the service's behaviour.
 
 *Responsibilities:*
 
