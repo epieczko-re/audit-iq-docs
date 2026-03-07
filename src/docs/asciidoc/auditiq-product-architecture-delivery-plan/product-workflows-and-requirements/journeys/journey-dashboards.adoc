@@ -2,6 +2,117 @@
 
 Dashboards provide read-only operational and executive views across all audits.
 
+==== End-to-End Workflow Diagrams
+
+===== Dashboard Data Aggregation & Rendering
+
+This workflow shows how audit events flow from operational services through aggregation into the executive and manager dashboards, including tenant isolation and role-based filtering.
+
+*Actors:* System (event processing + aggregation), Executive (read-only consumer), Manager (operational consumer) *Trigger:* Any audit event is emitted (finding created/closed, remediation updated, report generated) *End State:* Dashboard KPIs and charts reflect current audit program state within 30 seconds
+
+*Design Reference:* <<sect-reporting-service>>, <<sect-audit-trail-event-store>>
+
+[mermaid]
+----
+flowchart TD
+    A([Audit Events Emitted<br/>Findings, Remediations,<br/>Reports, Approvals]) --> B[Immutable Event Store<br/>Append-Only Log]
+    B --> C[Aggregation Engine<br/>Materialized Views + Queries]
+    C --> D{User Role?}
+
+    D -->|Executive| E[Executive Dashboard<br/>Portfolio KPIs]
+    D -->|Manager| F[Manager Dashboard<br/>Operational Metrics]
+    D -->|Model Risk Officer| G[Drift Monitoring<br/>Phase 2]
+
+    E --> E1[KPI Cards:<br/>Audit Count, Findings,<br/>Compliance Rate, Avg Resolution]
+    E --> E2[Compliance Trend Chart<br/>12-Month Rolling]
+    E --> E3[Severity Breakdown<br/>+ Recent Finalized Audits]
+
+    F --> F1[Active Audits<br/>+ Progress Tracking]
+    F --> F2[Critical Findings<br/>Requiring Action]
+    F --> F3[Pending Approvals<br/>AI Narratives, Closures, Reports]
+    F --> F4[Team Workload<br/>+ SLA Violations]
+
+    %% Tenant isolation annotation
+    RLS[Tenant Isolation:<br/>PostgreSQL RLS filters<br/>all queries by tenant_id.<br/>Cross-tenant data access<br/>architecturally impossible.]
+    C -.-> RLS
+
+    %% Refresh annotation
+    REF[Refresh Cadence:<br/>KPI cards: page load<br/>Charts: 30s polling<br/>Alerts: real-time via WebSocket]
+    E1 -.-> REF
+    F2 -.-> REF
+
+    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style B fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style D fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style E fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style F fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style G fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style E1 fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style E2 fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style E3 fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style F1 fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style F2 fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style F3 fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style F4 fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style RLS fill:#2B3E50,color:#ccc,stroke:#555,stroke-dasharray:5 5
+    style REF fill:#2B3E50,color:#ccc,stroke:#555,stroke-dasharray:5 5
+----
+
+'''
+
+===== Executive & Manager Dashboard Interaction
+
+This sequence diagram shows the interaction flow for both executive and manager dashboard users, including how alerts surface SLA violations and how drill-down navigation connects dashboards to operational screens.
+
+*Actors:* Executive, Manager, System *Trigger:* User navigates to dashboard *End State:* User has visibility into audit program health and has actioned any urgent items
+
+[mermaid]
+----
+sequenceDiagram
+    participant Executive
+    participant Manager
+    participant System
+    participant DB as PostgreSQL (RLS)
+
+    Executive->>System: Open Executive Dashboard
+    System->>DB: Query KPIs (filtered by tenant_id via RLS)
+    DB-->>System: Aggregated metrics (audit count, findings, compliance rate)
+    System-->>Executive: Render KPI cards + compliance trend chart
+
+    Executive->>System: Click compliance trend data point (March)
+    System->>DB: Query March audits for tenant
+    System-->>Executive: Drill-down: March audit list with findings summary
+
+    Executive->>System: Download Quarterly Report
+    System->>System: Generate executive summary PDF
+    System-->>Executive: PDF download
+
+    Note over Manager: Manager Dashboard — operational view
+
+    Manager->>System: Open Manager Dashboard
+    System->>DB: Query active audits, critical findings, pending approvals (RLS-filtered)
+    DB-->>System: Operational data + SLA violation alerts
+    System-->>Manager: Render dashboard with alert banner
+
+    alt SLA violations detected
+        System-->>Manager: Alert: "2 Critical findings untriaged > SLA"
+        Manager->>System: Click [Triage Now] on critical finding
+        System-->>Manager: Navigate to Finding Detail (triage pre-expanded)
+    end
+
+    Manager->>System: Review pending AI narrative approval
+    System-->>Manager: Navigate to AI Narrative Approval screen
+    Manager->>System: Approve AI narrative
+    System->>System: Record human_approval event
+
+    Manager->>System: Check team workload
+    System-->>Manager: Reviewer assignment counts + overdue items
+    Manager->>System: Navigate to Aging Dashboard for overdue details
+----
+
+'''
+
 ==== Overview
 
 *Primary workflow alignment:* supports closed-loop visibility for the Workflow 1 diagram above and execution-mode workflows (5-7).
