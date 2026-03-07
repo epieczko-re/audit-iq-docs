@@ -50,8 +50,6 @@ include::audit-pack-specification/index.adoc[]
 
 include::regulatory-compliance-and-policy-management/index.adoc[]
 
-include::glossary/index.adoc[]
-
 // ============================================================
 // Part V: Architecture & Design
 // ============================================================
