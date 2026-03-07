@@ -125,7 +125,7 @@ Docling-Graph produces a directed knowledge graph where each extracted entity is
 The knowledge graph supports two distinct edge types, serving different layers of the architecture:
 
 [[sect-graph-edge-taxonomy]]
-===== Graph Edge Type Taxonomy
+==== Graph Edge Type Taxonomy
 
 [cols="18%,22%,30%,30%",options="header"]
 |===
@@ -144,7 +144,7 @@ Drives graph-first alignment in the Policy Profile Creation Pipeline (<<sect-ai-
 |Sentence transformer anchoring pipeline (<<sect-embedding-architecture>>)
 |===
 
-===== `corroborates` Edge Schema
+==== `corroborates` Edge Schema
 
 When multiple documents reference the same loan (matched by `graph_id_fields`), Docling-Graph creates `corroborates` edges:
 
@@ -160,7 +160,7 @@ When multiple documents reference the same loan (matched by `graph_id_fields`), 
 }
 ----
 
-===== `implements` Edge Schema
+==== `implements` Edge Schema
 
 When a policy sentence is anchored to an ontology node via the two-layer embedding architecture (<<sect-two-layer-embeddings>>), an `implements` edge is created:
 
