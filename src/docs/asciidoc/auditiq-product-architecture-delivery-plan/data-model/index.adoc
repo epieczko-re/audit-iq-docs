@@ -3,26 +3,114 @@
 
 === Entity-Relationship Diagram (Conceptual)
 
-....
-audit_runs (one) ---> (many) findings
-audit_runs (one) ---> (many) evidence
-audit_runs (one) ---> (many) field_mappings
-audit_runs (one) ---> (many) users_assigned
-audit_runs (one) ---> (many) exam_bundles
+[mermaid]
+----
+---
+title: AuditIQ Entity-Relationship Diagram (Conceptual)
+---
+erDiagram
+    audit_runs {
+        uuid audit_id PK
+        uuid tenant_id FK
+        varchar pack_id
+        varchar status
+        uuid target_dataset_id FK
+        varchar audit_context_id FK
+    }
 
-findings (one) ---> (many) status_transitions
-findings (one) ---> (many) evidence (via foreign_key)
-findings (one) ---> (many) remediation_actions
-findings (one) ---> (many) bundle_exceptions
+    findings {
+        uuid finding_id PK
+        uuid audit_id FK
+        varchar record_id
+        varchar field_id
+        decimal combined_confidence
+        varchar severity
+        varchar status
+        uuid audit_event_id FK
+    }
 
-exam_bundles (one) ---> (many) bundle_approvals
-exam_bundles (one) ---> (many) bundle_exceptions
-exam_bundles (one) ---> (one) parent_bundle (self-referential version chain)
+    field_mappings {
+        uuid mapping_id PK
+        uuid audit_id FK
+        varchar target_field_id
+        varchar source_field_id
+        decimal confidence
+        varchar status
+    }
 
-evidence (one) ---> (many) audit_trail.events
+    evidence {
+        uuid evidence_id PK
+        uuid audit_id FK
+        uuid finding_id FK
+        varchar sha256_hash
+        varchar s3_path
+        uuid audit_event_id FK
+    }
 
-field_mappings (one) ---> (many) mapping_versions
-....
+    exam_bundles {
+        uuid bundle_id PK
+        uuid tenant_id FK
+        uuid audit_id FK
+        uuid parent_bundle_id FK
+        varchar bundle_version
+        varchar status
+        varchar bundle_content_hash
+    }
+
+    bundle_approvals {
+        uuid approval_id PK
+        uuid bundle_id FK
+        int defense_line
+        uuid approver_id FK
+        uuid audit_event_id FK
+    }
+
+    bundle_exceptions {
+        uuid exception_id PK
+        uuid bundle_id FK
+        uuid audit_id FK
+        uuid finding_id FK
+        varchar exception_type
+        jsonb original_value
+        jsonb overridden_to
+    }
+
+    policy_documents {
+        uuid document_id PK
+        uuid tenant_id FK
+        uuid institution_id FK
+        varchar document_type
+        varchar status
+        uuid supersedes_document_id FK
+    }
+
+    audit_trail_events {
+        uuid event_id PK
+        uuid tenant_id FK
+        uuid audit_id FK
+        varchar entity_type
+        varchar entity_id
+        varchar event_type
+        varchar event_hash
+    }
+
+    audit_runs ||--o{ findings : "produces"
+    audit_runs ||--o{ evidence : "collects"
+    audit_runs ||--o{ field_mappings : "defines"
+    audit_runs ||--o{ exam_bundles : "generates"
+    audit_runs ||--o{ audit_trail_events : "logs"
+
+    findings ||--o{ evidence : "supported by"
+    findings ||--o{ bundle_exceptions : "triggers"
+
+    exam_bundles ||--o{ bundle_approvals : "requires"
+    exam_bundles ||--o{ bundle_exceptions : "may have"
+    exam_bundles |o--|| exam_bundles : "parent version"
+
+    evidence ||--o{ audit_trail_events : "tracked in"
+
+    policy_documents |o--|| policy_documents : "supersedes"
+----
 
 [[sect-mismo-alignment]]
 === MISMO Alignment Strategy
