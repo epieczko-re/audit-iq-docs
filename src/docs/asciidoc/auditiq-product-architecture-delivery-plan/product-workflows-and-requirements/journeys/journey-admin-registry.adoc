@@ -2,6 +2,140 @@
 
 Admin screens cover user management, pack lifecycle, model registry, system configuration, and audit trail viewing.
 
+==== End-to-End Workflow Diagrams
+
+===== Administrative Governance Lifecycle
+
+This workflow shows the complete administrative setup and governance cycle — from user onboarding through pack publication, model approval, and ongoing audit trail oversight — that must be completed before any operational audit can begin.
+
+*Actors:* IT Admin (user + system setup), Manager (pack + model governance), Model Risk Officer (model approval) *Trigger:* New tenant provisioned or administrative change required *End State:* Platform configured with active users, published packs, approved models, and monitored audit trail
+
+*Design Reference:* <<sect-rbac-permission-matrix>>, <<sect-audit-pack-spec>>, <<sect-model-registry>>
+
+[mermaid]
+----
+flowchart TD
+    A([Tenant Provisioned]) --> B[IT Admin Configures<br/>SSO / SAML Integration]
+    B --> C[IT Admin Creates Users<br/>Assigns Defense Lines + Roles]
+    C --> D[IT Admin Sets<br/>System Settings + Thresholds]
+
+    D --> E{Platform<br/>Ready?}
+    E -->|Users + Settings configured| F[Manager Creates<br/>Audit Pack Draft]
+    F --> G[Pack Validation<br/>Test Harness Execution]
+    G --> H{Validation<br/>Result?}
+    H -->|Pass| I[Manager Publishes Pack<br/>Available for New Audits]
+    H -->|Fail| F
+
+    E -->|Models needed| J[Register AI/ML Model<br/>Draft → Staging]
+    J --> K[Model Risk Officer<br/>Reviews Performance Metrics]
+    K --> L{Approval<br/>Decision?}
+    L -->|Approve| M[Model Approved<br/>Available for Call-Time Use]
+    L -->|Reject| J
+    M -->|Superseded| N[Model Deprecated<br/>Active Audits Continue]
+
+    I --> O([Operational Audits<br/>Can Begin])
+    M --> O
+
+    %% Ongoing governance
+    O --> P[Audit Trail Viewer<br/>Continuous Monitoring]
+    P --> Q{Anomaly<br/>Detected?}
+    Q -->|Violation logged| R[IT Admin / Compliance<br/>Investigates Event]
+    R --> S[Corrective Action<br/>+ Evidence Logged]
+    Q -->|No issues| P
+
+    %% Fail-closed annotation
+    FC[Fail-Closed Gating:<br/>No approved model = system<br/>refuses AI calls at runtime.<br/>No published pack = no new<br/>audits can be created.]
+    M -.-> FC
+    I -.-> FC
+
+    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style B fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style C fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style E fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style G fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style H fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style I fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style J fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style K fill:#20B2AA,color:#fff,stroke:#178A83
+    style L fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style M fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style N fill:#2B3E50,color:#fff,stroke:#1A2A3A
+    style O fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style P fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style Q fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style R fill:#C0392B,color:#fff,stroke:#922B21
+    style S fill:#20B2AA,color:#fff,stroke:#178A83
+    style FC fill:#2B3E50,color:#ccc,stroke:#555,stroke-dasharray:5 5
+----
+
+'''
+
+===== Pack Publication & Model Approval Sequence
+
+This sequence diagram details the handoffs between IT Admin, Manager, and Model Risk Officer during the pack and model governance workflows, including the test harness validation and fail-closed gating that protect production audit operations.
+
+*Actors:* IT Admin, Manager, Model Risk Officer, System *Trigger:* New pack or model needs to be made available for audits *End State:* Pack published and model approved; platform ready for operational audits
+
+[mermaid]
+----
+sequenceDiagram
+    participant Admin as IT Admin
+    participant Manager
+    participant MRO as Model Risk Officer
+    participant System
+
+    Note over Admin: User & tenant setup
+
+    Admin->>System: Configure SSO/SAML integration
+    Admin->>System: Create users with defense line + role assignments
+    System->>System: Enforce cross-line isolation (1 user = 1 defense line)
+    Admin->>System: Set confidence thresholds + SLA timelines
+    System->>System: Log all settings changes to audit trail
+
+    Note over Manager: Pack lifecycle
+
+    Manager->>System: Create new audit pack (Draft)
+    Manager->>System: Define rules, scoring weights, evidence requirements
+    Manager->>System: Submit pack for validation
+    System->>System: Execute test harness against sample data
+
+    alt Validation passes
+        System-->>Manager: Validation report (expected findings generated)
+        Manager->>System: Publish pack
+        System->>System: Pack status → Published (available for new audits)
+        System->>System: Existing audits remain pinned to prior version
+    else Validation fails
+        System-->>Manager: Failure report (unexpected findings, missing rules)
+        Manager->>System: Revise pack and resubmit
+    end
+
+    Note over MRO: Model lifecycle
+
+    MRO->>System: Register new AI/ML model (Draft)
+    MRO->>System: Upload performance metrics + validation results
+    System->>System: Model status → Staging
+    MRO->>System: Review model against acceptance criteria
+    MRO->>System: Approve model
+    System->>System: Model status → Approved (available at call-time)
+
+    Note over System: Fail-closed gating active
+
+    alt No approved model exists for a capability
+        System->>System: AI call refused — fail closed
+        System-->>Manager: Error: no approved model for extraction
+    end
+
+    Note over MRO: Model deprecation
+
+    MRO->>System: Deprecate older model version
+    System->>System: Active audits continue with current model
+    System->>System: New audits use latest approved model
+----
+
+'''
+
 ==== Overview
 
 *Primary workflow alignment:* administrative governance that enables all execution workflows (1-7), including RBAC and pack/model lifecycle controls.

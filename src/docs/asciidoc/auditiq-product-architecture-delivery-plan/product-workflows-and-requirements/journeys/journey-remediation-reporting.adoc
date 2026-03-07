@@ -3,6 +3,136 @@
 This journey covers the 9-state finding remediation lifecycle, SLA tracking, report generation, and exam-ready bundle export.
 Findings flow from identification through closure with approval gates at each transition.
 
+==== End-to-End Workflow Diagrams
+
+===== Finding Remediation Lifecycle (9-State)
+
+This workflow details the complete remediation lifecycle from initial finding identification through closure, including SLA enforcement, retest gates, and escalation paths.
+
+*Actors:* Reviewer (triage + remediation), Senior Reviewer (retest), Manager (approval + escalation) *Trigger:* Rules engine or reviewer creates a finding *End State:* Finding closed with full remediation evidence trail, or escalated for management disposition
+
+*Design Reference:* <<sect-finding-remediation>>, <<sect-concept-of-operations>>
+
+[mermaid]
+----
+flowchart TD
+    A([Finding Created<br/>by Rules Engine / Reviewer]) --> B[Identified<br/>Awaiting Triage]
+    B --> C[Reviewer Triages<br/>Confirms Severity + Assigns Owner]
+    C --> D[Triaged<br/>Owner Notified]
+    D --> E[Remediation Assigned<br/>Owner Plans Corrective Action]
+    E --> F[Owner Executes<br/>Corrective Action + Uploads Evidence]
+    F --> G[Corrected<br/>Pending Retest]
+    G --> H{Independent<br/>Retest?}
+    H -->|Pass| I[Retest Passed<br/>Correction Verified]
+    H -->|Fail| J[Retest Failed<br/>→ Back to Remediation]
+    J --> E
+
+    I --> K{Severity =<br/>Critical / High?}
+    K -->|Yes — Manager approval required| L[Manager Reviews<br/>Evidence + Retest Results]
+    L --> M{Manager<br/>Disposition?}
+    M -->|Approve closure| N([Closed<br/>Full Evidence Chain Logged])
+    M -->|Request rework| E
+    K -->|No — auto-close eligible| N
+
+    %% SLA Breach path
+    B -->|SLA breach| O[Escalated<br/>Auto-Escalation to Manager]
+    E -->|SLA breach| O
+    O --> P[Manager Assigns<br/>New Owner or Priority]
+    P --> E
+
+    %% Reopen path
+    N -->|Post-closure issue found| Q[Reopened<br/>New Bundle Version Created]
+    Q --> C
+
+    %% SLA annotation
+    SLA[SLA Thresholds:<br/>Critical: 1 day<br/>High: 3 days<br/>Medium: 7 days<br/>Low: 14 days]
+    B -.-> SLA
+    E -.-> SLA
+
+    style A fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style B fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style C fill:#20B2AA,color:#fff,stroke:#178A83
+    style D fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style E fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style F fill:#4A6FA5,color:#fff,stroke:#2B4570
+    style G fill:#20B2AA,color:#fff,stroke:#178A83
+    style H fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style I fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style J fill:#C0392B,color:#fff,stroke:#922B21
+    style K fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style L fill:#20B2AA,color:#fff,stroke:#178A83
+    style M fill:#FF7E2D,color:#fff,stroke:#CC5500
+    style N fill:#2E8B57,color:#fff,stroke:#1B5E3B
+    style O fill:#C0392B,color:#fff,stroke:#922B21
+    style P fill:#20B2AA,color:#fff,stroke:#178A83
+    style Q fill:#7B68EE,color:#fff,stroke:#5B4CB8
+    style SLA fill:#2B3E50,color:#ccc,stroke:#555,stroke-dasharray:5 5
+----
+
+'''
+
+===== Remediation Through Report Export (End-to-End Sequence)
+
+This sequence diagram traces the complete path from finding triage through remediation, report generation, and exam-ready bundle export — showing handoffs between all participating actors and the Three Lines Model approval gates.
+
+*Actors:* Reviewer, Senior Reviewer, Manager, Compliance Officer, System *Trigger:* Finding enters Identified state *End State:* Exam-ready bundle exported with Three Lines Model certification
+
+[mermaid]
+----
+sequenceDiagram
+    participant Reviewer
+    participant SrReviewer as Senior Reviewer
+    participant Manager
+    participant CO as Compliance Officer
+    participant System
+
+    Reviewer->>System: Triage finding (confirm severity, assign owner)
+    System->>System: Start SLA timer (severity-based)
+    System-->>Reviewer: Remediation assignment notification
+
+    Reviewer->>System: Submit corrective action + upload evidence
+    System->>System: Compute SHA-256 hash, store evidence (append-only)
+    System->>System: Record EvidenceCreated event
+
+    Reviewer->>System: Request retest
+    System->>SrReviewer: Route to independent retester (≠ remediation owner)
+    SrReviewer->>System: Verify correction against source documents
+
+    alt Retest passes
+        SrReviewer->>System: Mark retest passed
+    else Retest fails
+        SrReviewer->>System: Mark retest failed + add notes
+        System-->>Reviewer: Return to remediation with failure notes
+        Note over Reviewer: Cycle repeats until retest passes
+    end
+
+    alt Critical or High severity
+        System->>Manager: Route for manager approval
+        Manager->>System: Approve closure (or request rework)
+    end
+
+    System->>System: Finding → Closed state
+
+    Note over Manager: All findings closed — ready for reporting
+
+    Manager->>System: Request audit report generation
+    System->>System: Aggregate findings, generate AI draft narrative
+    Manager->>System: Review and approve AI-generated sections
+    System->>System: Generate PDF report from pack template
+
+    Note over Manager,CO: Three Lines Model approval gate
+
+    Manager->>System: First Line sign-off (QC Manager)
+    CO->>System: Second Line sign-off (Compliance Officer)
+    System->>System: Third Line sign-off (Audit Director)
+
+    System->>System: Assemble exam-ready bundle (14 artifacts)
+    System->>System: Compute bundle SHA-256, verify hash chain
+    System-->>Manager: Bundle ready for download (versioned ZIP)
+----
+
+'''
+
 ==== Overview
 
 *Primary workflows:* the Workflow 1 diagram above (end-to-end closure/reporting) and execution-mode workflows (5-7).
