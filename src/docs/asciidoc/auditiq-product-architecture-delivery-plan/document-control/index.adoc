@@ -27,6 +27,7 @@ Expanded Component-Level Design (Section 10) with nine improvements: added Schem
 |0.35 |2026-03-07 |Erik Pieczkowski |Added consuming-screen cross-references to every component in Component-Level Design, linking each service and infrastructure component back to its corresponding screens in the UI Workflows, Screens & User Journeys section for full traceability between architecture and user experience.
 Expanded Exam Pack Lifecycle Manager with contextual introduction explaining the audit pack vs. exam pack distinction — input configuration vs. output dossier — with comparison table, audience guidance, and cross-references to pack specification and architecture concepts.
 Reorganized Component-Level Design into nine logical tiers for improved readability: Conceptual Overview, Infrastructure & Platform Layer, Orchestration & Pack Definition, Data Processing Pipeline, Findings & Reporting, Intelligence & Policy Services, Governance & Auditability, Cross-Cutting Concerns, and Future Vision.
+Added contextual introduction to Audit Orchestration Service explaining its role as the central lifecycle coordinator, its relationship to downstream services, and a roadmap of the subsections that follow.
 
 |0.34 |2026-03-07 |Erik Pieczkowski |Removed Workflow Delivery Matrix from Delivery Plan and Product Workflows sections; sprint-level detail now lives exclusively in the Delivery Plan phase tables and Quick Start 6-sprint plan.
 
