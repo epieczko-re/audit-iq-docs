@@ -302,6 +302,55 @@ erDiagram
     policy_documents |o--|| policy_documents : "supersedes"
 ----
 
+[[sect-entity-blob-storage-map]]
+=== Entity-to-Blob-Storage Mapping
+
+The data model stores file references as URI or path columns in PostgreSQL, while the physical files reside in tenant-isolated Azure Blob Storage containers.
+The table below consolidates this relationship so readers can trace any storage column directly to its blob container without cross-referencing multiple sections.
+
+[cols="22%,22%,22%,34%",options="header"]
+|===
+|Entity (Table) |Storage Column |Blob Container |What Is Stored
+
+|`evidence`
+|`s3_path`
+|`{tenant_id}-evidence`
+|Evidence files (PDFs, images, extracted documents) linked to individual findings.
+Written once on upload; read during review, reporting, and exam export.
+
+|`policy_documents`
+|`storage_reference`
+|`{tenant_id}-documents`
+|Institution policy documents (board policies, compliance procedures, job aids).
+URI may also point to an institution's external document store.
+
+|`exam_bundles`
+|`storage_path`
+|`{tenant_id}-exports`
+|Exam-ready bundle ZIPs containing the complete dossier for examiner delivery.
+Archived to cool storage after 90 days.
+
+|`GeneratedReport` (interface)
+|`formats.pdf`, `formats.csv`, `formats.xlsx`, `formats.json`
+|`{tenant_id}-reports`
+|Rendered report artifacts produced by the Reporting Engine in multiple formats.
+
+|`audit_trail.events` (anchors)
+|`anchor_hash` (when `is_anchor = true`)
+|Azure Immutable Blob (WORM)
+|Cryptographic anchors written every N events for tamper detection.
+Stored in write-once/read-many storage; not deletable.
+|===
+
+*Containers with no direct DB column:*
+
+* *`{tenant_id}-documents`* also stores source documents (PDF, TIFF, JPEG, PNG) uploaded via the <<sect-doc-processing,Document Processing Service>>.
+These files are referenced indirectly through the extraction pipeline rather than through a single table column.
+* *`{tenant_id}-quarantine`* holds files flagged by Microsoft Defender for Storage during malware scanning.
+Quarantined files have no database entity — they are removed after security investigation.
+
+For container-level encryption, lifecycle tiering, access control, and retention policies, see <<sect-document-store>>.
+
 [[sect-api-gateway]]
 === API Gateway
 
